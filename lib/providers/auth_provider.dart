@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
@@ -46,12 +48,13 @@ class AuthNotifier extends Notifier<AuthState> {
   AuthService get _authService => ref.read(authServiceProvider);
 
   /// Memulihkan sesi dari secure storage saat aplikasi dibuka.
-  Future<void> restoreSession() async {
+  /// Mengembalikan `true` bila sesi berhasil dipulihkan.
+  Future<bool> restoreSession() async {
     final token = await _storage.read(key: _tokenKey);
 
     if (token == null) {
       state = const AuthState(status: AuthStatus.unauthenticated);
-      return;
+      return false;
     }
 
     try {
@@ -61,15 +64,18 @@ class AuthNotifier extends Notifier<AuthState> {
         user: user,
         token: token,
       );
+      return true;
     } on ApiException catch (error) {
       if (error.statusCode == 401) {
         // Token kedaluwarsa/tidak valid → hapus agar bersih.
         await _storage.delete(key: _tokenKey);
       }
       state = const AuthState(status: AuthStatus.unauthenticated);
+      return false;
     } catch (_) {
       // Error jaringan dll.: token dibiarkan, dicoba lagi saat app dibuka.
       state = const AuthState(status: AuthStatus.unauthenticated);
+      return false;
     }
   }
 
@@ -104,10 +110,7 @@ class AuthNotifier extends Notifier<AuthState> {
   }
 
   /// Login. Mengembalikan `true` bila berhasil dan menyimpan token JWT.
-  Future<bool> login({
-    required String email,
-    required String password,
-  }) async {
+  Future<bool> login({required String email, required String password}) async {
     state = const AuthState(isLoading: true);
 
     try {
@@ -154,7 +157,11 @@ class AuthNotifier extends Notifier<AuthState> {
           error.errors != null &&
           error.errors!.isNotEmpty) {
         final details = error.errors!
-            .map((item) => item is Map ? '${item['field']}: ${item['message']}' : item.toString())
+            .map(
+              (item) => item is Map
+                  ? '${item['field']}: ${item['message']}'
+                  : item.toString(),
+            )
             .join('; ');
         return '${error.message} ($details)';
       }
@@ -163,6 +170,8 @@ class AuthNotifier extends Notifier<AuthState> {
         case 401:
           // Contoh backend: "Email atau password salah" / "Token sudah kedaluwarsa".
           return error.message;
+        case 408:
+          return 'Permintaan melebihi batas waktu. Periksa koneksi internet Anda.';
         case 409:
           // Contoh backend: "Email sudah dipakai".
           return error.message;
@@ -171,6 +180,10 @@ class AuthNotifier extends Notifier<AuthState> {
         default:
           return error.message;
       }
+    }
+
+    if (error is TimeoutException) {
+      return 'Permintaan melebihi batas waktu. Periksa koneksi internet Anda.';
     }
 
     if (error is FormatException) {
@@ -182,5 +195,6 @@ class AuthNotifier extends Notifier<AuthState> {
 }
 
 /// Provider state authentication.
-final authNotifierProvider =
-    NotifierProvider<AuthNotifier, AuthState>(AuthNotifier.new);
+final authNotifierProvider = NotifierProvider<AuthNotifier, AuthState>(
+  AuthNotifier.new,
+);

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -35,11 +36,16 @@ class ApiException implements Exception {
 ///
 /// Method melempar [ApiException] bila status HTTP >= 400 sehingga
 /// pemanggil bisa membedakan error validasi (400), autentikasi (401),
-/// konflik (409), dan rate limit (429).
+/// konflik (409), dan rate limit (429). Request yang melebihi [timeout]
+/// (default 15 detik) melempar [ApiException] dengan status 408.
 class ApiService {
-  ApiService({http.Client? client}) : _client = client ?? http.Client();
+  ApiService({http.Client? client, this.timeout = const Duration(seconds: 15)})
+    : _client = client ?? http.Client();
 
   final http.Client _client;
+
+  /// Batas waktu maksimum untuk setiap request HTTP.
+  final Duration timeout;
 
   Uri _uri(String path) => Uri.parse('${AppConfig.baseUrl}$path');
 
@@ -65,7 +71,8 @@ class ApiService {
     if (response.statusCode >= 400) {
       throw ApiException(
         statusCode: response.statusCode,
-        message: (body['message'] as String?) ?? 'Terjadi kesalahan pada server',
+        message:
+            (body['message'] as String?) ?? 'Terjadi kesalahan pada server',
         errors: body['errors'] as List<dynamic>?,
       );
     }
@@ -73,10 +80,22 @@ class ApiService {
     return body;
   }
 
+  /// Menjalankan [request] dengan batas waktu [timeout].
+  Future<http.Response> _withTimeout(Future<http.Response> request) async {
+    try {
+      return await request.timeout(timeout);
+    } on TimeoutException {
+      throw const ApiException(
+        statusCode: 408,
+        message:
+            'Permintaan melebihi batas waktu. Periksa koneksi internet Anda.',
+      );
+    }
+  }
+
   Future<Map<String, dynamic>> get(String path, {String? token}) async {
-    final response = await _client.get(
-      _uri(path),
-      headers: _headers(token: token),
+    final response = await _withTimeout(
+      _client.get(_uri(path), headers: _headers(token: token)),
     );
     return _handleResponse(response);
   }
@@ -86,10 +105,12 @@ class ApiService {
     Map<String, dynamic> body, {
     String? token,
   }) async {
-    final response = await _client.post(
-      _uri(path),
-      headers: _headers(token: token),
-      body: jsonEncode(body),
+    final response = await _withTimeout(
+      _client.post(
+        _uri(path),
+        headers: _headers(token: token),
+        body: jsonEncode(body),
+      ),
     );
     return _handleResponse(response);
   }
@@ -99,18 +120,19 @@ class ApiService {
     Map<String, dynamic> body, {
     String? token,
   }) async {
-    final response = await _client.patch(
-      _uri(path),
-      headers: _headers(token: token),
-      body: jsonEncode(body),
+    final response = await _withTimeout(
+      _client.patch(
+        _uri(path),
+        headers: _headers(token: token),
+        body: jsonEncode(body),
+      ),
     );
     return _handleResponse(response);
   }
 
   Future<Map<String, dynamic>> delete(String path, {String? token}) async {
-    final response = await _client.delete(
-      _uri(path),
-      headers: _headers(token: token),
+    final response = await _withTimeout(
+      _client.delete(_uri(path), headers: _headers(token: token)),
     );
     return _handleResponse(response);
   }

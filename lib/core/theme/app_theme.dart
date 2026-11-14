@@ -7,15 +7,17 @@ class AppTheme {
   const AppTheme._();
 
   static ThemeData get lightTheme {
+    final colorScheme = ColorScheme.fromSeed(
+      seedColor: AppColors.primaryOrange,
+      primary: AppColors.primaryOrange,
+      onPrimary: AppColors.white,
+      surface: AppColors.white,
+      onSurface: AppColors.darkText,
+    );
+
     return ThemeData(
       useMaterial3: true,
-      colorScheme: ColorScheme.fromSeed(
-        seedColor: AppColors.primaryOrange,
-        primary: AppColors.primaryOrange,
-        onPrimary: AppColors.white,
-        surface: AppColors.white,
-        onSurface: AppColors.darkText,
-      ),
+      colorScheme: colorScheme,
       scaffoldBackgroundColor: AppColors.white,
       appBarTheme: const AppBarTheme(
         backgroundColor: AppColors.white,
@@ -76,6 +78,14 @@ class AppTheme {
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: AppColors.primaryOrange),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: colorScheme.error),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: colorScheme.error, width: 1.4),
         ),
         labelStyle: const TextStyle(color: AppColors.secondaryText),
         hintStyle: const TextStyle(color: AppColors.secondaryText),
