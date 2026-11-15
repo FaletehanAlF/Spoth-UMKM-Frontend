@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 
 import '../core/theme/app_colors.dart';
+import 'nav_items.dart';
 
 /// Bottom navigation berbentuk pill (rounded) dengan background putih.
 ///
 /// Menu tidak aktif: ikon + label abu-abu. Menu aktif: ikon + label orange
-/// (identitas SPOTH UMKM). Ikon berada di atas label.
+/// (identitas SPOTH UMKM). Dipakai di mobile/tablet; di web memakai sidebar.
 class SpothBottomNav extends StatelessWidget {
   const SpothBottomNav({
     super.key,
@@ -13,7 +14,7 @@ class SpothBottomNav extends StatelessWidget {
     required this.onChanged,
   });
 
-  /// Index tab aktif (0 = Beranda, 1 = Booking, 2 = Profil).
+  /// Index tab aktif (0=Beranda, 1=Tempat, 2=Booking, 3=Profil).
   final int index;
 
   /// Callback saat pengguna memilih tab baru.
@@ -23,9 +24,9 @@ class SpothBottomNav extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: EdgeInsets.fromLTRB(
-        16,
         10,
-        16,
+        10,
+        10,
         10 + MediaQuery.paddingOf(context).bottom,
       ),
       decoration: const BoxDecoration(color: AppColors.white),
@@ -44,27 +45,12 @@ class SpothBottomNav extends StatelessWidget {
         ),
         child: Row(
           children: [
-            _NavItem(
-              icon: Icons.home_outlined,
-              activeIcon: Icons.home,
-              label: 'Beranda',
-              selected: index == 0,
-              onTap: () => onChanged(0),
-            ),
-            _NavItem(
-              icon: Icons.receipt_long_outlined,
-              activeIcon: Icons.receipt_long,
-              label: 'Booking',
-              selected: index == 1,
-              onTap: () => onChanged(1),
-            ),
-            _NavItem(
-              icon: Icons.person_outline,
-              activeIcon: Icons.person,
-              label: 'Profil',
-              selected: index == 2,
-              onTap: () => onChanged(2),
-            ),
+            for (var i = 0; i < kNavItems.length; i++)
+              _NavItem(
+                item: kNavItems[i],
+                selected: index == i,
+                onTap: () => onChanged(i),
+              ),
           ],
         ),
       ),
@@ -75,16 +61,12 @@ class SpothBottomNav extends StatelessWidget {
 /// Satu butir menu pada bottom navigation.
 class _NavItem extends StatelessWidget {
   const _NavItem({
-    required this.icon,
-    required this.activeIcon,
-    required this.label,
+    required this.item,
     required this.selected,
     required this.onTap,
   });
 
-  final IconData icon;
-  final IconData activeIcon;
-  final String label;
+  final NavItemData item;
   final bool selected;
   final VoidCallback onTap;
 
@@ -101,10 +83,14 @@ class _NavItem extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(selected ? activeIcon : icon, size: 22, color: color),
+              Icon(
+                selected ? item.activeIcon : item.icon,
+                size: 22,
+                color: color,
+              ),
               const SizedBox(height: 3),
               Text(
-                label,
+                item.label,
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: selected ? FontWeight.w600 : FontWeight.w500,

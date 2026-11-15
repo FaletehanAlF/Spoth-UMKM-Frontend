@@ -14,6 +14,7 @@ import '../../providers/booking_provider.dart';
 import '../../providers/nav_provider.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/shimmer_loading.dart';
+import '../../widgets/spoth_app_bar.dart';
 
 /// Form pemesanan tempat untuk **Penyewa (TENANT)**.
 ///
@@ -187,7 +188,7 @@ class _BookingFormScreenState extends ConsumerState<BookingFormScreen> {
       );
 
       // Arahkan ke tab Booking.
-      ref.read(mainNavIndexProvider.notifier).setTab(1);
+      ref.read(mainNavIndexProvider.notifier).setTab(2);
       context.go('/home');
     } catch (_) {
       if (mounted) {
@@ -211,7 +212,7 @@ class _BookingFormScreenState extends ConsumerState<BookingFormScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.white,
-      appBar: AppBar(title: const Text('Form Penyewaan')),
+      appBar: const SpothAppBar(title: Text('Form Penyewaan')),
       body: !bolehMemesan
           ? const Center(
               child: SingleChildScrollView(

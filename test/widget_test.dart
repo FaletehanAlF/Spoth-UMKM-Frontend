@@ -8,11 +8,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:http/http.dart' as http;
 
 import 'package:spoth_umkm/core/services/api_service.dart';
 import 'package:spoth_umkm/core/services/booking_service.dart';
 import 'package:spoth_umkm/core/services/notification_service.dart';
 import 'package:spoth_umkm/core/services/place_service.dart';
+import 'package:spoth_umkm/core/services/upload_service.dart';
 import 'package:spoth_umkm/main.dart';
 import 'package:spoth_umkm/models/booking_model.dart';
 import 'package:spoth_umkm/models/notification_model.dart';
@@ -26,6 +28,7 @@ import 'package:spoth_umkm/screens/main/main_shell.dart';
 import 'package:spoth_umkm/screens/notification/notification_screen.dart';
 import 'package:spoth_umkm/screens/onboarding/onboarding_screen.dart';
 import 'package:spoth_umkm/screens/place/place_detail_screen.dart';
+import 'package:spoth_umkm/screens/place/tempat_screen.dart';
 import 'package:spoth_umkm/screens/place/place_form_screen.dart';
 
 /// Ukuran layar yang diuji (devicePixelRatio 1.0):
@@ -122,6 +125,10 @@ PlaceModel _tempatDetail() => PlaceModel(
   tipeDurasi: 'HARIAN',
   status: 'AKTIF',
   namaHost: 'Sari Dewi',
+  foto: const [
+    'https://cdn.example.test/a.jpg',
+    'https://cdn.example.test/b.jpg',
+  ],
   jadwalTerpakai: [
     BookedRange(
       tanggalMulai: '2026-11-20',
@@ -267,6 +274,29 @@ class _FakePlaceService extends PlaceService {
   }
 }
 
+/// UploadService palsu: mencatat jumlah upload, mengembalikan URL fixture.
+class _FakeUploadService extends UploadService {
+  _FakeUploadService() : super(http.Client());
+
+  int callCount = 0;
+  final List<String> uploadedFiles = [];
+
+  @override
+  Future<UploadResult> uploadPhoto({
+    required String token,
+    required String filename,
+    required List<int> bytes,
+    String? mimeType,
+  }) async {
+    callCount += 1;
+    uploadedFiles.add(filename);
+    return UploadResult(
+      secureUrl: 'https://cdn.example.test/${callCount}_$filename',
+      publicId: 'public_$callCount',
+    );
+  }
+}
+
 /// NotificationService palsu: mengembalikan data fixture.
 class _FakeNotificationService extends NotificationService {
   _FakeNotificationService() : super(ApiService());
@@ -388,11 +418,13 @@ Future<void> _pumpSized(
 /// Mem-pump MaterialApp.router dengan service palsu Pemilik — dipakai test
 /// form tempat yang memanggil `context.pop` (butuh GoRouter) dan butuh
 /// akses ke [_FakePlaceService] untuk memeriksa payload yang dikirim.
+/// Set [fakeUpload] untuk juga mengganti UploadService.
 Future<void> _pumpFormRouter(
   WidgetTester tester, {
   required GoRouter router,
   required _FakePlaceService fakePlace,
-  Size size = const Size(800, 1280),
+  _FakeUploadService? fakeUpload,
+  Size size = const Size(800, 1500),
 }) async {
   tester.view
     ..devicePixelRatio = 1.0
@@ -407,6 +439,8 @@ Future<void> _pumpFormRouter(
           _FakeNotificationService(),
         ),
         bookingServiceProvider.overrideWithValue(_FakeBookingService()),
+        if (fakeUpload != null)
+          uploadServiceProvider.overrideWithValue(fakeUpload),
       ],
       child: MaterialApp.router(routerConfig: router),
     ),
@@ -470,62 +504,89 @@ void main() {
     await _pumpOnAllSizes(tester, () => _hostApp(const HomeScreen()));
   });
 
-  testWidgets('Home penyewa menampilkan sapaan dan daftar tempat', (
+  testWidgets('Home penyewa menampilkan headline dan preview tempat', (
     WidgetTester tester,
   ) async {
     await _pumpSized(tester, const HomeScreen());
 
-    expect(find.text('Budi Santoso'), findsOneWidget);
-    expect(find.text('Yuk, temukan tempat usaha'), findsOneWidget);
+    expect(find.textContaining('Tempat Usahamu'), findsOneWidget);
 
     // Daftar tempat berasal dari service palsu (bukan data dummy UI).
     expect(find.text('Lapak Kuliner Baru'), findsOneWidget);
     expect(find.text('Booth Bazar Sekolah'), findsOneWidget);
   });
 
-  testWidgets('Bottom bar berpindah antar tab Booking dan Profil', (
-    WidgetTester tester,
-  ) async {
-    await _pumpSized(tester, const MainShell());
+  testWidgets(
+    'Bottom bar berpindah antar tab Beranda, Tempat, Booking, Profil',
+    (WidgetTester tester) async {
+      await _pumpSized(tester, const MainShell());
 
-    // Tab Booking — judul dan isi sesuai role Penyewa.
-    await tester.tap(find.text('Booking'));
-    await tester.pumpAndSettle();
-    expect(find.text('Penyewaan Saya'), findsOneWidget);
-    // Jenis usaha tampil tergabung dengan kode booking pada setiap kartu.
-    expect(find.textContaining('Warung Makan'), findsNWidgets(2));
-    expect(find.text('Menunggu Bayar'), findsOneWidget);
+      // Tab Tempat — katalog untuk Penyewa (pencarian + daftar).
+      await tester.tap(find.text('Tempat'));
+      await tester.pumpAndSettle();
+      expect(find.text('Cari tempat, kota, atau lokasi...'), findsOneWidget);
+      expect(find.text('Lapak Kuliner Baru'), findsOneWidget);
 
-    // Tab Profil — data akun dari auth state.
-    await tester.tap(find.text('Profil'));
-    await tester.pumpAndSettle();
-    // Email tampil dua kali: di kartu kepala dan baris rincian Email.
-    expect(find.text('budi@contoh.test'), findsNWidgets(2));
-    expect(find.text('Keluar'), findsOneWidget);
+      // Tab Booking — judul dan isi sesuai role Penyewa.
+      await tester.tap(find.text('Booking'));
+      await tester.pumpAndSettle();
+      expect(find.text('Penyewaan Saya'), findsOneWidget);
+      // Jenis usaha tampil tergabung dengan kode booking pada setiap kartu.
+      expect(find.textContaining('Warung Makan'), findsNWidgets(2));
+      expect(find.text('Menunggu Bayar'), findsOneWidget);
 
-    // Kembali ke Beranda.
-    await tester.tap(find.text('Beranda'));
-    await tester.pumpAndSettle();
-    expect(find.text('Budi Santoso'), findsOneWidget);
-  });
+      // Tab Profil — data akun dari auth state.
+      await tester.tap(find.text('Profil'));
+      await tester.pumpAndSettle();
+      // Email tampil dua kali: di kartu kepala dan baris rincian Email.
+      expect(find.text('budi@contoh.test'), findsNWidgets(2));
+      expect(find.text('Keluar'), findsOneWidget);
+
+      // Kembali ke Beranda.
+      await tester.tap(find.text('Beranda'));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('Tempat Usahamu'), findsOneWidget);
+    },
+  );
 
   testWidgets('Home pemilik menampilkan ringkasan dan daftar tempat miliknya', (
     WidgetTester tester,
   ) async {
     await _pumpSized(tester, const HomeScreen(), host: true);
 
-    expect(find.text('Sari Dewi'), findsOneWidget);
-    expect(find.text('Kelola tempat usaha Anda dari sini.'), findsOneWidget);
+    expect(find.text('SPOTH UMKM'), findsOneWidget);
 
     // Ringkasan dashboard dari GET /places/mine/summary (fixture).
     expect(find.text('Total Tempat'), findsOneWidget);
     expect(find.text('Tempat Aktif'), findsOneWidget);
     expect(find.text('Rp 750.000'), findsOneWidget);
 
-    // Daftar tempat milik HOST + tombol tambah.
+    // Kartu ajakan ke tab Tempat — tombol tambah sudah dipindah ke tab Tempat.
     expect(find.text('Tempat Saya'), findsOneWidget);
+    expect(find.text('Tambah Tempat'), findsNothing);
+  });
+
+  testWidgets('Tempat (pemilik) menampilkan daftar miliknya + tombol tambah', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(_hostApp(const TempatScreen()));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Tempat'), findsOneWidget);
     expect(find.text('Teras Dagang Pagi'), findsOneWidget);
     expect(find.text('Tambah Tempat'), findsOneWidget);
+  });
+
+  testWidgets('Tempat (penyewa) menampilkan katalog tanpa tombol tambah', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(_tenantApp(const TempatScreen()));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Tempat'), findsOneWidget);
+    expect(find.text('Cari tempat, kota, atau lokasi...'), findsOneWidget);
+    expect(find.text('Lapak Kuliner Baru'), findsOneWidget);
+    expect(find.text('Tambah Tempat'), findsNothing);
   });
 
   testWidgets('Detail tempat untuk penyewa menampilkan tombol sewa', (
@@ -535,6 +596,8 @@ void main() {
 
     expect(find.byTooltip('Kembali'), findsOneWidget);
     expect(find.text('Lapak Kuliner Baru'), findsOneWidget);
+    // Indikator jumlah foto (fixture memuat 2 foto).
+    expect(find.text('1 / 2'), findsOneWidget);
     expect(find.text('Fasilitas'), findsOneWidget);
     expect(find.text('Listrik'), findsOneWidget);
     expect(find.text('Kipas'), findsOneWidget);
@@ -706,5 +769,79 @@ void main() {
       findsOneWidget,
     );
     expect(find.text('Tambah Tempat'), findsNothing);
+  });
+
+  testWidgets('Form ubah: hapus satu foto existing, foto tersisa dikirim', (
+    WidgetTester tester,
+  ) async {
+    final fakePlace = _FakePlaceService();
+    final router = GoRouter(
+      initialLocation: '/',
+      routes: [
+        GoRoute(
+          path: '/',
+          builder: (_, _) => const Scaffold(body: Text('Awal Dummy')),
+        ),
+        GoRoute(
+          path: '/place-form',
+          builder: (_, _) => const PlaceFormScreen(placeId: '201'),
+        ),
+      ],
+    );
+
+    await _pumpFormRouter(tester, router: router, fakePlace: fakePlace);
+    router.push('/place-form');
+    await tester.pumpAndSettle();
+
+    // Dua foto existing dari fixture tampil dengan tombol hapus.
+    expect(find.byIcon(Icons.close), findsNWidgets(2));
+    await tester.tap(find.byIcon(Icons.close).first);
+    await tester.pumpAndSettle();
+    expect(find.byIcon(Icons.close), findsOneWidget);
+
+    await tester.tap(find.text('Simpan Tempat'));
+    await tester.pumpAndSettle();
+
+    final payload = fakePlace.lastUpdatePayload;
+    expect(payload, isNotNull);
+    // Foto yang dihapus tidak dikirim; sisanya menjaga urutan.
+    expect(payload!['foto'], ['https://cdn.example.test/b.jpg']);
+  });
+
+  testWidgets('Form ubah: hapus semua foto, foto kosong dikirim', (
+    WidgetTester tester,
+  ) async {
+    final fakePlace = _FakePlaceService();
+    final router = GoRouter(
+      initialLocation: '/',
+      routes: [
+        GoRoute(
+          path: '/',
+          builder: (_, _) => const Scaffold(body: Text('Awal Dummy')),
+        ),
+        GoRoute(
+          path: '/place-form',
+          builder: (_, _) => const PlaceFormScreen(placeId: '201'),
+        ),
+      ],
+    );
+
+    await _pumpFormRouter(tester, router: router, fakePlace: fakePlace);
+    router.push('/place-form');
+    await tester.pumpAndSettle();
+
+    expect(find.byIcon(Icons.close), findsNWidgets(2));
+    await tester.tap(find.byIcon(Icons.close).first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byIcon(Icons.close).first);
+    await tester.pumpAndSettle();
+    expect(find.byIcon(Icons.close), findsNothing);
+
+    await tester.tap(find.text('Simpan Tempat'));
+    await tester.pumpAndSettle();
+
+    final payload = fakePlace.lastUpdatePayload;
+    expect(payload, isNotNull);
+    expect(payload!['foto'], isEmpty);
   });
 }

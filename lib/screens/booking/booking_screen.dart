@@ -9,6 +9,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/booking_provider.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/shimmer_loading.dart';
+import '../../widgets/spoth_app_bar.dart';
 
 /// Tab Booking — riwayat pemesanan dari `GET /bookings`.
 ///
@@ -75,7 +76,9 @@ class BookingScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: AppColors.white,
-      appBar: AppBar(title: Text(isHost ? 'Pesanan Masuk' : 'Penyewaan Saya')),
+      appBar: SpothAppBar(
+        title: Text(isHost ? 'Pesanan Masuk' : 'Penyewaan Saya'),
+      ),
       body: bookings.when(
         loading: () => const Padding(
           padding: EdgeInsets.all(20),

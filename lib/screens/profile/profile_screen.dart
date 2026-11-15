@@ -7,6 +7,7 @@ import '../../core/theme/app_colors.dart';
 import '../../models/user_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../widgets/empty_state.dart';
+import '../../widgets/spoth_app_bar.dart';
 
 /// Halaman Profil — data akun pengguna yang login dan tombol keluar.
 class ProfileScreen extends ConsumerWidget {
@@ -49,7 +50,7 @@ class ProfileScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: AppColors.white,
-      appBar: AppBar(title: const Text('Profil')),
+      appBar: const SpothAppBar(title: Text('Profil')),
       body: user == null
           ? const Center(
               child: SingleChildScrollView(

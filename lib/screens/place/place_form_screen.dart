@@ -1,8 +1,12 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../core/services/place_service.dart';
+import '../../core/services/upload_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../models/place_model.dart';
 import '../../models/user_model.dart';
@@ -10,6 +14,30 @@ import '../../providers/auth_provider.dart';
 import '../../providers/place_provider.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/shimmer_loading.dart';
+import '../../widgets/spoth_app_bar.dart';
+
+/// Satu item foto pada form tempat.
+///
+/// - Foto yang sudah tersimpan di backend: [url] terisi.
+/// - Foto baru yang dipilih dari galeri/kamera: [bytes] + [filename] terisi,
+///   belum diunggah sampai tombol Simpan ditekan.
+class _PhotoItem {
+  /// Foto yang sudah tersimpan di Cloudinary.
+  _PhotoItem.existing({required this.url}) : bytes = null, filename = null;
+
+  /// Foto baru yang dipilih pengguna (disimpan di memori sementara).
+  _PhotoItem.newLocal({required this.bytes, required this.filename})
+    : url = null;
+
+  /// URL foto tersimpan; null untuk foto baru.
+  final String? url;
+
+  /// Bytes foto baru; null untuk foto tersimpan.
+  final Uint8List? bytes;
+
+  /// Nama file foto baru (dipakai saat upload ke backend).
+  final String? filename;
+}
 
 /// Form tambah/ubah tempat usaha untuk Pemilik (HOST).
 ///
@@ -17,7 +45,8 @@ import '../../widgets/shimmer_loading.dart';
 /// - Dengan `placeId` → memuat data lalu `PATCH /places/:id` (ubah;
 ///   status ikut dikelola lewat switch).
 ///
-/// Foto belum diintegrasikan (opsional di backend) — pekerjaan menyusul.
+/// Foto tempat dikelola lewat bagian "Foto Tempat": foto tersimpan dapat
+/// dihapus, dan foto baru diunggah ke `POST /uploads/photo` saat Simpan.
 class PlaceFormScreen extends ConsumerStatefulWidget {
   const PlaceFormScreen({super.key, this.placeId});
 
@@ -38,12 +67,21 @@ class _PlaceFormScreenState extends ConsumerState<PlaceFormScreen> {
   final _hargaNormalController = TextEditingController();
   final _hargaPromoController = TextEditingController();
 
+  // Batas yang sama dengan backend: 6 foto, 5 MB per foto.
+  static const int _maxPhotos = 6;
+  static const int _maxPhotoBytes = 5 * 1024 * 1024;
+  static const List<String> _allowedExtensions = ['jpg', 'jpeg', 'png', 'webp'];
+
   String _kategori = PlaceModel.kategoriValues.first;
   String _tipeDurasi = PlaceModel.durasiValues.first;
   bool _statusAktif = true;
   bool _loading = false;
   bool _submitting = false;
   String? _loadError;
+
+  /// Foto yang tampil di form (existing + baru, existing selalu di depan).
+  final List<_PhotoItem> _photos = [];
+  final ImagePicker _picker = ImagePicker();
 
   bool get _isEditing => (widget.placeId ?? '').isNotEmpty;
 
@@ -98,6 +136,10 @@ class _PlaceFormScreenState extends ConsumerState<PlaceFormScreen> {
       _kategori = place.kategori;
       _tipeDurasi = place.tipeDurasi;
       _statusAktif = place.isAktif;
+      // Foto existing dipertahankan (urutannya tidak berubah).
+      _photos
+        ..clear()
+        ..addAll(place.foto.map((url) => _PhotoItem.existing(url: url)));
     } catch (_) {
       if (mounted) {
         setState(() => _loadError = 'Gagal memuat data tempat');
@@ -116,6 +158,122 @@ class _PlaceFormScreenState extends ConsumerState<PlaceFormScreen> {
   double? _parseHarga(String text) {
     final bersih = text.trim().replaceAll('.', '').replaceAll(',', '.');
     return bersih.isEmpty ? null : double.tryParse(bersih);
+  }
+
+  /// Menampilkan pesan singkat di bagian bawah layar.
+  void _showSnack(String pesan) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(pesan)));
+  }
+
+  /// Bottom sheet: pilih dari galeri atau kamera.
+  Future<void> _showPickSheet() async {
+    if (_photos.length >= _maxPhotos) {
+      _showSnack('Maksimal $_maxPhotos foto.');
+      return;
+    }
+
+    final sumber = await showModalBottomSheet<ImageSource>(
+      context: context,
+      backgroundColor: AppColors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 4),
+              child: Row(
+                children: [
+                  const Text(
+                    'Tambah foto',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.darkText,
+                    ),
+                  ),
+                  const Spacer(),
+                  Text(
+                    '${_photos.length}/$_maxPhotos',
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: AppColors.secondaryText,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            ListTile(
+              leading: const Icon(
+                Icons.photo_library_outlined,
+                color: AppColors.primaryOrange,
+              ),
+              title: const Text('Galeri'),
+              onTap: () => Navigator.of(sheetContext).pop(ImageSource.gallery),
+            ),
+            ListTile(
+              leading: const Icon(
+                Icons.photo_camera_outlined,
+                color: AppColors.primaryOrange,
+              ),
+              title: const Text('Kamera'),
+              onTap: () => Navigator.of(sheetContext).pop(ImageSource.camera),
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+
+    if (sumber != null) {
+      await _addPhotoFromSource(sumber);
+    }
+  }
+
+  /// Memilih foto, memvalidasi format & ukuran, lalu menambahkannya ke form.
+  Future<void> _addPhotoFromSource(ImageSource source) async {
+    try {
+      final picked = await _picker.pickImage(
+        source: source,
+        maxWidth: 1600,
+        imageQuality: 85,
+      );
+      if (picked == null) return;
+
+      final size = await picked.length();
+      if (size > _maxPhotoBytes) {
+        _showSnack('Ukuran foto maksimal 5 MB.');
+        return;
+      }
+
+      final filename = picked.name.isNotEmpty
+          ? picked.name
+          : 'foto_${DateTime.now().millisecondsSinceEpoch}.jpg';
+      final titik = filename.lastIndexOf('.');
+      final ext = titik >= 0 ? filename.substring(titik + 1).toLowerCase() : '';
+      if (!_allowedExtensions.contains(ext)) {
+        _showSnack('Format foto harus JPG, JPEG, PNG, atau WEBP.');
+        return;
+      }
+
+      final bytes = await picked.readAsBytes();
+
+      if (!mounted) return;
+      setState(
+        () =>
+            _photos.add(_PhotoItem.newLocal(bytes: bytes, filename: filename)),
+      );
+    } catch (_) {
+      _showSnack('Gagal memilih foto. Coba lagi.');
+    }
+  }
+
+  /// Menghapus foto dari form (existing maupun baru).
+  void _removePhoto(int index) {
+    setState(() => _photos.removeAt(index));
   }
 
   Future<void> _submit() async {
@@ -150,6 +308,33 @@ class _PlaceFormScreenState extends ConsumerState<PlaceFormScreen> {
       final token = ref.read(authNotifierProvider.select((s) => s.token));
       if (token == null) return;
 
+      // 1) Upload foto baru satu per satu. Urutan: foto existing dulu
+      //    (dipertahankan), lalu URL foto baru.
+      final fotoUrls = <String>[
+        for (final photo in _photos)
+          if (photo.url != null) photo.url!,
+      ];
+
+      for (final photo in _photos) {
+        if (photo.bytes == null) continue;
+
+        try {
+          final result = await ref
+              .read(uploadServiceProvider)
+              .uploadPhoto(
+                token: token,
+                filename: photo.filename ?? 'foto.jpg',
+                bytes: photo.bytes!,
+              );
+          fotoUrls.add(result.secureUrl);
+        } catch (_) {
+          // Upload gagal → batalkan simpan, foto di form tetap utuh.
+          _showSnack('Gagal mengunggah foto. Coba lagi.');
+          return;
+        }
+      }
+
+      // 2) Kirim array foto ke backend (menggantikan seluruh daftar foto).
       final payload = <String, dynamic>{
         'nama_tempat': _namaController.text.trim(),
         'kategori': _kategori,
@@ -165,6 +350,9 @@ class _PlaceFormScreenState extends ConsumerState<PlaceFormScreen> {
         'fasilitas': _fasilitasController.text.trim(),
         if (_aturanController.text.trim().isNotEmpty)
           'aturan': _aturanController.text.trim(),
+        // Foto: selalu kirim (termasuk array kosong bila semua dihapus saat
+        // mengedit) karena backend menggantikan seluruh daftar foto.
+        'foto': fotoUrls,
         // Saat mengedit: kirim eksplisit (termasuk null) agar promo dapat
         // dihapus — skema update backend menerima `harga_promo: null`.
         // Saat menambah: null di-omit (`?`) karena skema create backend
@@ -221,7 +409,7 @@ class _PlaceFormScreenState extends ConsumerState<PlaceFormScreen> {
     if (!bolehMengelola) {
       return Scaffold(
         backgroundColor: AppColors.white,
-        appBar: AppBar(title: const Text('Kelola Tempat')),
+        appBar: const SpothAppBar(title: Text('Kelola Tempat')),
         body: const Center(
           child: SingleChildScrollView(
             padding: EdgeInsets.all(20),
@@ -239,7 +427,9 @@ class _PlaceFormScreenState extends ConsumerState<PlaceFormScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.white,
-      appBar: AppBar(title: Text(_isEditing ? 'Ubah Tempat' : 'Tambah Tempat')),
+      appBar: SpothAppBar(
+        title: Text(_isEditing ? 'Ubah Tempat' : 'Tambah Tempat'),
+      ),
       body: _loading
           ? const Padding(
               padding: EdgeInsets.all(20),
@@ -332,6 +522,41 @@ class _PlaceFormScreenState extends ConsumerState<PlaceFormScreen> {
                       labelText: 'Deskripsi (opsional)',
                       hintText: 'Jelaskan tempat usaha Anda',
                     ),
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Foto Tempat',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.darkText,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'Maks. 6 foto. Format JPG, JPEG, PNG, WEBP, maks 5 MB per foto.',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: AppColors.secondaryText,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  GridView.count(
+                    crossAxisCount: 3,
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    mainAxisSpacing: 8,
+                    crossAxisSpacing: 8,
+                    childAspectRatio: 1,
+                    children: [
+                      for (var i = 0; i < _photos.length; i++)
+                        _PhotoThumb(
+                          photo: _photos[i],
+                          onRemove: () => _removePhoto(i),
+                        ),
+                      if (_photos.length < _maxPhotos)
+                        _AddPhotoTile(onTap: _showPickSheet),
+                    ],
                   ),
                   const SizedBox(height: 16),
                   TextFormField(
@@ -442,12 +667,132 @@ class _PlaceFormScreenState extends ConsumerState<PlaceFormScreen> {
                   const SizedBox(height: 24),
                   ElevatedButton(
                     onPressed: _submitting ? null : _submit,
-                    child: Text(_submitting ? 'Menyimpan...' : 'Simpan Tempat'),
+                    child: Text(
+                      _submitting
+                          ? (_photos.any((photo) => photo.bytes != null)
+                                ? 'Mengunggah foto...'
+                                : 'Menyimpan...')
+                          : 'Simpan Tempat',
+                    ),
                   ),
                   const SizedBox(height: 24),
                 ],
               ),
             ),
+    );
+  }
+}
+
+/// Thumbnail satu foto di form (foto tersimpan via network, foto baru via memory).
+class _PhotoThumb extends StatelessWidget {
+  const _PhotoThumb({required this.photo, required this.onRemove});
+
+  final _PhotoItem photo;
+  final VoidCallback onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    final ImageProvider provider = photo.bytes != null
+        ? MemoryImage(photo.bytes!)
+        : NetworkImage(photo.url!);
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(12),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          Image(
+            image: provider,
+            fit: BoxFit.cover,
+            errorBuilder: (_, _, _) => const ColoredBox(
+              color: AppColors.lightOrange,
+              child: Icon(Icons.storefront, color: AppColors.primaryOrange),
+            ),
+          ),
+          Positioned(
+            top: 4,
+            right: 4,
+            child: Material(
+              color: Colors.black.withValues(alpha: 0.55),
+              shape: const CircleBorder(),
+              child: InkWell(
+                customBorder: const CircleBorder(),
+                onTap: onRemove,
+                child: const Padding(
+                  padding: EdgeInsets.all(5),
+                  child: Icon(Icons.close, size: 14, color: AppColors.white),
+                ),
+              ),
+            ),
+          ),
+          if (photo.bytes != null)
+            const Positioned(
+              left: 4,
+              bottom: 4,
+              child: _MiniBadge(label: 'BARU'),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Tile "Tambah Foto" (slot terakhir pada grid).
+class _AddPhotoTile extends StatelessWidget {
+  const _AddPhotoTile({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: AppColors.lightOrange,
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: onTap,
+        child: const Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.add_a_photo_outlined, color: AppColors.primaryOrange),
+            SizedBox(height: 6),
+            Text(
+              'Tambah Foto',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: AppColors.primaryOrange,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Lencana kecil pada thumbnail (mis. "BARU").
+class _MiniBadge extends StatelessWidget {
+  const _MiniBadge({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: AppColors.primaryOrange,
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Text(
+        label,
+        style: const TextStyle(
+          fontSize: 9,
+          fontWeight: FontWeight.w700,
+          color: AppColors.white,
+        ),
+      ),
     );
   }
 }
