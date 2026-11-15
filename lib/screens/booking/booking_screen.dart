@@ -8,6 +8,7 @@ import '../../models/user_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/booking_provider.dart';
 import '../../widgets/empty_state.dart';
+import '../../widgets/notification_icon.dart';
 import '../../widgets/shimmer_loading.dart';
 import '../../widgets/spoth_app_bar.dart';
 
@@ -78,6 +79,7 @@ class BookingScreen extends ConsumerWidget {
       backgroundColor: AppColors.white,
       appBar: SpothAppBar(
         title: Text(isHost ? 'Pesanan Masuk' : 'Penyewaan Saya'),
+        actions: const [NotificationIconButton()],
       ),
       body: bookings.when(
         loading: () => const Padding(

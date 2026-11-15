@@ -10,10 +10,11 @@ final notificationServiceProvider = Provider<NotificationService>((ref) {
 
 /// Akses ke endpoint notifikasi backend SPOTH UMKM (semuanya butuh token):
 ///
-/// - `GET   /notifications`          → daftar notifikasi milik pengguna
-/// - `GET   /notifications/summary`  → ringkasan `{ total, belum_dibaca }`
-/// - `PATCH /notifications/:id/read` → tandai satu sudah dibaca
-/// - `POST  /notifications/read-all` → tandai semua sudah dibaca
+/// - `GET    /notifications`          → daftar notifikasi milik pengguna
+/// - `GET    /notifications/summary`  → ringkasan `{ total, belum_dibaca }`
+/// - `PATCH  /notifications/:id/read` → tandai satu sudah dibaca
+/// - `POST   /notifications/read-all` → tandai semua sudah dibaca
+/// - `DELETE /notifications/:id`      → hapus satu notifikasi
 ///
 /// Isi notifikasi dibuat otomatis oleh backend saat pemesanan/pembayaran
 /// terjadi — frontend tidak pernah membuat notifikasi palsu.
@@ -34,14 +35,15 @@ class NotificationService {
     return query.isEmpty ? '' : '?$query';
   }
 
-  /// Daftar notifikasi milik pengguna yang sedang login.
+  /// Daftar notifikasi milik pengguna yang sedang login (berpaginasi).
   Future<List<NotificationModel>> list({
     required String token,
     bool unreadOnly = false,
+    int page = 1,
     int limit = 50,
   }) async {
     final body = await _apiService.get(
-      '/notifications${_query({'unread_only': unreadOnly ? 'true' : null, 'page': '1', 'limit': '$limit'})}',
+      '/notifications${_query({'unread_only': unreadOnly ? 'true' : null, 'page': '$page', 'limit': '$limit'})}',
       token: token,
     );
 
@@ -79,5 +81,10 @@ class NotificationService {
   /// Menandai semua notifikasi sebagai sudah dibaca.
   Future<void> markAllRead({required String token}) async {
     await _apiService.post('/notifications/read-all', {}, token: token);
+  }
+
+  /// Menghapus satu notifikasi milik pengguna yang sedang login.
+  Future<void> delete({required String token, required String id}) async {
+    await _apiService.delete('/notifications/$id', token: token);
   }
 }

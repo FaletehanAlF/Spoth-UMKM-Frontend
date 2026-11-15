@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/theme/app_colors.dart';
@@ -17,8 +18,48 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _storage = const FlutterSecureStorage();
 
   bool _obscurePassword = true;
+  bool _rememberMe = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadRemembered();
+  }
+
+  /// Memuat email yang tersimpan bila sebelumnya pengguna mencentang "Ingat saya".
+  Future<void> _loadRemembered() async {
+    final rememberMe = await _storage.read(key: 'remember_me');
+
+    if (rememberMe == 'true') {
+      final email = await _storage.read(key: 'remembered_email');
+
+      if (!mounted) return;
+      setState(() {
+        _rememberMe = true;
+        _emailController.text = email ?? '';
+      });
+    } else {
+      if (!mounted) return;
+      setState(() => _rememberMe = false);
+    }
+  }
+
+  /// Menyimpan/menghapus pilihan "Ingat saya" setelah login berhasil.
+  Future<void> _persistRememberMe() async {
+    if (_rememberMe) {
+      await _storage.write(key: 'remember_me', value: 'true');
+      await _storage.write(
+        key: 'remembered_email',
+        value: _emailController.text.trim(),
+      );
+    } else {
+      await _storage.delete(key: 'remember_me');
+      await _storage.delete(key: 'remembered_email');
+    }
+  }
 
   @override
   void dispose() {
@@ -40,15 +81,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     return null;
   }
 
-  void _showForgotPasswordInfo() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        behavior: SnackBarBehavior.floating,
-        content: Text('Fitur lupa password akan segera tersedia.'),
-      ),
-    );
-  }
-
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -64,6 +96,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     if (!mounted) return;
 
     if (success) {
+      await _persistRememberMe();
+      if (!mounted) return;
       context.go('/home');
     }
   }
@@ -161,11 +195,33 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         enabled: !isLoading,
                       ),
                       const SizedBox(height: 4),
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: TextButton(
-                          onPressed: isLoading ? null : _showForgotPasswordInfo,
-                          child: const Text('Lupa password?'),
+                      InkWell(
+                        onTap: isLoading
+                            ? null
+                            : () => setState(() => _rememberMe = !_rememberMe),
+                        borderRadius: BorderRadius.circular(8),
+                        child: Row(
+                          children: [
+                            Checkbox(
+                              value: _rememberMe,
+                              onChanged: isLoading
+                                  ? null
+                                  : (value) => setState(
+                                      () => _rememberMe = value ?? true,
+                                    ),
+                              activeColor: AppColors.primaryOrange,
+                              side: const BorderSide(
+                                color: AppColors.secondaryText,
+                              ),
+                            ),
+                            const Text(
+                              'Ingat saya',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: AppColors.darkText,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                       if (errorMessage != null) ...[

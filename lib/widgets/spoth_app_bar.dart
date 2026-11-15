@@ -29,12 +29,16 @@ class SpothAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Di layar lebar (web/desktop) judul dipusatkan agar sejajar dengan
+    // desain sidebar; di ponsel mengikuti pilihan tiap halaman.
+    final layarLebar = MediaQuery.sizeOf(context).width >= 900;
+
     return AppBar(
       backgroundColor: AppColors.white,
       foregroundColor: AppColors.darkText,
       elevation: 0,
       scrolledUnderElevation: 0,
-      centerTitle: centerTitle,
+      centerTitle: centerTitle || layarLebar,
       title: title,
       actions: actions,
       bottom: const PreferredSize(

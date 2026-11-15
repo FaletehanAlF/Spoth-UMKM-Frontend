@@ -15,6 +15,7 @@ import '../../providers/place_provider.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/shimmer_loading.dart';
 import '../../widgets/spoth_app_bar.dart';
+import '../../widgets/spoth_sidebar_scaffold.dart';
 
 /// Satu item foto pada form tempat.
 ///
@@ -407,7 +408,7 @@ class _PlaceFormScreenState extends ConsumerState<PlaceFormScreen> {
     final bolehMengelola =
         ref.watch(authNotifierProvider).user?.role == UserModel.roleHost;
     if (!bolehMengelola) {
-      return Scaffold(
+      final page = Scaffold(
         backgroundColor: AppColors.white,
         appBar: const SpothAppBar(title: Text('Kelola Tempat')),
         body: const Center(
@@ -423,9 +424,11 @@ class _PlaceFormScreenState extends ConsumerState<PlaceFormScreen> {
           ),
         ),
       );
+
+      return SpothSidebarScaffold(child: page);
     }
 
-    return Scaffold(
+    final page = Scaffold(
       backgroundColor: AppColors.white,
       appBar: SpothAppBar(
         title: Text(_isEditing ? 'Ubah Tempat' : 'Tambah Tempat'),
@@ -445,241 +448,248 @@ class _PlaceFormScreenState extends ConsumerState<PlaceFormScreen> {
                 onAction: _loadExisting,
               ),
             )
-          : Form(
-              key: _formKey,
-              child: ListView(
-                padding: const EdgeInsets.all(20),
-                children: [
-                  TextFormField(
-                    controller: _namaController,
-                    textCapitalization: TextCapitalization.words,
-                    decoration: const InputDecoration(
-                      labelText: 'Nama Tempat',
-                      hintText: 'Contoh: Lapak Kuliner Pasar Baru',
-                    ),
-                    validator: (value) =>
-                        (value == null || value.trim().isEmpty)
-                        ? 'Nama tempat wajib diisi'
-                        : null,
-                  ),
-                  const SizedBox(height: 16),
-                  const Text(
-                    'Kategori',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.darkText,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
+          : Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 640),
+                child: Form(
+                  key: _formKey,
+                  child: ListView(
+                    padding: const EdgeInsets.all(20),
                     children: [
-                      for (final kategori in PlaceModel.kategoriValues)
-                        ChoiceChip(
-                          label: Text(
-                            PlaceModel.kategoriLabels[kategori] ?? kategori,
-                          ),
-                          selected: _kategori == kategori,
-                          selectedColor: AppColors.primaryOrange,
-                          labelStyle: TextStyle(
-                            color: _kategori == kategori
-                                ? AppColors.white
-                                : AppColors.secondaryText,
-                            fontWeight: FontWeight.w600,
-                          ),
-                          showCheckmark: false,
-                          onSelected: (_) =>
-                              setState(() => _kategori = kategori),
+                      TextFormField(
+                        controller: _namaController,
+                        textCapitalization: TextCapitalization.words,
+                        decoration: const InputDecoration(
+                          labelText: 'Nama Tempat',
+                          hintText: 'Contoh: Lapak Kuliner Pasar Baru',
                         ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: _alamatController,
-                    decoration: const InputDecoration(labelText: 'Alamat'),
-                    validator: (value) =>
-                        (value == null || value.trim().isEmpty)
-                        ? 'Alamat wajib diisi'
-                        : null,
-                  ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: _kotaController,
-                    textCapitalization: TextCapitalization.words,
-                    decoration: const InputDecoration(labelText: 'Kota'),
-                    validator: (value) =>
-                        (value == null || value.trim().isEmpty)
-                        ? 'Kota wajib diisi'
-                        : null,
-                  ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: _deskripsiController,
-                    maxLines: 3,
-                    decoration: const InputDecoration(
-                      labelText: 'Deskripsi (opsional)',
-                      hintText: 'Jelaskan tempat usaha Anda',
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  const Text(
-                    'Foto Tempat',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.darkText,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  const Text(
-                    'Maks. 6 foto. Format JPG, JPEG, PNG, WEBP, maks 5 MB per foto.',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: AppColors.secondaryText,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  GridView.count(
-                    crossAxisCount: 3,
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    mainAxisSpacing: 8,
-                    crossAxisSpacing: 8,
-                    childAspectRatio: 1,
-                    children: [
-                      for (var i = 0; i < _photos.length; i++)
-                        _PhotoThumb(
-                          photo: _photos[i],
-                          onRemove: () => _removePhoto(i),
-                        ),
-                      if (_photos.length < _maxPhotos)
-                        _AddPhotoTile(onTap: _showPickSheet),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: _fasilitasController,
-                    decoration: const InputDecoration(
-                      labelText: 'Fasilitas (opsional)',
-                      hintText: 'Pisahkan dengan koma, mis: Listrik, Kipas',
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: _aturanController,
-                    maxLines: 3,
-                    decoration: const InputDecoration(
-                      labelText: 'Aturan (opsional)',
-                      hintText: 'Mis: Tutup pukul 21.00',
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: TextFormField(
-                          controller: _hargaNormalController,
-                          keyboardType: TextInputType.number,
-                          decoration: const InputDecoration(
-                            labelText: 'Harga Normal (Rp)',
-                            hintText: '250000',
-                          ),
-                          validator: (value) =>
-                              (value == null || value.trim().isEmpty)
-                              ? 'Harga normal wajib diisi'
-                              : null,
-                        ),
+                        validator: (value) =>
+                            (value == null || value.trim().isEmpty)
+                            ? 'Nama tempat wajib diisi'
+                            : null,
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: TextFormField(
-                          controller: _hargaPromoController,
-                          keyboardType: TextInputType.number,
-                          decoration: const InputDecoration(
-                            labelText: 'Harga Promo (Rp)',
-                            hintText: 'Kosong = tanpa promo',
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  const Text(
-                    'Tipe Durasi',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.darkText,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      for (final durasi in PlaceModel.durasiValues)
-                        ChoiceChip(
-                          label: Text(
-                            PlaceModel.durasiLabels[durasi] ?? durasi,
-                          ),
-                          selected: _tipeDurasi == durasi,
-                          selectedColor: AppColors.primaryOrange,
-                          labelStyle: TextStyle(
-                            color: _tipeDurasi == durasi
-                                ? AppColors.white
-                                : AppColors.secondaryText,
-                            fontWeight: FontWeight.w600,
-                          ),
-                          showCheckmark: false,
-                          onSelected: (_) =>
-                              setState(() => _tipeDurasi = durasi),
-                        ),
-                    ],
-                  ),
-                  if (_isEditing) ...[
-                    const SizedBox(height: 16),
-                    SwitchListTile(
-                      contentPadding: EdgeInsets.zero,
-                      activeThumbColor: AppColors.primaryOrange,
-                      title: const Text(
-                        'Tempat Aktif',
+                      const SizedBox(height: 16),
+                      const Text(
+                        'Kategori',
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
                           color: AppColors.darkText,
                         ),
                       ),
-                      subtitle: const Text(
-                        'Tempat nonaktif tidak tampil kepada penyewa',
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          for (final kategori in PlaceModel.kategoriValues)
+                            ChoiceChip(
+                              label: Text(
+                                PlaceModel.kategoriLabels[kategori] ?? kategori,
+                              ),
+                              selected: _kategori == kategori,
+                              selectedColor: AppColors.primaryOrange,
+                              labelStyle: TextStyle(
+                                color: _kategori == kategori
+                                    ? AppColors.white
+                                    : AppColors.secondaryText,
+                                fontWeight: FontWeight.w600,
+                              ),
+                              showCheckmark: false,
+                              onSelected: (_) =>
+                                  setState(() => _kategori = kategori),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: _alamatController,
+                        decoration: const InputDecoration(labelText: 'Alamat'),
+                        validator: (value) =>
+                            (value == null || value.trim().isEmpty)
+                            ? 'Alamat wajib diisi'
+                            : null,
+                      ),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: _kotaController,
+                        textCapitalization: TextCapitalization.words,
+                        decoration: const InputDecoration(labelText: 'Kota'),
+                        validator: (value) =>
+                            (value == null || value.trim().isEmpty)
+                            ? 'Kota wajib diisi'
+                            : null,
+                      ),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: _deskripsiController,
+                        maxLines: 3,
+                        decoration: const InputDecoration(
+                          labelText: 'Deskripsi (opsional)',
+                          hintText: 'Jelaskan tempat usaha Anda',
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'Foto Tempat',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.darkText,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      const Text(
+                        'Maks. 6 foto. Format JPG, JPEG, PNG, WEBP, maks 5 MB per foto.',
                         style: TextStyle(
                           fontSize: 12,
                           color: AppColors.secondaryText,
                         ),
                       ),
-                      value: _statusAktif,
-                      onChanged: (value) =>
-                          setState(() => _statusAktif = value),
-                    ),
-                  ],
-                  const SizedBox(height: 24),
-                  ElevatedButton(
-                    onPressed: _submitting ? null : _submit,
-                    child: Text(
-                      _submitting
-                          ? (_photos.any((photo) => photo.bytes != null)
-                                ? 'Mengunggah foto...'
-                                : 'Menyimpan...')
-                          : 'Simpan Tempat',
-                    ),
+                      const SizedBox(height: 8),
+                      GridView.count(
+                        crossAxisCount: 3,
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        mainAxisSpacing: 8,
+                        crossAxisSpacing: 8,
+                        childAspectRatio: 1,
+                        children: [
+                          for (var i = 0; i < _photos.length; i++)
+                            _PhotoThumb(
+                              photo: _photos[i],
+                              onRemove: () => _removePhoto(i),
+                            ),
+                          if (_photos.length < _maxPhotos)
+                            _AddPhotoTile(onTap: _showPickSheet),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: _fasilitasController,
+                        decoration: const InputDecoration(
+                          labelText: 'Fasilitas (opsional)',
+                          hintText: 'Pisahkan dengan koma, mis: Listrik, Kipas',
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: _aturanController,
+                        maxLines: 3,
+                        decoration: const InputDecoration(
+                          labelText: 'Aturan (opsional)',
+                          hintText: 'Mis: Tutup pukul 21.00',
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: TextFormField(
+                              controller: _hargaNormalController,
+                              keyboardType: TextInputType.number,
+                              decoration: const InputDecoration(
+                                labelText: 'Harga Normal (Rp)',
+                                hintText: '250000',
+                              ),
+                              validator: (value) =>
+                                  (value == null || value.trim().isEmpty)
+                                  ? 'Harga normal wajib diisi'
+                                  : null,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: TextFormField(
+                              controller: _hargaPromoController,
+                              keyboardType: TextInputType.number,
+                              decoration: const InputDecoration(
+                                labelText: 'Harga Promo (Rp)',
+                                hintText: 'Kosong = tanpa promo',
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'Tipe Durasi',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.darkText,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          for (final durasi in PlaceModel.durasiValues)
+                            ChoiceChip(
+                              label: Text(
+                                PlaceModel.durasiLabels[durasi] ?? durasi,
+                              ),
+                              selected: _tipeDurasi == durasi,
+                              selectedColor: AppColors.primaryOrange,
+                              labelStyle: TextStyle(
+                                color: _tipeDurasi == durasi
+                                    ? AppColors.white
+                                    : AppColors.secondaryText,
+                                fontWeight: FontWeight.w600,
+                              ),
+                              showCheckmark: false,
+                              onSelected: (_) =>
+                                  setState(() => _tipeDurasi = durasi),
+                            ),
+                        ],
+                      ),
+                      if (_isEditing) ...[
+                        const SizedBox(height: 16),
+                        SwitchListTile(
+                          contentPadding: EdgeInsets.zero,
+                          activeThumbColor: AppColors.primaryOrange,
+                          title: const Text(
+                            'Tempat Aktif',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.darkText,
+                            ),
+                          ),
+                          subtitle: const Text(
+                            'Tempat nonaktif tidak tampil kepada penyewa',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: AppColors.secondaryText,
+                            ),
+                          ),
+                          value: _statusAktif,
+                          onChanged: (value) =>
+                              setState(() => _statusAktif = value),
+                        ),
+                      ],
+                      const SizedBox(height: 24),
+                      ElevatedButton(
+                        onPressed: _submitting ? null : _submit,
+                        child: Text(
+                          _submitting
+                              ? (_photos.any((photo) => photo.bytes != null)
+                                    ? 'Mengunggah foto...'
+                                    : 'Menyimpan...')
+                              : 'Simpan Tempat',
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                    ],
                   ),
-                  const SizedBox(height: 24),
-                ],
+                ),
               ),
             ),
     );
+
+    return SpothSidebarScaffold(child: page);
   }
 }
 

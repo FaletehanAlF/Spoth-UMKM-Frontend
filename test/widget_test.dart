@@ -305,6 +305,7 @@ class _FakeNotificationService extends NotificationService {
   Future<List<NotificationModel>> list({
     required String token,
     bool unreadOnly = false,
+    int page = 1,
     int limit = 50,
   }) async => [
     _notifikasi(

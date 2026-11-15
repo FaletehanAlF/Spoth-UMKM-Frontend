@@ -14,7 +14,7 @@ class SpothBottomNav extends StatelessWidget {
     required this.onChanged,
   });
 
-  /// Index tab aktif (0=Beranda, 1=Tempat, 2=Booking, 3=Profil).
+  /// Index tab aktif (0=Beranda, 1=Tempat, 2=Booking, 3=Notifikasi, 4=Profil).
   final int index;
 
   /// Callback saat pengguna memilih tab baru.

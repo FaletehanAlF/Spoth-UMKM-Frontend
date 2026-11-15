@@ -5,6 +5,9 @@ import 'package:flutter/material.dart';
 ///
 /// Susunan (sama untuk Pemilik dan Penyewa):
 /// 0 = Beranda, 1 = Tempat, 2 = Booking, 3 = Profil
+///
+/// Halaman Notifikasi **tidak** menjadi menu navigasi (supaya tidak duplikat
+/// dengan ikon notifikasi di AppBar) — notifikasi dibuka lewat ikon bel.
 class NavItemData {
   const NavItemData({
     required this.icon,

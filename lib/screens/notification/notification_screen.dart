@@ -8,6 +8,7 @@ import '../../providers/notification_provider.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/shimmer_loading.dart';
 import '../../widgets/spoth_app_bar.dart';
+import '../../widgets/spoth_sidebar_scaffold.dart';
 
 /// Halaman Notifikasi (`GET /notifications`).
 ///
@@ -22,7 +23,7 @@ class NotificationScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final notifications = ref.watch(notificationsProvider);
 
-    return Scaffold(
+    final page = Scaffold(
       backgroundColor: AppColors.white,
       appBar: SpothAppBar(
         title: const Text('Notifikasi'),
@@ -53,7 +54,9 @@ class NotificationScreen extends ConsumerWidget {
             ),
           ),
         ),
-        data: (items) {
+        data: (page) {
+          final items = page.items;
+
           if (items.isEmpty) {
             return const Center(
               child: SingleChildScrollView(
@@ -72,17 +75,37 @@ class NotificationScreen extends ConsumerWidget {
           return RefreshIndicator(
             color: AppColors.primaryOrange,
             onRefresh: () => ref.read(notificationsProvider.notifier).refresh(),
-            child: ListView.separated(
+            child: ListView.builder(
               padding: const EdgeInsets.all(20),
-              itemCount: items.length,
-              separatorBuilder: (_, _) => const SizedBox(height: 12),
-              itemBuilder: (context, index) =>
-                  _NotificationCard(notification: items[index]),
+              itemCount: items.length + (page.hasMore ? 1 : 0),
+              itemBuilder: (context, index) {
+                if (index == items.length) {
+                  // Tombol "Muat Lebih Banyak" bila server punya halaman lagi.
+                  return Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Center(
+                      child: OutlinedButton.icon(
+                        onPressed: () =>
+                            ref.read(notificationsProvider.notifier).loadMore(),
+                        icon: const Icon(Icons.expand_more),
+                        label: const Text('Muat Lebih Banyak'),
+                      ),
+                    ),
+                  );
+                }
+
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: _NotificationCard(notification: items[index]),
+                );
+              },
             ),
           );
         },
       ),
     );
+
+    return SpothSidebarScaffold(activeNavIndex: 1, child: page);
   }
 }
 
@@ -98,10 +121,10 @@ class _NotificationCard extends ConsumerWidget {
     final dibaca = notification.dibaca;
 
     return Material(
-      color: AppColors.lightOrange,
-      borderRadius: BorderRadius.circular(12),
+      color: AppColors.white,
+      borderRadius: BorderRadius.circular(18),
       child: InkWell(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(18),
         onTap: dibaca
             ? null
             : () async {
@@ -112,10 +135,10 @@ class _NotificationCard extends ConsumerWidget {
         child: Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(18),
             border: Border.all(
               color: dibaca
-                  ? AppColors.lightOrange
+                  ? AppColors.softBorder
                   : AppColors.primaryOrange.withValues(alpha: 0.4),
             ),
           ),
@@ -126,7 +149,7 @@ class _NotificationCard extends ConsumerWidget {
                 width: 40,
                 height: 40,
                 decoration: const BoxDecoration(
-                  color: AppColors.white,
+                  color: AppColors.lightOrange,
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
@@ -179,6 +202,23 @@ class _NotificationCard extends ConsumerWidget {
                   ),
                 ),
               ],
+              const SizedBox(width: 4),
+              IconButton(
+                icon: const Icon(Icons.delete_outline, size: 18),
+                tooltip: 'Hapus notifikasi',
+                color: AppColors.secondaryText,
+                onPressed: () async {
+                  await ref
+                      .read(notificationsProvider.notifier)
+                      .delete(notification.id);
+
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Notifikasi dihapus')),
+                    );
+                  }
+                },
+              ),
             ],
           ),
         ),
