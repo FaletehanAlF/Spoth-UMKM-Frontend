@@ -7,8 +7,12 @@ import '../theme/app_colors.dart';
 import '../../providers/auth_provider.dart';
 import '../../screens/auth/login_screen.dart';
 import '../../screens/auth/register_screen.dart';
-import '../../screens/home/home_screen.dart';
+import '../../screens/booking/booking_form_screen.dart';
+import '../../screens/main/main_shell.dart';
+import '../../screens/notification/notification_screen.dart';
 import '../../screens/onboarding/onboarding_screen.dart';
+import '../../screens/place/place_detail_screen.dart';
+import '../../screens/place/place_form_screen.dart';
 
 /// Konfigurasi navigasi GoRouter.
 final appRouter = GoRouter(
@@ -24,7 +28,26 @@ final appRouter = GoRouter(
       path: '/register',
       builder: (context, state) => const RegisterScreen(),
     ),
-    GoRoute(path: '/home', builder: (context, state) => const HomeScreen()),
+    GoRoute(path: '/home', builder: (context, state) => const MainShell()),
+    GoRoute(
+      path: '/notifications',
+      builder: (context, state) => const NotificationScreen(),
+    ),
+    GoRoute(
+      path: '/place-detail',
+      builder: (context, state) =>
+          PlaceDetailScreen(placeId: state.uri.queryParameters['id'] ?? ''),
+    ),
+    GoRoute(
+      path: '/place-form',
+      builder: (context, state) =>
+          PlaceFormScreen(placeId: state.uri.queryParameters['id']),
+    ),
+    GoRoute(
+      path: '/booking-form',
+      builder: (context, state) =>
+          BookingFormScreen(placeId: state.uri.queryParameters['id'] ?? ''),
+    ),
   ],
 );
 

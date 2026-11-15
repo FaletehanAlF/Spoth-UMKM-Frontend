@@ -29,7 +29,9 @@ class UserModel {
       email: json['email'] as String,
       noHp: json['no_hp'] as String?,
       role: json['role'] as String,
-      createdAt: DateTime.parse(json['created_at'] as String),
+      createdAt:
+          DateTime.tryParse(json['created_at']?.toString() ?? '') ??
+          DateTime.now(),
     );
   }
 
