@@ -20,4 +20,10 @@ class AppColors {
 
   /// Secondary Text — teks pendukung/caption.
   static const Color secondaryText = Color(0xFF666666);
+
+  /// Charcoal — warna teks gelap / tombol aksen gelap.
+  static const Color charcoal = Color(0xFF2E2A26);
+
+  /// Border lembut untuk kartu/input putih.
+  static const Color softBorder = Color(0xFFF0ECE4);
 }
