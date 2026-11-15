@@ -7,6 +7,7 @@ import '../../models/notification_model.dart';
 import '../../providers/notification_provider.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/shimmer_loading.dart';
+import '../../widgets/spoth_app_bar.dart';
 
 /// Halaman Notifikasi (`GET /notifications`).
 ///
@@ -23,7 +24,7 @@ class NotificationScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: AppColors.white,
-      appBar: AppBar(
+      appBar: SpothAppBar(
         title: const Text('Notifikasi'),
         actions: [
           IconButton(

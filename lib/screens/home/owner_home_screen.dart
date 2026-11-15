@@ -1,104 +1,115 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../core/theme/app_colors.dart';
-import '../../core/theme/app_fonts.dart';
 import '../../core/utils/format.dart';
-import '../../models/place_model.dart';
-import '../../providers/auth_provider.dart';
+import '../../providers/nav_provider.dart';
 import '../../providers/place_provider.dart';
 import '../../widgets/empty_state.dart';
-import '../../widgets/greeting_header.dart';
 import '../../widgets/notification_icon.dart';
+import '../../widgets/spoth_app_bar.dart';
 import '../../widgets/shimmer_loading.dart';
 
 /// Home untuk role **Pemilik Tempat (HOST)**:
 ///
-/// - Ringkasan jumlah tempat, tempat aktif, pemesanan menunggu, pendapatan
-///   (dari `GET /places/mine/summary`).
-/// - Daftar tempat miliknya sendiri (dari `GET /places/mine`).
-/// - Menambah tempat (FAB), mengelola lewat halaman detail tempat
-///   (edit/hapus/status), dan akses notifikasi.
+/// - Ringkasan Total Tempat, Tempat Aktif, Menunggu Pembayaran, Pendapatan.
+/// - Kartu "Tempat Saya" menuju tab Tempat (daftar tempat milik akun ini).
+/// - Akses notifikasi.
 ///
-/// Pemilik tidak diberi aksi penyewaan; pengelolaan tempat milik pengguna
-/// lain juga dicegah (cek `host_id` + validasi backend).
+/// Pengelolaan tempat (edit/hapus/status) dilakukan dari halaman detail tempat.
 class OwnerHomeScreen extends ConsumerWidget {
   const OwnerHomeScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final user = ref.watch(authNotifierProvider).user;
-    final nama = user?.nama.trim() ?? '';
-    final displayName = nama.isNotEmpty ? nama : 'Pemilik SPOTH';
-
     return Scaffold(
       backgroundColor: AppColors.white,
-      floatingActionButton: FloatingActionButton.extended(
-        backgroundColor: AppColors.primaryOrange,
-        foregroundColor: AppColors.white,
-        icon: const Icon(Icons.add),
-        label: const Text('Tambah Tempat'),
-        onPressed: () async {
-          final saved = await context.push('/place-form');
-          if (saved == true && context.mounted) {
-            await ref.read(myPlacesProvider.notifier).refresh();
-            await ref.read(hostSummaryProvider.notifier).refresh();
-          }
-        },
+      appBar: SpothAppBar(
+        centerTitle: true,
+        title: const Text(
+          'SPOTH UMKM',
+          style: TextStyle(
+            color: AppColors.primaryOrange,
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        actions: const [NotificationIconButton()],
       ),
-      body: SafeArea(
-        child: RefreshIndicator(
-          color: AppColors.primaryOrange,
-          onRefresh: () async {
-            await ref.read(myPlacesProvider.notifier).refresh();
-            await ref.read(hostSummaryProvider.notifier).refresh();
-          },
-          child: SingleChildScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 96),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
+      body: RefreshIndicator(
+        color: AppColors.primaryOrange,
+        onRefresh: () async {
+          await ref.read(myPlacesProvider.notifier).refresh();
+          await ref.read(hostSummaryProvider.notifier).refresh();
+        },
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const _SummarySection(),
+              const SizedBox(height: 18),
+              _ManagePlacesCard(
+                onTap: () => ref.read(mainNavIndexProvider.notifier).setTab(1),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Kartu ajakan untuk menuju tab Tempat (daftar tempat milik Pemilik).
+class _ManagePlacesCard extends StatelessWidget {
+  const _ManagePlacesCard({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: AppColors.lightOrange,
+      borderRadius: BorderRadius.circular(18),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(18),
+        onTap: onTap,
+        child: const Padding(
+          padding: EdgeInsets.all(16),
+          child: Row(
+            children: [
+              CircleAvatar(
+                radius: 26,
+                backgroundColor: AppColors.primaryOrange,
+                child: Icon(Icons.storefront, color: AppColors.white, size: 24),
+              ),
+              SizedBox(width: 14),
+              Expanded(
+                child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      child: GreetingHeader(
-                        displayName: displayName,
-                        subtitle: 'Kelola tempat usaha Anda dari sini.',
+                    Text(
+                      'Tempat Saya',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.charcoal,
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    const NotificationIconButton(),
+                    SizedBox(height: 2),
+                    Text(
+                      'Lihat, edit, dan kelola semua tempat usaha Anda',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppColors.secondaryText,
+                      ),
+                    ),
                   ],
                 ),
-                const SizedBox(height: 16),
-                Text(
-                  'Kelola Tempat\nUsahamu',
-                  style: AppFonts.serif(
-                    fontSize: 30,
-                    weight: 600,
-                    height: 1.15,
-                    letterSpacing: -0.5,
-                    color: AppColors.charcoal,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                const _SummarySection(),
-                const SizedBox(height: 22),
-                const Text(
-                  'Tempat Saya',
-                  style: TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.charcoal,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                const _MyPlacesSection(),
-              ],
-            ),
+              ),
+              Icon(Icons.chevron_right, color: AppColors.charcoal),
+            ],
           ),
         ),
       ),
@@ -248,224 +259,6 @@ class _SummaryCard extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-/// Daftar tempat milik Pemilik.
-class _MyPlacesSection extends ConsumerWidget {
-  const _MyPlacesSection();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final places = ref.watch(myPlacesProvider);
-
-    return places.when(
-      loading: () => const PlaceListSkeleton(count: 3),
-      error: (error, _) => EmptyState(
-        icon: Icons.error_outline,
-        title: 'Gagal memuat daftar tempat',
-        message: 'Periksa koneksi internet Anda lalu tarik ke bawah untuk mencoba lagi.',
-      ),
-      data: (items) {
-        if (items.isEmpty) {
-          return const Padding(
-            padding: EdgeInsets.symmetric(vertical: 12),
-            child: EmptyState(
-              icon: Icons.storefront,
-              title: 'Belum ada tempat',
-              message: 'Tambahkan tempat usaha pertama Anda dengan tombol "Tambah Tempat".',
-            ),
-          );
-        }
-
-        return Column(
-          children: [
-            for (var i = 0; i < items.length; i++) ...[
-              if (i > 0) const SizedBox(height: 12),
-              _OwnerPlaceCard(place: items[i]),
-            ],
-          ],
-        );
-      },
-    );
-  }
-}
-
-/// Kartu tempat milik Pemilik; ketuk untuk membuka detail (edit/hapus/status).
-class _OwnerPlaceCard extends StatelessWidget {
-  const _OwnerPlaceCard({required this.place});
-
-  final PlaceModel place;
-
-  @override
-  Widget build(BuildContext context) {
-    final foto = place.foto.isNotEmpty ? place.foto.first : null;
-    final promo = place.hasPromo ? place.hargaPromo : null;
-
-    return Material(
-      color: AppColors.white,
-      borderRadius: BorderRadius.circular(18),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(18),
-        onTap: () => context.push('/place-detail?id=${place.id}'),
-        child: Container(
-          decoration: BoxDecoration(
-            color: AppColors.white,
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: AppColors.softBorder),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.04),
-                blurRadius: 10,
-                offset: const Offset(0, 3),
-              ),
-            ],
-          ),
-          padding: const EdgeInsets.all(12),
-          child: Row(
-            children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(14),
-                child: SizedBox(
-                  width: 84,
-                  height: 84,
-                  child: foto != null
-                      ? Image.network(
-                          foto,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, _, _) => const _PhotoPlaceholder(),
-                        )
-                      : const _PhotoPlaceholder(),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            place.namaTempat,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.charcoal,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        _StatusBadge(isAktif: place.isAktif),
-                      ],
-                    ),
-                    const SizedBox(height: 3),
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.location_on_outlined,
-                          size: 12,
-                          color: AppColors.secondaryText,
-                        ),
-                        const SizedBox(width: 2),
-                        Expanded(
-                          child: Text(
-                            '${place.kategoriLabel} • ${place.kota}',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              fontSize: 12,
-                              color: AppColors.secondaryText,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 6),
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Expanded(
-                          child: Text(
-                            formatRupiah(place.hargaEfektif),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.primaryOrange,
-                            ),
-                          ),
-                        ),
-                        if (promo != null)
-                          Text(
-                            formatRupiah(place.hargaNormal),
-                            style: const TextStyle(
-                              fontSize: 10,
-                              decoration: TextDecoration.lineThrough,
-                              color: AppColors.secondaryText,
-                            ),
-                          ),
-                      ],
-                    ),
-                    Text(
-                      'per ${place.durasiLabel.toLowerCase()}',
-                      style: const TextStyle(
-                        fontSize: 10,
-                        color: AppColors.secondaryText,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const Icon(Icons.chevron_right, color: AppColors.secondaryText),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// Badge status tempat (AKTIF / NONAKTIF) sesuai data backend.
-class _StatusBadge extends StatelessWidget {
-  const _StatusBadge({required this.isAktif});
-
-  final bool isAktif;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: isAktif ? AppColors.primaryOrange : AppColors.lightOrange,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Text(
-        isAktif ? 'AKTIF' : 'NONAKTIF',
-        style: TextStyle(
-          fontSize: 9,
-          fontWeight: FontWeight.w700,
-          letterSpacing: 0.4,
-          color: isAktif ? AppColors.white : AppColors.secondaryText,
-        ),
-      ),
-    );
-  }
-}
-
-/// Placeholder konsisten ketika foto kosong atau gagal dimuat.
-class _PhotoPlaceholder extends StatelessWidget {
-  const _PhotoPlaceholder();
-
-  @override
-  Widget build(BuildContext context) {
-    return const ColoredBox(
-      color: AppColors.lightOrange,
-      child: Icon(Icons.storefront, size: 26, color: AppColors.primaryOrange),
     );
   }
 }

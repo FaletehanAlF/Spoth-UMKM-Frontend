@@ -69,6 +69,7 @@ flutter:
 
   assets:
     - assets/images/
+    - assets/icons/
 
   fonts:
     # Serif elegan untuk judul halaman (lisensi OFL, Google Fonts).
