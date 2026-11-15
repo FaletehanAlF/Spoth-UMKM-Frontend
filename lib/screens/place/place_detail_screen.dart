@@ -12,6 +12,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/place_provider.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/shimmer_loading.dart';
+import '../../widgets/spoth_sidebar_scaffold.dart';
 
 /// Detail tempat usaha (`GET /places/:id` — publik).
 ///
@@ -172,7 +173,7 @@ class _PlaceDetailScreenState extends ConsumerState<PlaceDetailScreen> {
         user!.id == place.hostId;
     final isTenant = user?.role == UserModel.roleTenant;
 
-    return Scaffold(
+    final page = Scaffold(
       backgroundColor: AppColors.white,
       body: _loading
           ? const DetailSkeleton()
@@ -219,6 +220,8 @@ class _PlaceDetailScreenState extends ConsumerState<PlaceDetailScreen> {
               ],
             ),
     );
+
+    return SpothSidebarScaffold(activeNavIndex: 1, child: page);
   }
 }
 

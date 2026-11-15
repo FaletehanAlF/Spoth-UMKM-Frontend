@@ -7,6 +7,7 @@ import '../../core/theme/app_colors.dart';
 import '../../models/user_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../widgets/empty_state.dart';
+import '../../widgets/notification_icon.dart';
 import '../../widgets/spoth_app_bar.dart';
 
 /// Halaman Profil — data akun pengguna yang login dan tombol keluar.
@@ -50,7 +51,10 @@ class ProfileScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: AppColors.white,
-      appBar: const SpothAppBar(title: Text('Profil')),
+      appBar: const SpothAppBar(
+        title: Text('Profil'),
+        actions: [NotificationIconButton()],
+      ),
       body: user == null
           ? const Center(
               child: SingleChildScrollView(
@@ -62,21 +66,29 @@ class ProfileScreen extends ConsumerWidget {
                 ),
               ),
             )
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _ProfileHeader(user: user),
-                  const SizedBox(height: 16),
-                  _ProfileInfo(user: user),
-                  const SizedBox(height: 24),
-                  OutlinedButton.icon(
-                    onPressed: () => _confirmAndLogout(context, ref),
-                    icon: const Icon(Icons.logout),
-                    label: const Text('Keluar'),
+          : Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 560),
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _ProfileHeader(user: user),
+                      const SizedBox(height: 16),
+                      _ProfileInfo(user: user),
+                      const SizedBox(height: 24),
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
+                          onPressed: () => _confirmAndLogout(context, ref),
+                          icon: const Icon(Icons.logout),
+                          label: const Text('Keluar'),
+                        ),
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
             ),
     );
@@ -98,8 +110,16 @@ class _ProfileHeader extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppColors.lightOrange,
-        borderRadius: BorderRadius.circular(12),
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: AppColors.softBorder),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
       ),
       child: Row(
         children: [
@@ -163,8 +183,16 @@ class _ProfileInfo extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       decoration: BoxDecoration(
-        color: AppColors.lightOrange,
-        borderRadius: BorderRadius.circular(12),
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: AppColors.softBorder),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
       ),
       child: Column(
         children: [
@@ -177,7 +205,11 @@ class _ProfileInfo extends StatelessWidget {
           _InfoRow(
             icon: Icons.badge_outlined,
             label: 'Peran',
-            value: user.role,
+            value: user.role == UserModel.roleHost
+                ? 'Pemilik'
+                : user.role == UserModel.roleTenant
+                ? 'Penyewa'
+                : user.role,
           ),
           _InfoRow(
             icon: Icons.calendar_today_outlined,

@@ -7,6 +7,7 @@ import '../../models/user_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/place_provider.dart';
 import '../../widgets/empty_state.dart';
+import '../../widgets/notification_icon.dart';
 import '../../widgets/owner_place_list.dart';
 import '../../widgets/place_catalog.dart';
 import '../../widgets/spoth_app_bar.dart';
@@ -37,7 +38,10 @@ class TempatScreen extends ConsumerWidget {
     // Role tidak dikenal → jangan tampilkan data apa pun.
     return Scaffold(
       backgroundColor: AppColors.white,
-      appBar: const SpothAppBar(title: Text('Tempat')),
+      appBar: const SpothAppBar(
+        title: Text('Tempat'),
+        actions: [NotificationIconButton()],
+      ),
       body: const Center(
         child: SingleChildScrollView(
           padding: EdgeInsets.all(20),
@@ -61,7 +65,10 @@ class _OwnerTempatPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
       backgroundColor: AppColors.white,
-      appBar: const SpothAppBar(title: Text('Tempat')),
+      appBar: const SpothAppBar(
+        title: Text('Tempat'),
+        actions: [NotificationIconButton()],
+      ),
       // Tombol tambah jelas terlihat di kanan bawah — bukan ikon kecil
       // di pojok kanan atas.
       floatingActionButton: FloatingActionButton.extended(
@@ -101,7 +108,10 @@ class _TenantTempatPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.white,
-      appBar: const SpothAppBar(title: Text('Tempat')),
+      appBar: const SpothAppBar(
+        title: Text('Tempat'),
+        actions: [NotificationIconButton()],
+      ),
       body: const SafeArea(child: PlaceCatalog()),
     );
   }

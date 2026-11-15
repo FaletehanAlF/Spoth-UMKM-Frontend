@@ -15,6 +15,7 @@ import '../../providers/nav_provider.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/shimmer_loading.dart';
 import '../../widgets/spoth_app_bar.dart';
+import '../../widgets/spoth_sidebar_scaffold.dart';
 
 /// Form pemesanan tempat untuk **Penyewa (TENANT)**.
 ///
@@ -210,7 +211,7 @@ class _BookingFormScreenState extends ConsumerState<BookingFormScreen> {
     final user = ref.watch(authNotifierProvider).user;
     final bolehMemesan = user?.role == UserModel.roleTenant;
 
-    return Scaffold(
+    final page = Scaffold(
       backgroundColor: AppColors.white,
       appBar: const SpothAppBar(title: Text('Form Penyewaan')),
       body: !bolehMemesan
@@ -247,8 +248,9 @@ class _BookingFormScreenState extends ConsumerState<BookingFormScreen> {
                     width: double.infinity,
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: AppColors.lightOrange,
-                      borderRadius: BorderRadius.circular(12),
+                      color: AppColors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: AppColors.softBorder),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -358,6 +360,8 @@ class _BookingFormScreenState extends ConsumerState<BookingFormScreen> {
               ),
             ),
     );
+
+    return SpothSidebarScaffold(activeNavIndex: 1, child: page);
   }
 }
 
@@ -373,8 +377,9 @@ class _PreviewCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.lightOrange,
-        borderRadius: BorderRadius.circular(12),
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.softBorder),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
