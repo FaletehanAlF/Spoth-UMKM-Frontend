@@ -302,10 +302,8 @@ class _DetailScrollView extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         gallery,
-                        Transform.translate(
-                          offset: const Offset(0, -20),
-                          child: _DetailSheet(place: place),
-                        ),
+                        const SizedBox(height: 16),
+                        _DetailSheet(place: place),
                         const SizedBox(height: 24),
                       ],
                     ),
@@ -335,72 +333,299 @@ class _HeroGallery extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final fotos = place.foto;
-    final aktif = fotos.isNotEmpty
-        ? fotos[fotoIndex.clamp(0, fotos.length - 1)]
-        : null;
+    final index = fotos.isEmpty ? 0 : fotoIndex.clamp(0, fotos.length - 1);
+    final aktif = fotos.isNotEmpty ? fotos[index] : null;
     final adaNavigasi = fotos.length > 1;
 
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(18),
-      child: SizedBox(
-        height: tinggi,
-        width: lebar,
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            aktif != null
-                ? Image.network(
-                    aktif,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, _, _) => const _HeroPlaceholder(),
-                  )
-                : const _HeroPlaceholder(),
-            if (adaNavigasi)
-              GestureDetector(
-                behavior: HitTestBehavior.translucent,
-                onTapDown: (details) {
-                  final keKanan = details.localPosition.dx > lebar / 2;
-                  final baru = (fotoIndex + (keKanan ? 1 : -1)) % fotos.length;
-                  onFotoChanged(baru < 0 ? fotos.length - 1 : baru);
+    return SizedBox(
+      width: lebar,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(18),
+            child: SizedBox(
+              height: tinggi,
+              width: lebar,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  aktif != null
+                      ? Image.network(
+                          aktif,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, _, _) => const _HeroPlaceholder(),
+                        )
+                      : const _HeroPlaceholder(),
+                  if (adaNavigasi)
+                    GestureDetector(
+                      behavior: HitTestBehavior.translucent,
+                      onTapDown: (details) {
+                        final keKanan = details.localPosition.dx > lebar / 2;
+                        final baru =
+                            (index + (keKanan ? 1 : -1)) % fotos.length;
+                        onFotoChanged(baru < 0 ? fotos.length - 1 : baru);
+                      },
+                    ),
+                  if (adaNavigasi)
+                    IgnorePointer(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: const [
+                            _GalleryCue(icon: Icons.chevron_left),
+                            _GalleryCue(icon: Icons.chevron_right),
+                          ],
+                        ),
+                      ),
+                    ),
+                  if (aktif != null)
+                    Positioned(
+                      top: 12,
+                      right: 12,
+                      child: _GalleryButton(
+                        icon: Icons.open_in_full,
+                        tooltip: 'Perbesar foto',
+                        onPressed: () => _bukaFoto(context, fotos, index),
+                      ),
+                    ),
+                  if (adaNavigasi)
+                    Positioned(
+                      bottom: 12,
+                      right: 12,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 9,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withValues(alpha: 0.55),
+                          borderRadius: BorderRadius.circular(9),
+                        ),
+                        child: Text(
+                          '${index + 1} / ${fotos.length}',
+                          style: const TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+          if (adaNavigasi) ...[
+            const SizedBox(height: 10),
+            SizedBox(
+              height: 58,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: fotos.length,
+                separatorBuilder: (_, _) => const SizedBox(width: 8),
+                itemBuilder: (context, i) {
+                  final dipilih = i == index;
+
+                  return GestureDetector(
+                    key: ValueKey('galeri-thumb-$i'),
+                    onTap: () => onFotoChanged(i),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 150),
+                      width: 78,
+                      clipBehavior: Clip.antiAlias,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: dipilih
+                              ? AppColors.primaryOrange
+                              : AppColors.softBorder,
+                          width: dipilih ? 2 : 1,
+                        ),
+                      ),
+                      child: Image.network(
+                        fotos[i],
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, _, _) =>
+                            const _HeroPlaceholder(iconSize: 22),
+                      ),
+                    ),
+                  );
                 },
               ),
-            if (adaNavigasi)
-              IgnorePointer(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 10),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: const [
-                      _GalleryCue(icon: Icons.chevron_left),
-                      _GalleryCue(icon: Icons.chevron_right),
-                    ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Future<void> _bukaFoto(BuildContext context, List<String> fotos, int mulai) {
+    return showDialog<void>(
+      context: context,
+      barrierColor: Colors.black.withValues(alpha: 0.9),
+      builder: (_) => _PhotoViewer(fotos: fotos, initialIndex: mulai),
+    );
+  }
+}
+
+class _GalleryButton extends StatelessWidget {
+  const _GalleryButton({
+    required this.icon,
+    required this.tooltip,
+    required this.onPressed,
+  });
+
+  final IconData icon;
+  final String tooltip;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: tooltip,
+      child: Material(
+        color: Colors.black.withValues(alpha: 0.45),
+        shape: const CircleBorder(),
+        child: InkWell(
+          customBorder: const CircleBorder(),
+          onTap: onPressed,
+          child: SizedBox(
+            width: 36,
+            height: 36,
+            child: Icon(icon, size: 18, color: AppColors.white),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PhotoViewer extends StatefulWidget {
+  const _PhotoViewer({required this.fotos, required this.initialIndex});
+
+  final List<String> fotos;
+  final int initialIndex;
+
+  @override
+  State<_PhotoViewer> createState() => _PhotoViewerState();
+}
+
+class _PhotoViewerState extends State<_PhotoViewer> {
+  late int _index = widget.initialIndex.clamp(0, widget.fotos.length - 1);
+
+  void _geser(int arah) {
+    setState(() {
+      _index = (_index + arah) % widget.fotos.length;
+      if (_index < 0) _index = widget.fotos.length - 1;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final adaNavigasi = widget.fotos.length > 1;
+
+    return SizedBox.expand(
+      child: ColoredBox(
+        color: Colors.black,
+        child: Stack(
+          children: [
+            Positioned.fill(
+              child: InteractiveViewer(
+                minScale: 1,
+                maxScale: 4,
+                child: Image.network(
+                  widget.fotos[_index],
+                  fit: BoxFit.contain,
+                  errorBuilder: (_, _, _) =>
+                      const Center(child: _HeroPlaceholder()),
+                ),
+              ),
+            ),
+            Positioned(
+              top: 12,
+              right: 12,
+              child: _ViewerButton(
+                icon: Icons.close,
+                tooltip: 'Tutup',
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+            ),
+            if (adaNavigasi) ...[
+              Positioned(
+                left: 12,
+                top: 0,
+                bottom: 0,
+                child: Center(
+                  child: _ViewerButton(
+                    icon: Icons.chevron_left,
+                    tooltip: 'Foto sebelumnya',
+                    onPressed: () => _geser(-1),
                   ),
                 ),
               ),
-            if (adaNavigasi)
               Positioned(
-                bottom: 14,
-                right: 14,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 9,
-                    vertical: 4,
+                right: 12,
+                top: 0,
+                bottom: 0,
+                child: Center(
+                  child: _ViewerButton(
+                    icon: Icons.chevron_right,
+                    tooltip: 'Foto berikutnya',
+                    onPressed: () => _geser(1),
                   ),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withValues(alpha: 0.55),
-                    borderRadius: BorderRadius.circular(9),
-                  ),
+                ),
+              ),
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 24,
+                child: Center(
                   child: Text(
-                    '${fotoIndex + 1} / ${fotos.length}',
+                    '${_index + 1} / ${widget.fotos.length}',
                     style: const TextStyle(
-                      fontSize: 11,
+                      fontSize: 13,
                       fontWeight: FontWeight.w600,
                       color: AppColors.white,
                     ),
                   ),
                 ),
               ),
+            ],
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ViewerButton extends StatelessWidget {
+  const _ViewerButton({
+    required this.icon,
+    required this.tooltip,
+    required this.onPressed,
+  });
+
+  final IconData icon;
+  final String tooltip;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: tooltip,
+      child: Material(
+        color: Colors.white.withValues(alpha: 0.16),
+        shape: const CircleBorder(),
+        child: InkWell(
+          customBorder: const CircleBorder(),
+          onTap: onPressed,
+          child: SizedBox(
+            width: 44,
+            height: 44,
+            child: Icon(icon, size: 22, color: AppColors.white),
+          ),
         ),
       ),
     );
@@ -429,14 +654,20 @@ class _GalleryCue extends StatelessWidget {
 }
 
 class _HeroPlaceholder extends StatelessWidget {
-  const _HeroPlaceholder();
+  const _HeroPlaceholder({this.iconSize = 64});
+
+  final double iconSize;
 
   @override
   Widget build(BuildContext context) {
-    return const ColoredBox(
+    return ColoredBox(
       color: AppColors.lightOrange,
       child: Center(
-        child: Icon(Icons.storefront, size: 64, color: AppColors.primaryOrange),
+        child: Icon(
+          Icons.storefront,
+          size: iconSize,
+          color: AppColors.primaryOrange,
+        ),
       ),
     );
   }
@@ -572,7 +803,13 @@ class _DetailSheet extends StatelessWidget {
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: [ringkasan, const SizedBox(height: 26), rincian],
+        children: [
+          ringkasan,
+          const SizedBox(height: 24),
+          Container(height: 1, color: AppColors.softBorder),
+          const SizedBox(height: 24),
+          rincian,
+        ],
       ),
     );
   }
@@ -749,10 +986,7 @@ class _PriceBlock extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 7,
-                  vertical: 3,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
                 decoration: BoxDecoration(
                   color: AppColors.primaryOrange,
                   borderRadius: BorderRadius.circular(7),
@@ -850,7 +1084,10 @@ class _SpecItem extends StatelessWidget {
           label,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: const TextStyle(fontSize: 10.5, color: AppColors.secondaryText),
+          style: const TextStyle(
+            fontSize: 10.5,
+            color: AppColors.secondaryText,
+          ),
         ),
       ],
     );
@@ -1096,23 +1333,49 @@ class _ActionBar extends StatelessWidget {
 
     Widget content;
     if (isOwner) {
-      content = SizedBox(
-        width: double.infinity,
-        child: ElevatedButton.icon(
-          onPressed: acting ? null : () => _showKelolaSheet(context),
-          icon: const Icon(Icons.tune),
-          label: Text(acting ? 'Memproses...' : 'Kelola Tempat'),
-        ),
+      final tombol = ElevatedButton.icon(
+        onPressed: acting ? null : () => _showKelolaSheet(context),
+        icon: const Icon(Icons.tune, size: 18),
+        label: Text(acting ? 'Memproses...' : 'Kelola Tempat'),
+      );
+
+      content = LayoutBuilder(
+        builder: (context, constraints) {
+          if (constraints.maxWidth >= 520) {
+            return Row(
+              children: [
+                Expanded(child: _BarStatus(place: place)),
+                const SizedBox(width: 24),
+                SizedBox(width: 260, height: 48, child: tombol),
+              ],
+            );
+          }
+
+          return SizedBox(width: double.infinity, height: 48, child: tombol);
+        },
       );
     } else if (isTenant) {
       if (place.isAktif) {
-        content = SizedBox(
-          width: double.infinity,
-          child: ElevatedButton.icon(
-            onPressed: () => context.push('/booking-form?id=${place.id}'),
-            icon: const Icon(Icons.event_available),
-            label: const Text('Sewa Tempat Ini'),
-          ),
+        final tombol = ElevatedButton.icon(
+          onPressed: () => context.push('/booking-form?id=${place.id}'),
+          icon: const Icon(Icons.event_available, size: 18),
+          label: const Text('Sewa Tempat Ini'),
+        );
+
+        content = LayoutBuilder(
+          builder: (context, constraints) {
+            if (constraints.maxWidth >= 520) {
+              return Row(
+                children: [
+                  Expanded(child: _BarHarga(place: place)),
+                  const SizedBox(width: 24),
+                  SizedBox(width: 240, height: 48, child: tombol),
+                ],
+              );
+            }
+
+            return SizedBox(width: double.infinity, height: 48, child: tombol);
+          },
         );
       } else {
         content = Container(
@@ -1184,6 +1447,98 @@ class _ActionBar extends StatelessWidget {
       case _AksiKelola.hapus:
         onDelete();
     }
+  }
+}
+
+class _BarStatus extends StatelessWidget {
+  const _BarStatus({required this.place});
+
+  final PlaceModel place;
+
+  @override
+  Widget build(BuildContext context) {
+    final aktif = place.isAktif;
+
+    return Row(
+      children: [
+        Container(
+          width: 8,
+          height: 8,
+          decoration: BoxDecoration(
+            color: aktif ? AppColors.primaryOrange : AppColors.neutralBorder,
+            shape: BoxShape.circle,
+          ),
+        ),
+        const SizedBox(width: 9),
+        Flexible(
+          child: Text(
+            aktif
+                ? 'Tempat aktif dan tampil di pencarian'
+                : 'Tempat nonaktif, tidak tampil di pencarian',
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              fontSize: 13,
+              height: 1.35,
+              color: AppColors.secondaryText,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _BarHarga extends StatelessWidget {
+  const _BarHarga({required this.place});
+
+  final PlaceModel place;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Harga sewa',
+          style: TextStyle(fontSize: 11.5, color: AppColors.secondaryText),
+        ),
+        const SizedBox(height: 2),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Flexible(
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  formatRupiah(place.hargaEfektif),
+                  maxLines: 1,
+                  style: const TextStyle(
+                    fontSize: 19,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -0.3,
+                    color: AppColors.charcoal,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 4),
+            Padding(
+              padding: const EdgeInsets.only(bottom: 2),
+              child: Text(
+                '/${place.durasiLabel.toLowerCase()}',
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: AppColors.secondaryText,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
   }
 }
 
@@ -1261,7 +1616,7 @@ class _KelolaSheet extends StatelessWidget {
             icon: Icons.delete_outline,
             label: 'Hapus Tempat',
             keterangan: 'Tempat yang dihapus tidak dapat dikembalikan',
-            warna: AppColors.primaryOrange,
+            warna: Theme.of(context).colorScheme.error,
             onTap: () => Navigator.of(context).pop(_AksiKelola.hapus),
           ),
           const SizedBox(height: 6),

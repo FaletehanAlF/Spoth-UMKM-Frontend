@@ -9,6 +9,7 @@ import '../../providers/nav_provider.dart';
 import '../../providers/place_provider.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/notification_icon.dart';
+import '../../widgets/place_grid.dart';
 import '../../widgets/shimmer_loading.dart';
 import '../../widgets/spoth_app_bar.dart';
 
@@ -69,7 +70,7 @@ class OwnerHomeScreen extends ConsumerWidget {
                       color: AppColors.charcoal,
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 20),
                   LayoutBuilder(
                     builder: (context, constraints) {
                       final lebar = constraints.maxWidth;
@@ -104,7 +105,94 @@ class OwnerHomeScreen extends ConsumerWidget {
                       );
                     },
                   ),
+                  const SizedBox(height: 28),
+                  Row(
+                    children: [
+                      const Expanded(
+                        child: Text(
+                          'Jelajahi Tempat Lain',
+                          style: TextStyle(
+                            fontSize: 17,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.charcoal,
+                          ),
+                        ),
+                      ),
+                      _SectionLink(
+                        label: 'Lihat Semua',
+                        onTap: () => ref.read(
+                          mainNavIndexProvider.notifier,
+                        ).setTab(1),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  const _BrowsePlacesSection(),
                 ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _BrowsePlacesSection extends ConsumerWidget {
+  const _BrowsePlacesSection();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final places = ref.watch(tenantPlacesProvider);
+
+    return places.when(
+      loading: () => const PlaceGridSkeleton(count: 4),
+      error: (error, _) => EmptyState(
+        icon: Icons.wifi_off,
+        title: 'Gagal memuat tempat',
+        message: 'Periksa koneksi internet Anda lalu tarik ke bawah untuk mencoba lagi.',
+      ),
+      data: (items) {
+        if (items.isEmpty) {
+          return const EmptyState(
+            icon: Icons.storefront,
+            title: 'Belum ada tempat lain',
+            message: 'Belum ada tempat usaha lain yang terdaftar saat ini.',
+          );
+        }
+
+        return PlaceGrid(places: items.take(4).toList());
+      },
+    );
+  }
+}
+
+class _SectionLink extends StatelessWidget {
+  const _SectionLink({required this.label, required this.onTap});
+
+  final String label;
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(10),
+        onTap: onTap,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 44),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: Center(
+              child: Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.primaryOrange,
+                ),
               ),
             ),
           ),

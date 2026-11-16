@@ -642,7 +642,10 @@ void main() {
     await _pumpSized(tester, const HomeScreen());
 
     expect(find.textContaining('Tempat Usahamu'), findsOneWidget);
-    expect(find.textContaining('Cari tempat, kota, atau lokasi'), findsOneWidget);
+    expect(
+      find.textContaining('Cari tempat, kota, atau lokasi'),
+      findsOneWidget,
+    );
     expect(find.textContaining('Lihat Semua'), findsOneWidget);
 
     expect(find.text('Lapak Kuliner Baru'), findsOneWidget);
@@ -689,6 +692,18 @@ void main() {
 
     expect(find.text('Tempat Saya'), findsOneWidget);
     expect(find.text('Tambah Tempat'), findsNothing);
+  });
+
+  testWidgets('Beranda pemilik menampilkan galeri jelajah tempat lain', (
+    WidgetTester tester,
+  ) async {
+    await _pumpSized(tester, const HomeScreen(), host: true);
+
+    expect(find.text('Jelajahi Tempat Lain'), findsOneWidget);
+    expect(find.text('Lihat Semua'), findsOneWidget);
+
+    expect(find.text('Lapak Kuliner Baru'), findsOneWidget);
+    expect(find.text('Booth Bazar Sekolah'), findsOneWidget);
   });
 
   testWidgets('Tempat (pemilik) menampilkan daftar miliknya + tombol tambah', (
@@ -972,40 +987,38 @@ void main() {
     expect(payload!['foto'], isEmpty);
   });
 
-  testWidgets(
-    'Detail tempat tanpa overflow pada semua ukuran layar',
-    (WidgetTester tester) async {
-      await _pumpOnAllSizes(
-        tester,
-        () => _tenantApp(const PlaceDetailScreen(placeId: '101')),
+  testWidgets('Detail tempat tanpa overflow pada semua ukuran layar', (
+    WidgetTester tester,
+  ) async {
+    await _pumpOnAllSizes(
+      tester,
+      () => _tenantApp(const PlaceDetailScreen(placeId: '101')),
+    );
+  });
+
+  testWidgets('Detail tempat tanpa overflow pada lebar web', (
+    WidgetTester tester,
+  ) async {
+    const ukuranWeb = [Size(1440, 900), Size(1920, 1080)];
+    for (final size in ukuranWeb) {
+      tester.view
+        ..devicePixelRatio = 1.0
+        ..physicalSize = size;
+
+      await tester.pumpWidget(
+        _tenantApp(const PlaceDetailScreen(placeId: '101')),
       );
-    },
-  );
+      await tester.pumpAndSettle();
 
-  testWidgets(
-    'Detail tempat tanpa overflow pada lebar web',
-    (WidgetTester tester) async {
-      const ukuranWeb = [Size(1440, 900), Size(1920, 1080)];
-      for (final size in ukuranWeb) {
-        tester.view
-          ..devicePixelRatio = 1.0
-          ..physicalSize = size;
+      expect(
+        tester.takeException(),
+        isNull,
+        reason: 'Layout error pada ukuran ${size.width}x${size.height}',
+      );
 
-        await tester.pumpWidget(
-          _tenantApp(const PlaceDetailScreen(placeId: '101')),
-        );
-        await tester.pumpAndSettle();
-
-        expect(
-          tester.takeException(),
-          isNull,
-          reason: 'Layout error pada ukuran ${size.width}x${size.height}',
-        );
-
-        tester.view.reset();
-      }
-    },
-  );
+      tester.view.reset();
+    }
+  });
 
   testWidgets('Detail tempat menampilkan sapaan lokasi, host, dan aturan', (
     WidgetTester tester,
@@ -1073,7 +1086,8 @@ void main() {
   testWidgets('Detail tempat: pemilik melihat tempat milik akun lain', (
     WidgetTester tester,
   ) async {
-    final fakePlace = _FakePlaceService()..placeOverride = _tempatMilikOrangLain;
+    final fakePlace = _FakePlaceService()
+      ..placeOverride = _tempatMilikOrangLain;
 
     await _pumpDetail(tester, fakePlace: fakePlace, host: true);
 
@@ -1096,6 +1110,65 @@ void main() {
     );
 
     expect(bergradien, findsNothing);
+  });
+
+  testWidgets('Detail tempat: thumbnail galeri memilih foto lain', (
+    WidgetTester tester,
+  ) async {
+    await _pumpSized(tester, const PlaceDetailScreen(placeId: '101'));
+
+    expect(find.text('1 / 2'), findsOneWidget);
+
+    await tester.ensureVisible(find.byKey(const ValueKey('galeri-thumb-1')));
+    await tester.tap(find.byKey(const ValueKey('galeri-thumb-1')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('2 / 2'), findsOneWidget);
+  });
+
+  testWidgets(
+    'Detail tempat: tombol perbesar membuka dan menutup penampil foto',
+    (WidgetTester tester) async {
+      await _pumpSized(tester, const PlaceDetailScreen(placeId: '101'));
+
+      await tester.tap(find.byIcon(Icons.open_in_full));
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(Icons.close), findsOneWidget);
+
+      await tester.tap(find.byIcon(Icons.close));
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(Icons.close), findsNothing);
+    },
+  );
+
+  testWidgets('Detail tempat di layar lebar menampilkan harga pada bar aksi', (
+    WidgetTester tester,
+  ) async {
+    await _pumpSized(
+      tester,
+      const PlaceDetailScreen(placeId: '101'),
+      size: const Size(1200, 900),
+    );
+
+    expect(find.text('Harga sewa'), findsOneWidget);
+    expect(find.text('Sewa Tempat Ini'), findsOneWidget);
+    expect(find.text('Rp 200.000'), findsWidgets);
+  });
+
+  testWidgets('Detail tempat untuk pemilik menampilkan status pada bar aksi', (
+    WidgetTester tester,
+  ) async {
+    await _pumpSized(
+      tester,
+      const PlaceDetailScreen(placeId: '101'),
+      host: true,
+      size: const Size(1200, 900),
+    );
+
+    expect(find.text('Tempat aktif dan tampil di pencarian'), findsOneWidget);
+    expect(find.text('Kelola Tempat'), findsOneWidget);
   });
 
   testWidgets('Detail tempat: pemilik menonaktifkan mengirim status NONAKTIF', (
@@ -1121,7 +1194,10 @@ void main() {
 
     expect(find.text('Halo, Budi'), findsOneWidget);
     expect(find.textContaining('Tempat Usahamu'), findsOneWidget);
-    expect(find.textContaining('Cari tempat, kota, atau lokasi'), findsOneWidget);
+    expect(
+      find.textContaining('Cari tempat, kota, atau lokasi'),
+      findsOneWidget,
+    );
     expect(find.textContaining('Lihat Semua'), findsOneWidget);
   });
 
