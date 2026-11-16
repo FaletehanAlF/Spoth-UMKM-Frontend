@@ -6,14 +6,8 @@ import 'package:http/http.dart' as http;
 
 import '../config/app_config.dart';
 
-/// Provider global untuk [ApiService].
 final apiServiceProvider = Provider<ApiService>((ref) => ApiService());
 
-/// Error dari REST API backend.
-///
-/// Backend selalu mengirim body `{ success: false, message: "..." }`
-/// dan pada error validasi (HTTP 400) juga disertai field `errors`
-/// berisi daftar `{ field, message }`.
 class ApiException implements Exception {
   const ApiException({
     required this.statusCode,
@@ -29,22 +23,12 @@ class ApiException implements Exception {
   String toString() => 'ApiException($statusCode): $message';
 }
 
-/// Pembungkus sederhana package `http` untuk memanggil REST API backend.
-///
-/// Token JWT (jika diperlukan) dikirim lewat parameter `token` dan
-/// dipasang pada header `Authorization: Bearer <token>`.
-///
-/// Method melempar [ApiException] bila status HTTP >= 400 sehingga
-/// pemanggil bisa membedakan error validasi (400), autentikasi (401),
-/// konflik (409), dan rate limit (429). Request yang melebihi [timeout]
-/// (default 15 detik) melempar [ApiException] dengan status 408.
 class ApiService {
   ApiService({http.Client? client, this.timeout = const Duration(seconds: 15)})
     : _client = client ?? http.Client();
 
   final http.Client _client;
 
-  /// Batas waktu maksimum untuk setiap request HTTP.
   final Duration timeout;
 
   Uri _uri(String path) => Uri.parse('${AppConfig.baseUrl}$path');
@@ -63,9 +47,7 @@ class ApiService {
     if (response.body.isNotEmpty) {
       try {
         body = jsonDecode(response.body) as Map<String, dynamic>;
-      } catch (_) {
-        // Body bukan JSON valid; biarkan kosong dan ditangani di bawah.
-      }
+      } catch (_) {}
     }
 
     if (response.statusCode >= 400) {
@@ -80,7 +62,6 @@ class ApiService {
     return body;
   }
 
-  /// Menjalankan [request] dengan batas waktu [timeout].
   Future<http.Response> _withTimeout(Future<http.Response> request) async {
     try {
       return await request.timeout(timeout);

@@ -10,12 +10,6 @@ import '../../widgets/shimmer_loading.dart';
 import '../../widgets/spoth_app_bar.dart';
 import '../../widgets/spoth_sidebar_scaffold.dart';
 
-/// Halaman Notifikasi (`GET /notifications`).
-///
-/// Isi notifikasi berasal dari backend dan otomatis menyesuaikan role:
-/// Pemilik menerima pemberitahuan pemesanan tempat miliknya, Penyewa
-/// menerima pemberitahuan status penyewaannya. Frontend tidak membuat
-/// notifikasi palsu.
 class NotificationScreen extends ConsumerWidget {
   const NotificationScreen({super.key});
 
@@ -80,7 +74,6 @@ class NotificationScreen extends ConsumerWidget {
               itemCount: items.length + (page.hasMore ? 1 : 0),
               itemBuilder: (context, index) {
                 if (index == items.length) {
-                  // Tombol "Muat Lebih Banyak" bila server punya halaman lagi.
                   return Padding(
                     padding: const EdgeInsets.only(top: 4),
                     child: Center(
@@ -109,8 +102,6 @@ class NotificationScreen extends ConsumerWidget {
   }
 }
 
-/// Kartu satu notifikasi. Ketuk untuk menandai sudah dibaca.
-/// Notifikasi yang belum dibaca ditandai dengan garis tepi orange.
 class _NotificationCard extends ConsumerWidget {
   const _NotificationCard({required this.notification});
 

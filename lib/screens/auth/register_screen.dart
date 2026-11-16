@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -6,6 +7,7 @@ import '../../core/theme/app_colors.dart';
 import '../../models/user_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../widgets/app_button.dart';
+import '../../widgets/auth_widgets.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({super.key});
@@ -24,7 +26,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
   bool _obscurePassword = true;
   bool _obscureConfirm = true;
-  String _role = UserModel.roleTenant;
+  String? _role;
+  String? _roleError;
 
   @override
   void dispose() {
@@ -37,26 +40,28 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   }
 
   String? _validateNama(String? value) {
-    final v = value?.trim() ?? '';
-    if (v.isEmpty) return 'Nama wajib diisi';
-    if (v.length > 100) return 'Nama maksimal 100 karakter';
+    final text = value?.trim() ?? '';
+    if (text.isEmpty) return 'Nama wajib diisi';
+    if (text.length > 100) return 'Nama maksimal 100 karakter';
     return null;
   }
 
   String? _validateEmail(String? value) {
-    final v = value?.trim() ?? '';
-    if (v.isEmpty) return 'Email wajib diisi';
+    final text = value?.trim() ?? '';
+    if (text.isEmpty) return 'Email wajib diisi';
     final regex = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
-    if (!regex.hasMatch(v)) return 'Format email tidak valid';
-    if (v.length > 150) return 'Email maksimal 150 karakter';
+    if (!regex.hasMatch(text)) return 'Format email tidak valid';
+    if (text.length > 150) return 'Email maksimal 150 karakter';
     return null;
   }
 
   String? _validateNoHp(String? value) {
-    final v = value?.trim() ?? '';
-    if (v.isEmpty) return null;
+    final text = value?.trim() ?? '';
+    if (text.isEmpty) return 'Nomor telepon wajib diisi';
     final regex = RegExp(r'^(?:\+62|62|0)8[1-9][0-9]{6,11}$');
-    if (!regex.hasMatch(v)) return 'Format nomor HP tidak valid';
+    if (!regex.hasMatch(text)) {
+      return 'Gunakan format 08xxxxxxxxxx';
+    }
     return null;
   }
 
@@ -71,12 +76,27 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     if (value == null || value.isEmpty) {
       return 'Konfirmasi password wajib diisi';
     }
-    if (value != _passwordController.text) return 'Password tidak sama';
+    if (value != _passwordController.text) {
+      return 'Konfirmasi password tidak sama';
+    }
     return null;
   }
 
+  void _selectRole(String role) {
+    setState(() {
+      _role = role;
+      _roleError = null;
+    });
+  }
+
   Future<void> _submit() async {
-    if (!_formKey.currentState!.validate()) return;
+    final formValid = _formKey.currentState!.validate();
+
+    if (_role == null) {
+      setState(() => _roleError = 'Pilih salah satu peran');
+    }
+
+    if (!formValid || _role == null) return;
 
     FocusScope.of(context).unfocus();
 
@@ -87,7 +107,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           email: _emailController.text.trim(),
           password: _passwordController.text,
           noHp: _noHpController.text.trim(),
-          role: _role,
+          role: _role!,
         );
 
     if (!mounted) return;
@@ -108,267 +128,155 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     final authState = ref.watch(authNotifierProvider);
     final isLoading = authState.isLoading;
     final errorMessage = authState.errorMessage;
-    final errorColor = Theme.of(context).colorScheme.error;
 
     return Scaffold(
       backgroundColor: AppColors.white,
       body: SafeArea(
-        child: TweenAnimationBuilder<double>(
-          tween: Tween(begin: 0, end: 1),
-          duration: const Duration(milliseconds: 400),
-          curve: Curves.easeOut,
-          builder: (context, value, child) {
-            return Opacity(
-              opacity: value,
-              child: Transform.translate(
-                offset: Offset(0, 20 * (1 - value)),
-                child: child,
-              ),
-            );
-          },
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-            child: Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 480),
-                child: Form(
-                  key: _formKey,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      const SizedBox(height: 8),
-                      const Center(child: _Logo()),
-                      const SizedBox(height: 24),
-                      const Text(
-                        'Buat Akun Baru',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.darkText,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(24, 40, 24, 32),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 400),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const Center(child: AuthBrand()),
+                  const SizedBox(height: 28),
+                  const AuthHeader(
+                    title: 'Buat Akun Baru',
+                    description: 'Lengkapi data di bawah untuk mulai menggunakan SPOTH UMKM.',
+                  ),
+                  const SizedBox(height: 28),
+                  Form(
+                    key: _formKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        AuthField(
+                          label: 'Nama Lengkap',
+                          controller: _namaController,
+                          hintText: 'Nama sesuai identitas',
+                          textInputAction: TextInputAction.next,
+                          validator: _validateNama,
+                          enabled: !isLoading,
                         ),
-                      ),
-                      const SizedBox(height: 6),
-                      const Text(
-                        'Daftar untuk mulai menggunakan SPOTH UMKM',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: AppColors.secondaryText,
-                        ),
-                      ),
-                      const SizedBox(height: 32),
-                      TextFormField(
-                        controller: _namaController,
-                        textInputAction: TextInputAction.next,
-                        decoration: const InputDecoration(
-                          labelText: 'Nama Lengkap',
-                          hintText: 'Masukkan nama lengkap',
-                          prefixIcon: Icon(Icons.person_outline),
-                        ),
-                        validator: _validateNama,
-                        enabled: !isLoading,
-                      ),
-                      const SizedBox(height: 16),
-                      TextFormField(
-                        controller: _emailController,
-                        keyboardType: TextInputType.emailAddress,
-                        autocorrect: false,
-                        textInputAction: TextInputAction.next,
-                        decoration: const InputDecoration(
-                          labelText: 'Email',
+                        const SizedBox(height: 16),
+                        AuthField(
+                          label: 'Email',
+                          controller: _emailController,
                           hintText: 'nama@email.com',
-                          prefixIcon: Icon(Icons.email_outlined),
+                          keyboardType: TextInputType.emailAddress,
+                          autocorrect: false,
+                          textInputAction: TextInputAction.next,
+                          validator: _validateEmail,
+                          enabled: !isLoading,
                         ),
-                        validator: _validateEmail,
-                        enabled: !isLoading,
-                      ),
-                      const SizedBox(height: 16),
-                      TextFormField(
-                        controller: _noHpController,
-                        keyboardType: TextInputType.phone,
-                        textInputAction: TextInputAction.next,
-                        decoration: const InputDecoration(
-                          labelText: 'Nomor HP (opsional)',
+                        const SizedBox(height: 16),
+                        AuthField(
+                          label: 'Nomor Telepon',
+                          controller: _noHpController,
                           hintText: '081234567890',
-                          prefixIcon: Icon(Icons.phone_outlined),
-                        ),
-                        validator: _validateNoHp,
-                        enabled: !isLoading,
-                      ),
-                      const SizedBox(height: 16),
-                      const Align(
-                        alignment: Alignment.centerLeft,
-                        child: Text(
-                          'Daftar sebagai',
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: AppColors.secondaryText,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      SegmentedButton<String>(
-                        segments: const [
-                          ButtonSegment<String>(
-                            value: UserModel.roleHost,
-                            label: Text('Pemilik'),
-                            icon: Icon(Icons.store_outlined),
-                          ),
-                          ButtonSegment<String>(
-                            value: UserModel.roleTenant,
-                            label: Text('Penyewa'),
-                            icon: Icon(Icons.person_outline),
-                          ),
-                        ],
-                        selected: {_role},
-                        onSelectionChanged: isLoading
-                            ? null
-                            : (selection) =>
-                                  setState(() => _role = selection.first),
-                      ),
-                      const SizedBox(height: 16),
-                      TextFormField(
-                        controller: _passwordController,
-                        obscureText: _obscurePassword,
-                        textInputAction: TextInputAction.next,
-                        decoration: InputDecoration(
-                          labelText: 'Password',
-                          hintText: 'Minimal 8 karakter',
-                          prefixIcon: const Icon(Icons.lock_outline),
-                          suffixIcon: IconButton(
-                            icon: Icon(
-                              _obscurePassword
-                                  ? Icons.visibility_outlined
-                                  : Icons.visibility_off_outlined,
+                          keyboardType: TextInputType.phone,
+                          textInputAction: TextInputAction.next,
+                          inputFormatters: [
+                            FilteringTextInputFormatter.allow(
+                              RegExp(r'[0-9+]'),
                             ),
+                          ],
+                          validator: _validateNoHp,
+                          enabled: !isLoading,
+                        ),
+                        const SizedBox(height: 16),
+                        AuthField(
+                          label: 'Password',
+                          controller: _passwordController,
+                          hintText: 'Minimal 8 karakter',
+                          obscureText: _obscurePassword,
+                          textInputAction: TextInputAction.next,
+                          validator: _validatePassword,
+                          enabled: !isLoading,
+                          suffixIcon: AuthPasswordToggle(
+                            hidden: _obscurePassword,
                             onPressed: () => setState(
                               () => _obscurePassword = !_obscurePassword,
                             ),
                           ),
                         ),
-                        validator: _validatePassword,
-                        enabled: !isLoading,
-                      ),
-                      const SizedBox(height: 16),
-                      TextFormField(
-                        controller: _confirmController,
-                        obscureText: _obscureConfirm,
-                        textInputAction: TextInputAction.done,
-                        onFieldSubmitted: (_) => _submit(),
-                        decoration: InputDecoration(
-                          labelText: 'Konfirmasi Password',
+                        const SizedBox(height: 16),
+                        AuthField(
+                          label: 'Konfirmasi Password',
+                          controller: _confirmController,
                           hintText: 'Ulangi password',
-                          prefixIcon: const Icon(Icons.lock_outline),
-                          suffixIcon: IconButton(
-                            icon: Icon(
-                              _obscureConfirm
-                                  ? Icons.visibility_outlined
-                                  : Icons.visibility_off_outlined,
-                            ),
+                          obscureText: _obscureConfirm,
+                          textInputAction: TextInputAction.done,
+                          onFieldSubmitted: (_) => _submit(),
+                          validator: _validateConfirm,
+                          enabled: !isLoading,
+                          suffixIcon: AuthPasswordToggle(
+                            hidden: _obscureConfirm,
                             onPressed: () => setState(
                               () => _obscureConfirm = !_obscureConfirm,
                             ),
                           ),
                         ),
-                        validator: _validateConfirm,
-                        enabled: !isLoading,
-                      ),
-                      if (errorMessage != null) ...[
-                        const SizedBox(height: 16),
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Icon(
-                              Icons.error_outline,
-                              size: 18,
-                              color: errorColor,
+                        const SizedBox(height: 20),
+                        const Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            'Pilih Peran',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.darkText,
                             ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                errorMessage,
-                                style: TextStyle(
-                                  color: errorColor,
-                                  fontSize: 13,
-                                  height: 1.4,
-                                ),
-                              ),
-                            ),
-                          ],
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        AuthRoleOption(
+                          title: 'Pemilik',
+                          description:
+                              'Untuk kamu yang ingin menyewakan tempat usaha.',
+                          selected: _role == UserModel.roleHost,
+                          onTap: () => _selectRole(UserModel.roleHost),
+                        ),
+                        const SizedBox(height: 10),
+                        AuthRoleOption(
+                          title: 'Penyewa',
+                          description: 'Untuk kamu yang mencari tempat usaha.',
+                          selected: _role == UserModel.roleTenant,
+                          onTap: () => _selectRole(UserModel.roleTenant),
+                        ),
+                        if (_roleError != null) ...[
+                          const SizedBox(height: 8),
+                          AuthMessage(text: _roleError!),
+                        ],
+                        if (errorMessage != null) ...[
+                          const SizedBox(height: 12),
+                          AuthMessage(text: errorMessage),
+                        ],
+                        const SizedBox(height: 20),
+                        PrimaryButton(
+                          label: 'Daftar',
+                          isLoading: isLoading,
+                          height: 52,
+                          borderRadius: 14,
+                          onPressed: _submit,
+                        ),
+                        const SizedBox(height: 20),
+                        AuthFooterLink(
+                          label: 'Sudah punya akun?',
+                          actionLabel: 'Masuk',
+                          enabled: !isLoading,
+                          onTap: () => context.go('/login'),
                         ),
                       ],
-                      const SizedBox(height: 24),
-                      PrimaryButton(
-                        label: 'Daftar',
-                        isLoading: isLoading,
-                        onPressed: _submit,
-                      ),
-                      const SizedBox(height: 20),
-                      Wrap(
-                        alignment: WrapAlignment.center,
-                        crossAxisAlignment: WrapCrossAlignment.center,
-                        spacing: 4,
-                        children: [
-                          const Text(
-                            'Sudah punya akun?',
-                            style: TextStyle(color: AppColors.secondaryText),
-                          ),
-                          TextButton(
-                            onPressed: isLoading
-                                ? null
-                                : () => context.go('/login'),
-                            child: const Text('Login'),
-                          ),
-                        ],
-                      ),
-                    ],
+                    ),
                   ),
-                ),
+                ],
               ),
             ),
           ),
         ),
-      ),
-    );
-  }
-}
-
-/// Logo SPOTH dari asset. Bila asset gagal dimuat/terdecode (mis. AVIF tidak
-/// didukung pada Android < 12), fallback ke badge ikon Material.
-class _Logo extends StatelessWidget {
-  const _Logo();
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 80,
-      child: Image.asset(
-        'assets/images/spoth_umkm.avif',
-        fit: BoxFit.contain,
-        errorBuilder: (context, error, stackTrace) => const _LogoBadge(),
-      ),
-    );
-  }
-}
-
-/// Badge logo sederhana memakai ikon Material (fallback bila logo asset gagal).
-class _LogoBadge extends StatelessWidget {
-  const _LogoBadge();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 72,
-      height: 72,
-      decoration: BoxDecoration(
-        color: AppColors.lightOrange,
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: const Icon(
-        Icons.storefront,
-        size: 40,
-        color: AppColors.primaryOrange,
       ),
     );
   }

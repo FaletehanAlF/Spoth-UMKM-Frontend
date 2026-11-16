@@ -11,11 +11,6 @@ import 'empty_state.dart';
 import 'place_grid_card.dart';
 import 'shimmer_loading.dart';
 
-/// Katalog tempat untuk **Penyewa (TENANT)**:
-/// kolom pencarian (debounce), chip kategori, dan grid 2 kolom.
-///
-/// Dipakai pada tab Tempat. Semua data berasal dari `GET /places`
-/// (berstatus AKTIF). Tidak ada aksi CRUD di sini.
 class PlaceCatalog extends ConsumerStatefulWidget {
   const PlaceCatalog({super.key});
 
@@ -34,9 +29,8 @@ class _PlaceCatalogState extends ConsumerState<PlaceCatalog> {
     super.dispose();
   }
 
-  /// Menyimpan kata kunci setelah pengguna berhenti mengetik (350 ms).
   void _onSearchChanged(String value) {
-    setState(() {}); // Memperbarui tampilan tombol bersihkan.
+    setState(() {});
     _debounce?.cancel();
     _debounce = Timer(const Duration(milliseconds: 350), () {
       ref.read(tenantSearchProvider.notifier).setKeyword(value);
@@ -49,7 +43,6 @@ class _PlaceCatalogState extends ConsumerState<PlaceCatalog> {
     ref.read(tenantSearchProvider.notifier).setKeyword('');
   }
 
-  /// Bottom sheet pemilihan kategori (tombol filter di search bar).
   Future<void> _showFilterSheet() async {
     final kategoriAktif = ref.read(tenantSearchProvider).kategori;
 
@@ -164,7 +157,6 @@ class _PlaceCatalogState extends ConsumerState<PlaceCatalog> {
   }
 }
 
-/// Bottom sheet pemilihan kategori tempat.
 class _CategorySheet extends StatelessWidget {
   const _CategorySheet({required this.kategoriAktif});
 
@@ -220,7 +212,7 @@ class _CategorySheet extends StatelessWidget {
           const SizedBox(height: 16),
           Text(
             'Pilih kategori',
-            style: AppFonts.serif(
+            style: AppFonts.heading(
               fontSize: 20,
               weight: 600,
               color: AppColors.charcoal,
@@ -252,7 +244,6 @@ class _CategorySheet extends StatelessWidget {
   }
 }
 
-/// Chip kategori horizontal (Semua + 3 kategori dari backend).
 class _CategoryChips extends ConsumerWidget {
   const _CategoryChips({required this.kategoriAktif});
 
@@ -317,7 +308,6 @@ class _CategoryChips extends ConsumerWidget {
   }
 }
 
-/// Grid 2 kolom hasil pencarian/filter.
 class _CatalogGrid extends ConsumerWidget {
   const _CatalogGrid();
 

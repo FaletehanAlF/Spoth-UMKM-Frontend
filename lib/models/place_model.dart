@@ -1,5 +1,3 @@
-/// Model data tempat usaha sesuai respons backend SPOTH UMKM
-/// (`GET /places`, `GET /places/mine`, `POST /places`, `PATCH /places/:id`).
 class PlaceModel {
   const PlaceModel({
     required this.id,
@@ -70,7 +68,6 @@ class PlaceModel {
   bool get isAktif => status == 'AKTIF';
   bool get hasPromo => hargaPromo != null && hargaPromo! < hargaNormal;
 
-  /// Fasilitas dalam bentuk list (database menyimpan teks berpemisah koma).
   List<String> get fasilitasList => (fasilitas ?? '')
       .split(',')
       .map((item) => item.trim())
@@ -133,8 +130,6 @@ class PlaceModel {
   }
 }
 
-/// Rentang tanggal tempat yang sudah dipesan pengguna lain
-/// (dari `jadwal_terpakai` pada detail tempat).
 class BookedRange {
   const BookedRange({
     required this.tanggalMulai,
@@ -155,8 +150,6 @@ class BookedRange {
   }
 }
 
-/// Ringkasan dashboard Host dari `GET /places/mine/summary`
-/// (kunci JSON: `data.ringkasan`).
 class PlaceSummaryModel {
   const PlaceSummaryModel({
     required this.totalTempat,

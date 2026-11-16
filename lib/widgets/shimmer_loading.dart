@@ -3,7 +3,6 @@ import 'package:shimmer/shimmer.dart';
 
 import '../core/theme/app_colors.dart';
 
-/// Bungkus area loading dengan efek shimmer (satu animasi per area).
 class ShimmerLoading extends StatelessWidget {
   const ShimmerLoading({super.key, required this.child});
 
@@ -19,7 +18,6 @@ class ShimmerLoading extends StatelessWidget {
   }
 }
 
-/// Kotak placeholder berwarna light-orange.
 class ShimmerBox extends StatelessWidget {
   const ShimmerBox({
     super.key,
@@ -45,7 +43,6 @@ class ShimmerBox extends StatelessWidget {
   }
 }
 
-/// Skeleton daftar kartu tempat (Home pemilik & penyewa).
 class PlaceListSkeleton extends StatelessWidget {
   const PlaceListSkeleton({super.key, this.count = 3});
 
@@ -110,7 +107,6 @@ class PlaceListSkeleton extends StatelessWidget {
   }
 }
 
-/// Skeleton ringkasan 4 kartu (Home pemilik).
 class SummarySkeleton extends StatelessWidget {
   const SummarySkeleton({super.key});
 
@@ -172,7 +168,6 @@ class SummarySkeleton extends StatelessWidget {
   }
 }
 
-/// Skeleton daftar notifikasi.
 class NotificationListSkeleton extends StatelessWidget {
   const NotificationListSkeleton({super.key, this.count = 5});
 
@@ -237,7 +232,6 @@ class NotificationListSkeleton extends StatelessWidget {
   }
 }
 
-/// Skeleton daftar pemesanan (tab Booking).
 class BookingListSkeleton extends StatelessWidget {
   const BookingListSkeleton({super.key, this.count = 4});
 
@@ -283,7 +277,6 @@ class BookingListSkeleton extends StatelessWidget {
   }
 }
 
-/// Skeleton detail tempat.
 class DetailSkeleton extends StatelessWidget {
   const DetailSkeleton({super.key});
 
@@ -334,7 +327,6 @@ class DetailSkeleton extends StatelessWidget {
   }
 }
 
-/// Skeleton form tempat (loading data saat mode ubah).
 class PlaceFormSkeleton extends StatelessWidget {
   const PlaceFormSkeleton({super.key});
 

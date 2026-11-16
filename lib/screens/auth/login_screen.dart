@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../providers/auth_provider.dart';
 import '../../widgets/app_button.dart';
+import '../../widgets/auth_widgets.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -29,7 +30,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     _loadRemembered();
   }
 
-  /// Memuat email yang tersimpan bila sebelumnya pengguna mencentang "Ingat saya".
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
   Future<void> _loadRemembered() async {
     final rememberMe = await _storage.read(key: 'remember_me');
 
@@ -47,7 +54,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     }
   }
 
-  /// Menyimpan/menghapus pilihan "Ingat saya" setelah login berhasil.
   Future<void> _persistRememberMe() async {
     if (_rememberMe) {
       await _storage.write(key: 'remember_me', value: 'true');
@@ -61,18 +67,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     }
   }
 
-  @override
-  void dispose() {
-    _emailController.dispose();
-    _passwordController.dispose();
-    super.dispose();
-  }
-
   String? _validateEmail(String? value) {
-    final v = value?.trim() ?? '';
-    if (v.isEmpty) return 'Email wajib diisi';
+    final text = value?.trim() ?? '';
+    if (text.isEmpty) return 'Email wajib diisi';
     final regex = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
-    if (!regex.hasMatch(v)) return 'Format email tidak valid';
+    if (!regex.hasMatch(text)) return 'Format email tidak valid';
     return null;
   }
 
@@ -107,218 +106,149 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final authState = ref.watch(authNotifierProvider);
     final isLoading = authState.isLoading;
     final errorMessage = authState.errorMessage;
-    final errorColor = Theme.of(context).colorScheme.error;
 
     return Scaffold(
       backgroundColor: AppColors.white,
       body: SafeArea(
-        child: TweenAnimationBuilder<double>(
-          tween: Tween(begin: 0, end: 1),
-          duration: const Duration(milliseconds: 400),
-          curve: Curves.easeOut,
-          builder: (context, value, child) {
-            return Opacity(
-              opacity: value,
-              child: Transform.translate(
-                offset: Offset(0, 20 * (1 - value)),
-                child: child,
-              ),
-            );
-          },
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-            child: Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 480),
-                child: Form(
-                  key: _formKey,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      const SizedBox(height: 8),
-                      const Center(child: _Logo()),
-                      const SizedBox(height: 24),
-                      const Text(
-                        'Selamat Datang Kembali',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.darkText,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      const Text(
-                        'Masuk untuk melanjutkan ke SPOTH UMKM',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: AppColors.secondaryText,
-                        ),
-                      ),
-                      const SizedBox(height: 32),
-                      TextFormField(
-                        controller: _emailController,
-                        keyboardType: TextInputType.emailAddress,
-                        autocorrect: false,
-                        textInputAction: TextInputAction.next,
-                        decoration: const InputDecoration(
-                          labelText: 'Email',
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(24, 48, 24, 32),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 400),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const Center(child: AuthBrand()),
+                  const SizedBox(height: 28),
+                  const AuthHeader(
+                    title: 'Selamat Datang Kembali',
+                    description:
+                        'Masuk untuk melanjutkan ke akun SPOTH UMKM Anda.',
+                  ),
+                  const SizedBox(height: 28),
+                  Form(
+                    key: _formKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        AuthField(
+                          label: 'Email',
+                          controller: _emailController,
                           hintText: 'nama@email.com',
-                          prefixIcon: Icon(Icons.email_outlined),
+                          keyboardType: TextInputType.emailAddress,
+                          autocorrect: false,
+                          textInputAction: TextInputAction.next,
+                          validator: _validateEmail,
+                          enabled: !isLoading,
                         ),
-                        validator: _validateEmail,
-                        enabled: !isLoading,
-                      ),
-                      const SizedBox(height: 16),
-                      TextFormField(
-                        controller: _passwordController,
-                        obscureText: _obscurePassword,
-                        textInputAction: TextInputAction.done,
-                        onFieldSubmitted: (_) => _submit(),
-                        decoration: InputDecoration(
-                          labelText: 'Password',
+                        const SizedBox(height: 16),
+                        AuthField(
+                          label: 'Password',
+                          controller: _passwordController,
                           hintText: 'Masukkan password',
-                          prefixIcon: const Icon(Icons.lock_outline),
-                          suffixIcon: IconButton(
-                            icon: Icon(
-                              _obscurePassword
-                                  ? Icons.visibility_outlined
-                                  : Icons.visibility_off_outlined,
-                            ),
+                          obscureText: _obscurePassword,
+                          textInputAction: TextInputAction.done,
+                          onFieldSubmitted: (_) => _submit(),
+                          validator: _validatePassword,
+                          enabled: !isLoading,
+                          suffixIcon: AuthPasswordToggle(
+                            hidden: _obscurePassword,
                             onPressed: () => setState(
                               () => _obscurePassword = !_obscurePassword,
                             ),
                           ),
                         ),
-                        validator: _validatePassword,
-                        enabled: !isLoading,
-                      ),
-                      const SizedBox(height: 4),
-                      InkWell(
-                        onTap: isLoading
-                            ? null
-                            : () => setState(() => _rememberMe = !_rememberMe),
-                        borderRadius: BorderRadius.circular(8),
-                        child: Row(
+                        const SizedBox(height: 4),
+                        Row(
                           children: [
-                            Checkbox(
-                              value: _rememberMe,
-                              onChanged: isLoading
-                                  ? null
-                                  : (value) => setState(
-                                      () => _rememberMe = value ?? true,
+                            Expanded(
+                              child: Row(
+                                children: [
+                                  Checkbox(
+                                    value: _rememberMe,
+                                    onChanged: isLoading
+                                        ? null
+                                        : (value) => setState(
+                                            () => _rememberMe = value ?? true,
+                                          ),
+                                    activeColor: AppColors.primaryOrange,
+                                    visualDensity: VisualDensity.compact,
+                                    materialTapTargetSize:
+                                        MaterialTapTargetSize.shrinkWrap,
+                                    overlayColor:
+                                        const WidgetStatePropertyAll<Color?>(
+                                          Colors.transparent,
+                                        ),
+                                    side: const BorderSide(
+                                      color: AppColors.neutralBorder,
+                                      width: 1.4,
                                     ),
-                              activeColor: AppColors.primaryOrange,
-                              side: const BorderSide(
-                                color: AppColors.secondaryText,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Flexible(
+                                    child: MouseRegion(
+                                      cursor: isLoading
+                                          ? SystemMouseCursors.basic
+                                          : SystemMouseCursors.click,
+                                      child: GestureDetector(
+                                        behavior: HitTestBehavior.opaque,
+                                        onTap: isLoading
+                                            ? null
+                                            : () => setState(
+                                                () =>
+                                                    _rememberMe = !_rememberMe,
+                                              ),
+                                        child: const Text(
+                                          'Ingat saya',
+                                          style: TextStyle(
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w600,
+                                            color: AppColors.darkText,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                            const Text(
-                              'Ingat saya',
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: AppColors.darkText,
-                              ),
+                            AuthTextLink(
+                              label: 'Lupa password?',
+                              enabled: !isLoading,
+                              onTap: () => context.push('/forgot-password'),
                             ),
                           ],
                         ),
-                      ),
-                      if (errorMessage != null) ...[
-                        const SizedBox(height: 8),
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Icon(
-                              Icons.error_outline,
-                              size: 18,
-                              color: errorColor,
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                errorMessage,
-                                style: TextStyle(
-                                  color: errorColor,
-                                  fontSize: 13,
-                                  height: 1.4,
-                                ),
-                              ),
-                            ),
-                          ],
+                        if (errorMessage != null) ...[
+                          const SizedBox(height: 12),
+                          AuthMessage(text: errorMessage),
+                        ],
+                        const SizedBox(height: 20),
+                        PrimaryButton(
+                          label: 'Masuk',
+                          isLoading: isLoading,
+                          height: 52,
+                          borderRadius: 14,
+                          onPressed: _submit,
+                        ),
+                        const SizedBox(height: 20),
+                        AuthFooterLink(
+                          label: 'Belum punya akun?',
+                          actionLabel: 'Daftar',
+                          enabled: !isLoading,
+                          onTap: () => context.go('/register'),
                         ),
                       ],
-                      const SizedBox(height: 16),
-                      PrimaryButton(
-                        label: 'Login',
-                        isLoading: isLoading,
-                        onPressed: _submit,
-                      ),
-                      const SizedBox(height: 20),
-                      Wrap(
-                        alignment: WrapAlignment.center,
-                        crossAxisAlignment: WrapCrossAlignment.center,
-                        spacing: 4,
-                        children: [
-                          const Text(
-                            'Belum punya akun?',
-                            style: TextStyle(color: AppColors.secondaryText),
-                          ),
-                          TextButton(
-                            onPressed: isLoading
-                                ? null
-                                : () => context.go('/register'),
-                            child: const Text('Daftar'),
-                          ),
-                        ],
-                      ),
-                    ],
+                    ),
                   ),
-                ),
+                ],
               ),
             ),
           ),
         ),
-      ),
-    );
-  }
-}
-
-/// Logo SPOTH dari asset. Bila asset gagal dimuat/terdecode (mis. AVIF tidak
-/// didukung pada Android < 12), fallback ke badge ikon Material.
-class _Logo extends StatelessWidget {
-  const _Logo();
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 80,
-      child: Image.asset(
-        'assets/images/spoth_umkm.avif',
-        fit: BoxFit.contain,
-        errorBuilder: (context, error, stackTrace) => const _LogoBadge(),
-      ),
-    );
-  }
-}
-
-/// Badge logo sederhana memakai ikon Material (fallback bila logo asset gagal).
-class _LogoBadge extends StatelessWidget {
-  const _LogoBadge();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 72,
-      height: 72,
-      decoration: BoxDecoration(
-        color: AppColors.lightOrange,
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: const Icon(
-        Icons.storefront,
-        size: 40,
-        color: AppColors.primaryOrange,
       ),
     );
   }

@@ -5,7 +5,6 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/theme/app_colors.dart';
 
-/// Onboarding 3 halaman untuk pengguna baru.
 class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key});
 
@@ -75,9 +74,23 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           children: [
             Align(
               alignment: Alignment.topRight,
-              child: TextButton(
-                onPressed: _complete,
-                child: const Text('Lewati'),
+              child: MouseRegion(
+                cursor: SystemMouseCursors.click,
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: _complete,
+                  child: const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                    child: Text(
+                      'Lewati',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.primaryOrange,
+                      ),
+                    ),
+                  ),
+                ),
               ),
             ),
             Expanded(
@@ -89,8 +102,6 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                   final page = _pages[index];
                   return LayoutBuilder(
                     builder: (context, constraints) {
-                      // Ukuran ikon menyesuaikan tinggi yang tersedia agar
-                      // konten tetap proporsional di layar kecil & landscape.
                       final double iconSize = (constraints.maxHeight * 0.28)
                           .clamp(72.0, 120.0)
                           .toDouble();

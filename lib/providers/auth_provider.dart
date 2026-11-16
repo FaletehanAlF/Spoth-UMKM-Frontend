@@ -7,15 +7,8 @@ import '../core/services/api_service.dart';
 import '../core/services/auth_service.dart';
 import '../models/user_model.dart';
 
-/// Status autentikasi pengguna.
-enum AuthStatus {
-  /// Belum diperiksa (misalnya token belum dibaca dari secure storage).
-  unknown,
-  authenticated,
-  unauthenticated,
-}
+enum AuthStatus { unknown, authenticated, unauthenticated }
 
-/// State authentication yang dibaca oleh UI.
 class AuthState {
   const AuthState({
     this.status = AuthStatus.unknown,
@@ -32,11 +25,6 @@ class AuthState {
   final String? errorMessage;
 }
 
-/// Notifier yang mengelola autentikasi:
-///
-/// - Membaca/menulis token JWT ke `flutter_secure_storage`
-/// - Memanggil `AuthService` untuk bicara dengan backend
-/// - Menyediakan state user + token + status loading/error untuk UI
 class AuthNotifier extends Notifier<AuthState> {
   static const String _tokenKey = 'jwt_token';
 
@@ -47,8 +35,6 @@ class AuthNotifier extends Notifier<AuthState> {
 
   AuthService get _authService => ref.read(authServiceProvider);
 
-  /// Memulihkan sesi dari secure storage saat aplikasi dibuka.
-  /// Mengembalikan `true` bila sesi berhasil dipulihkan.
   Future<bool> restoreSession() async {
     final token = await _storage.read(key: _tokenKey);
 
@@ -67,20 +53,16 @@ class AuthNotifier extends Notifier<AuthState> {
       return true;
     } on ApiException catch (error) {
       if (error.statusCode == 401) {
-        // Token kedaluwarsa/tidak valid → hapus agar bersih.
         await _storage.delete(key: _tokenKey);
       }
       state = const AuthState(status: AuthStatus.unauthenticated);
       return false;
     } catch (_) {
-      // Error jaringan dll.: token dibiarkan, dicoba lagi saat app dibuka.
       state = const AuthState(status: AuthStatus.unauthenticated);
       return false;
     }
   }
 
-  /// Registrasi. Mengembalikan `true` bila berhasil.
-  /// Tidak ada token yang tersimpan; user perlu login setelah registrasi.
   Future<bool> register({
     required String nama,
     required String email,
@@ -109,7 +91,6 @@ class AuthNotifier extends Notifier<AuthState> {
     }
   }
 
-  /// Login. Mengembalikan `true` bila berhasil dan menyimpan token JWT.
   Future<bool> login({required String email, required String password}) async {
     state = const AuthState(isLoading: true);
 
@@ -131,26 +112,19 @@ class AuthNotifier extends Notifier<AuthState> {
     }
   }
 
-  /// Logout: hapus token lokal. Kegagalan memanggil endpoint logout
-  /// diabaikan agar user tetap bisa keluar dari aplikasi.
   Future<void> logout() async {
     final token = state.token ?? await _storage.read(key: _tokenKey);
 
     if (token != null) {
       try {
         await _authService.logout(token: token);
-      } catch (_) {
-        // Token lokal tetap dihapus meski server tidak terjangkau.
-      }
+      } catch (_) {}
     }
 
     await _storage.delete(key: _tokenKey);
     state = const AuthState(status: AuthStatus.unauthenticated);
   }
 
-  /// Mengambil pesan error yang mudah dibaca dari error backend.
-  /// Menangani HTTP 400 (validasi), 401 (autentikasi), 409 (konflik email),
-  /// dan 429 (terlalu banyak percobaan).
   String _errorMessage(Object error) {
     if (error is ApiException) {
       if (error.statusCode == 400 &&
@@ -168,12 +142,10 @@ class AuthNotifier extends Notifier<AuthState> {
 
       switch (error.statusCode) {
         case 401:
-          // Contoh backend: "Email atau password salah" / "Token sudah kedaluwarsa".
           return error.message;
         case 408:
           return 'Permintaan melebihi batas waktu. Periksa koneksi internet Anda.';
         case 409:
-          // Contoh backend: "Email sudah dipakai".
           return error.message;
         case 429:
           return 'Terlalu banyak percobaan. Silakan coba lagi beberapa menit lagi.';
@@ -194,7 +166,6 @@ class AuthNotifier extends Notifier<AuthState> {
   }
 }
 
-/// Provider state authentication.
 final authNotifierProvider = NotifierProvider<AuthNotifier, AuthState>(
   AuthNotifier.new,
 );

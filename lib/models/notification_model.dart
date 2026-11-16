@@ -1,5 +1,3 @@
-/// Model data notifikasi sesuai respons backend SPOTH UMKM
-/// (`GET /notifications`, `GET /notifications/summary`).
 class NotificationModel {
   const NotificationModel({
     required this.id,
@@ -16,7 +14,6 @@ class NotificationModel {
   final bool dibaca;
   final DateTime? createdAt;
 
-  /// Data tambahan dari backend (mis. `{ booking_id, tipe }`).
   final Map<String, dynamic>? metadata;
 
   factory NotificationModel.fromJson(Map<String, dynamic> json) {
@@ -33,8 +30,6 @@ class NotificationModel {
   }
 }
 
-/// Ringkasan notifikasi dari `GET /notifications/summary`
-/// (kunci JSON: `data.ringkasan`) — dipakai untuk badge jumlah belum dibaca.
 class NotificationSummaryModel {
   const NotificationSummaryModel({
     required this.total,

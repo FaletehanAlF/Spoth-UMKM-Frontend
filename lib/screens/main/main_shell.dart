@@ -10,15 +10,6 @@ import '../home/home_screen.dart';
 import '../place/tempat_screen.dart';
 import '../profile/profile_screen.dart';
 
-/// Kerangka halaman utama.
-///
-/// - Layar lebar (>= 900 px, mis. Chrome/Edge atau desktop): sidebar di kiri
-///   (penuh >= 1100 px, ikon saja < 1100 px).
-/// - Layar sempit (< 900 px, mis. ponsel): bottom navigation berbentuk pill.
-///
-/// Area konten dibatasi maksimal 1160 px agar tetap rapi di layar lebar.
-/// Menu: Beranda (0) — Tempat (1) — Booking (2) — Profil (3), sama untuk
-/// semua role. Memakai [IndexedStack] agar state setiap tab terjaga.
 class MainShell extends ConsumerWidget {
   const MainShell({super.key});
 

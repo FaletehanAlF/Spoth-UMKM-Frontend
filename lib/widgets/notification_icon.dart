@@ -4,8 +4,6 @@ import 'package:go_router/go_router.dart';
 
 import '../providers/notification_provider.dart';
 
-/// Icon notifikasi dengan badge jumlah belum dibaca (data nyata dari
-/// `GET /notifications/summary`). Dipakai di AppBar Home Pemilik & Penyewa.
 class NotificationIconButton extends ConsumerWidget {
   const NotificationIconButton({super.key});
 

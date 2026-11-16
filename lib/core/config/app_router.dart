@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../theme/app_colors.dart';
 import '../../providers/auth_provider.dart';
+import '../../screens/auth/forgot_password_screen.dart';
 import '../../screens/auth/login_screen.dart';
 import '../../screens/auth/register_screen.dart';
 import '../../screens/booking/booking_form_screen.dart';
@@ -14,7 +15,6 @@ import '../../screens/onboarding/onboarding_screen.dart';
 import '../../screens/place/place_detail_screen.dart';
 import '../../screens/place/place_form_screen.dart';
 
-/// Konfigurasi navigasi GoRouter.
 final appRouter = GoRouter(
   initialLocation: '/',
   routes: [
@@ -27,6 +27,10 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/register',
       builder: (context, state) => const RegisterScreen(),
+    ),
+    GoRoute(
+      path: '/forgot-password',
+      builder: (context, state) => const ForgotPasswordScreen(),
     ),
     GoRoute(path: '/home', builder: (context, state) => const MainShell()),
     GoRoute(
@@ -51,7 +55,6 @@ final appRouter = GoRouter(
   ],
 );
 
-/// Layar singkat yang menentukan rute awal berdasarkan status onboarding & token.
 class _SplashScreen extends ConsumerStatefulWidget {
   const _SplashScreen();
 
@@ -93,7 +96,6 @@ class _SplashScreenState extends ConsumerState<_SplashScreen> {
 
       if (mounted) context.go('/login');
     } catch (_) {
-      // Penyimpanan lokal tidak tersedia (mis. saat test): arahkan ke onboarding.
       if (mounted) context.go('/onboarding');
     }
   }

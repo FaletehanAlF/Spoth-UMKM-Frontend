@@ -11,11 +11,6 @@ import '../../widgets/spoth_app_bar.dart';
 import '../../widgets/place_grid_card.dart';
 import '../../widgets/shimmer_loading.dart';
 
-/// Home untuk role **Penyewa (TENANT)**:
-///
-/// - Headline + preview beberapa tempat (dari `GET /places`).
-/// - Tombol "Lihat Semua Tempat" menuju tab Tempat (katalog lengkap).
-/// - Akses notifikasi. Aksi CRUD tempat tidak tersedia untuk Penyewa.
 class TenantHomeScreen extends ConsumerWidget {
   const TenantHomeScreen({super.key});
 
@@ -24,11 +19,10 @@ class TenantHomeScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: AppColors.white,
       appBar: SpothAppBar(
-        centerTitle: true,
         title: const Text(
-          'SPOTH UMKM',
+          'Spoth UMKM',
           style: TextStyle(
-            color: AppColors.primaryOrange,
+            color: AppColors.darkText,
             fontSize: 18,
             fontWeight: FontWeight.w700,
           ),
@@ -46,7 +40,7 @@ class TenantHomeScreen extends ConsumerWidget {
             children: [
               Text(
                 'Temukan\nTempat Usahamu',
-                style: AppFonts.serif(
+                style: AppFonts.heading(
                   fontSize: 30,
                   weight: 600,
                   height: 1.15,
@@ -83,8 +77,6 @@ class TenantHomeScreen extends ConsumerWidget {
   }
 }
 
-/// Preview beberapa tempat (maks. 4) pada Beranda.
-/// Katalog lengkap (pencarian + filter) ada di tab Tempat.
 class _PlacePreviewGrid extends ConsumerWidget {
   const _PlacePreviewGrid();
 

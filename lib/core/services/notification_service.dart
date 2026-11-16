@@ -3,21 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/notification_model.dart';
 import 'api_service.dart';
 
-/// Provider global untuk [NotificationService].
 final notificationServiceProvider = Provider<NotificationService>((ref) {
   return NotificationService(ref.watch(apiServiceProvider));
 });
 
-/// Akses ke endpoint notifikasi backend SPOTH UMKM (semuanya butuh token):
-///
-/// - `GET    /notifications`          → daftar notifikasi milik pengguna
-/// - `GET    /notifications/summary`  → ringkasan `{ total, belum_dibaca }`
-/// - `PATCH  /notifications/:id/read` → tandai satu sudah dibaca
-/// - `POST   /notifications/read-all` → tandai semua sudah dibaca
-/// - `DELETE /notifications/:id`      → hapus satu notifikasi
-///
-/// Isi notifikasi dibuat otomatis oleh backend saat pemesanan/pembayaran
-/// terjadi — frontend tidak pernah membuat notifikasi palsu.
 class NotificationService {
   NotificationService(this._apiService);
 
@@ -35,7 +24,6 @@ class NotificationService {
     return query.isEmpty ? '' : '?$query';
   }
 
-  /// Daftar notifikasi milik pengguna yang sedang login (berpaginasi).
   Future<List<NotificationModel>> list({
     required String token,
     bool unreadOnly = false,
@@ -60,7 +48,6 @@ class NotificationService {
         .toList();
   }
 
-  /// Ringkasan jumlah notifikasi total dan belum dibaca (untuk badge).
   Future<NotificationSummaryModel> summary({required String token}) async {
     final body = await _apiService.get('/notifications/summary', token: token);
     final data = body['data'] as Map<String, dynamic>?;
@@ -73,17 +60,14 @@ class NotificationService {
     return NotificationSummaryModel.fromJson(ringkasan);
   }
 
-  /// Menandai satu notifikasi sebagai sudah dibaca.
   Future<void> markRead({required String token, required String id}) async {
     await _apiService.patch('/notifications/$id/read', {}, token: token);
   }
 
-  /// Menandai semua notifikasi sebagai sudah dibaca.
   Future<void> markAllRead({required String token}) async {
     await _apiService.post('/notifications/read-all', {}, token: token);
   }
 
-  /// Menghapus satu notifikasi milik pengguna yang sedang login.
   Future<void> delete({required String token, required String id}) async {
     await _apiService.delete('/notifications/$id', token: token);
   }

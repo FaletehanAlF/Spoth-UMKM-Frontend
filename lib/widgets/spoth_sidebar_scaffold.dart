@@ -4,15 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/nav_provider.dart';
 import 'spoth_sidebar.dart';
 
-/// Membungkus halaman dengan sidebar di layar lebar (Chrome/Edge/desktop
-/// >= 900 px), layar sempit (ponsel) mengembalikan [child] apa adanya.
-///
-/// Dipakai agar navigasi sidebar tetap terlihat saat pengguna membuka
-/// halaman yang di-push (mis. Form Tempat) — isi halaman tidak lagi
-/// menutupi navigasi utama.
-///
-/// Mengetuk menu sidebar saat halaman ini terbuka akan kembali ke shell
-/// utama pada tab yang dipilih.
 class SpothSidebarScaffold extends ConsumerWidget {
   const SpothSidebarScaffold({
     super.key,
@@ -20,10 +11,8 @@ class SpothSidebarScaffold extends ConsumerWidget {
     this.activeNavIndex = 1,
   });
 
-  /// Konten halaman (mis. form).
   final Widget child;
 
-  /// Index tab yang ditandai aktif di sidebar.
   final int activeNavIndex;
 
   @override

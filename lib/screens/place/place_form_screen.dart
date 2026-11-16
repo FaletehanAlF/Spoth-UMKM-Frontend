@@ -17,37 +17,19 @@ import '../../widgets/shimmer_loading.dart';
 import '../../widgets/spoth_app_bar.dart';
 import '../../widgets/spoth_sidebar_scaffold.dart';
 
-/// Satu item foto pada form tempat.
-///
-/// - Foto yang sudah tersimpan di backend: [url] terisi.
-/// - Foto baru yang dipilih dari galeri/kamera: [bytes] + [filename] terisi,
-///   belum diunggah sampai tombol Simpan ditekan.
 class _PhotoItem {
-  /// Foto yang sudah tersimpan di Cloudinary.
   _PhotoItem.existing({required this.url}) : bytes = null, filename = null;
 
-  /// Foto baru yang dipilih pengguna (disimpan di memori sementara).
   _PhotoItem.newLocal({required this.bytes, required this.filename})
     : url = null;
 
-  /// URL foto tersimpan; null untuk foto baru.
   final String? url;
 
-  /// Bytes foto baru; null untuk foto tersimpan.
   final Uint8List? bytes;
 
-  /// Nama file foto baru (dipakai saat upload ke backend).
   final String? filename;
 }
 
-/// Form tambah/ubah tempat usaha untuk Pemilik (HOST).
-///
-/// - Tanpa `placeId` → `POST /places` (tambah; status default AKTIF di backend).
-/// - Dengan `placeId` → memuat data lalu `PATCH /places/:id` (ubah;
-///   status ikut dikelola lewat switch).
-///
-/// Foto tempat dikelola lewat bagian "Foto Tempat": foto tersimpan dapat
-/// dihapus, dan foto baru diunggah ke `POST /uploads/photo` saat Simpan.
 class PlaceFormScreen extends ConsumerStatefulWidget {
   const PlaceFormScreen({super.key, this.placeId});
 
@@ -68,7 +50,6 @@ class _PlaceFormScreenState extends ConsumerState<PlaceFormScreen> {
   final _hargaNormalController = TextEditingController();
   final _hargaPromoController = TextEditingController();
 
-  // Batas yang sama dengan backend: 6 foto, 5 MB per foto.
   static const int _maxPhotos = 6;
   static const int _maxPhotoBytes = 5 * 1024 * 1024;
   static const List<String> _allowedExtensions = ['jpg', 'jpeg', 'png', 'webp'];
@@ -80,7 +61,6 @@ class _PlaceFormScreenState extends ConsumerState<PlaceFormScreen> {
   bool _submitting = false;
   String? _loadError;
 
-  /// Foto yang tampil di form (existing + baru, existing selalu di depan).
   final List<_PhotoItem> _photos = [];
   final ImagePicker _picker = ImagePicker();
 
@@ -137,7 +117,6 @@ class _PlaceFormScreenState extends ConsumerState<PlaceFormScreen> {
       _kategori = place.kategori;
       _tipeDurasi = place.tipeDurasi;
       _statusAktif = place.isAktif;
-      // Foto existing dipertahankan (urutannya tidak berubah).
       _photos
         ..clear()
         ..addAll(place.foto.map((url) => _PhotoItem.existing(url: url)));
@@ -161,13 +140,11 @@ class _PlaceFormScreenState extends ConsumerState<PlaceFormScreen> {
     return bersih.isEmpty ? null : double.tryParse(bersih);
   }
 
-  /// Menampilkan pesan singkat di bagian bawah layar.
   void _showSnack(String pesan) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(pesan)));
   }
 
-  /// Bottom sheet: pilih dari galeri atau kamera.
   Future<void> _showPickSheet() async {
     if (_photos.length >= _maxPhotos) {
       _showSnack('Maksimal $_maxPhotos foto.');
@@ -234,7 +211,6 @@ class _PlaceFormScreenState extends ConsumerState<PlaceFormScreen> {
     }
   }
 
-  /// Memilih foto, memvalidasi format & ukuran, lalu menambahkannya ke form.
   Future<void> _addPhotoFromSource(ImageSource source) async {
     try {
       final picked = await _picker.pickImage(
@@ -272,7 +248,6 @@ class _PlaceFormScreenState extends ConsumerState<PlaceFormScreen> {
     }
   }
 
-  /// Menghapus foto dari form (existing maupun baru).
   void _removePhoto(int index) {
     setState(() => _photos.removeAt(index));
   }
@@ -309,8 +284,6 @@ class _PlaceFormScreenState extends ConsumerState<PlaceFormScreen> {
       final token = ref.read(authNotifierProvider.select((s) => s.token));
       if (token == null) return;
 
-      // 1) Upload foto baru satu per satu. Urutan: foto existing dulu
-      //    (dipertahankan), lalu URL foto baru.
       final fotoUrls = <String>[
         for (final photo in _photos)
           if (photo.url != null) photo.url!,
@@ -329,13 +302,11 @@ class _PlaceFormScreenState extends ConsumerState<PlaceFormScreen> {
               );
           fotoUrls.add(result.secureUrl);
         } catch (_) {
-          // Upload gagal → batalkan simpan, foto di form tetap utuh.
           _showSnack('Gagal mengunggah foto. Coba lagi.');
           return;
         }
       }
 
-      // 2) Kirim array foto ke backend (menggantikan seluruh daftar foto).
       final payload = <String, dynamic>{
         'nama_tempat': _namaController.text.trim(),
         'kategori': _kategori,
@@ -345,19 +316,10 @@ class _PlaceFormScreenState extends ConsumerState<PlaceFormScreen> {
         'tipe_durasi': _tipeDurasi,
         if (_deskripsiController.text.trim().isNotEmpty)
           'deskripsi': _deskripsiController.text.trim(),
-        // Fasilitas dikirim sebagai string (boleh kosong) agar daftar
-        // fasilitas dapat dikosongkan; meng-omit key akan mempertahankan
-        // nilai lama di backend.
         'fasilitas': _fasilitasController.text.trim(),
         if (_aturanController.text.trim().isNotEmpty)
           'aturan': _aturanController.text.trim(),
-        // Foto: selalu kirim (termasuk array kosong bila semua dihapus saat
-        // mengedit) karena backend menggantikan seluruh daftar foto.
         'foto': fotoUrls,
-        // Saat mengedit: kirim eksplisit (termasuk null) agar promo dapat
-        // dihapus — skema update backend menerima `harga_promo: null`.
-        // Saat menambah: null di-omit (`?`) karena skema create backend
-        // tidak menerima null (hanya angka positif atau key tidak dikirim).
         if (_isEditing)
           'harga_promo': hargaPromo
         else
@@ -403,8 +365,6 @@ class _PlaceFormScreenState extends ConsumerState<PlaceFormScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Pembatasan akses: hanya Pemilik (HOST) yang boleh mengelola tempat.
-    // Penyewa tidak dapat menambah/mengubah tempat usaha.
     final bolehMengelola =
         ref.watch(authNotifierProvider).user?.role == UserModel.roleHost;
     if (!bolehMengelola) {
@@ -693,7 +653,6 @@ class _PlaceFormScreenState extends ConsumerState<PlaceFormScreen> {
   }
 }
 
-/// Thumbnail satu foto di form (foto tersimpan via network, foto baru via memory).
 class _PhotoThumb extends StatelessWidget {
   const _PhotoThumb({required this.photo, required this.onRemove});
 
@@ -747,7 +706,6 @@ class _PhotoThumb extends StatelessWidget {
   }
 }
 
-/// Tile "Tambah Foto" (slot terakhir pada grid).
 class _AddPhotoTile extends StatelessWidget {
   const _AddPhotoTile({required this.onTap});
 
@@ -781,7 +739,6 @@ class _AddPhotoTile extends StatelessWidget {
   }
 }
 
-/// Lencana kecil pada thumbnail (mis. "BARU").
 class _MiniBadge extends StatelessWidget {
   const _MiniBadge({required this.label});
 

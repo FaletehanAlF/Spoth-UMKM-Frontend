@@ -1,9 +1,3 @@
-// Smoke test dan uji layout responsif aplikasi SPOTH UMKM.
-//
-// Semua dependensi jaringan diganti dengan service palsu (fake) sehingga
-// `flutter test` TIDAK pernah mengirim request HTTP ke backend. Data yang
-// tampil di layar berasal dari fixture di file ini.
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -21,6 +15,7 @@ import 'package:spoth_umkm/models/notification_model.dart';
 import 'package:spoth_umkm/models/place_model.dart';
 import 'package:spoth_umkm/models/user_model.dart';
 import 'package:spoth_umkm/providers/auth_provider.dart';
+import 'package:spoth_umkm/screens/auth/forgot_password_screen.dart';
 import 'package:spoth_umkm/screens/auth/login_screen.dart';
 import 'package:spoth_umkm/screens/auth/register_screen.dart';
 import 'package:spoth_umkm/screens/home/home_screen.dart';
@@ -31,9 +26,6 @@ import 'package:spoth_umkm/screens/place/place_detail_screen.dart';
 import 'package:spoth_umkm/screens/place/tempat_screen.dart';
 import 'package:spoth_umkm/screens/place/place_form_screen.dart';
 
-/// Ukuran layar yang diuji (devicePixelRatio 1.0):
-/// smartphone kecil, standar, besar, tablet portrait,
-/// smartphone landscape, dan tablet landscape.
 const List<Size> _screenSizes = [
   Size(320, 480),
   Size(360, 800),
@@ -43,11 +35,6 @@ const List<Size> _screenSizes = [
   Size(1280, 800),
 ];
 
-// ---------------------------------------------------------------------------
-// Data fixture (bentuk JSON persis seperti respons backend).
-// ---------------------------------------------------------------------------
-
-/// Penyewa (TENANT) contoh.
 UserModel _tenantUser() => UserModel(
   id: '10',
   nama: 'Budi Santoso',
@@ -57,7 +44,6 @@ UserModel _tenantUser() => UserModel(
   createdAt: DateTime(2026, 1, 15),
 );
 
-/// User dengan role yang TIDAK dikenali backend (skenario error).
 UserModel _userRoleAneh() => UserModel(
   id: '30',
   nama: 'Ratu Aneh',
@@ -67,7 +53,6 @@ UserModel _userRoleAneh() => UserModel(
   createdAt: DateTime(2026, 3, 1),
 );
 
-/// Pemilik (HOST) contoh.
 UserModel _hostUser() => UserModel(
   id: '20',
   nama: 'Sari Dewi',
@@ -77,7 +62,6 @@ UserModel _hostUser() => UserModel(
   createdAt: DateTime(2026, 2, 10),
 );
 
-/// Tempat yang dilihat/dipilih Penyewa.
 const PlaceModel _tempatPenyewa1 = PlaceModel(
   id: '101',
   hostId: '20',
@@ -93,7 +77,6 @@ const PlaceModel _tempatPenyewa1 = PlaceModel(
   namaHost: 'Sari Dewi',
 );
 
-/// Tempat kedua untuk daftar Penyewa.
 const PlaceModel _tempatPenyewa2 = PlaceModel(
   id: '102',
   hostId: '20',
@@ -108,7 +91,6 @@ const PlaceModel _tempatPenyewa2 = PlaceModel(
   namaHost: 'Sari Dewi',
 );
 
-/// Detail tempat (memuat fasilitas, aturan, dan jadwal terpakai).
 PlaceModel _tempatDetail() => PlaceModel(
   id: '101',
   hostId: '20',
@@ -138,7 +120,6 @@ PlaceModel _tempatDetail() => PlaceModel(
   ],
 );
 
-/// Tempat milik Pemilik (HOST).
 const PlaceModel _tempatMilikHost = PlaceModel(
   id: '201',
   hostId: '20',
@@ -186,11 +167,6 @@ NotificationModel _notifikasi({
   createdAt: DateTime(2026, 11, 12, 9, 30),
 );
 
-// ---------------------------------------------------------------------------
-// Service & notifier palsu (tidak menyentuh jaringan sama sekali).
-// ---------------------------------------------------------------------------
-
-/// Auth palsu: selalu ter-authenticated dengan user yang diberikan.
 class _FakeAuthNotifier extends AuthNotifier {
   _FakeAuthNotifier(this._user);
 
@@ -204,18 +180,14 @@ class _FakeAuthNotifier extends AuthNotifier {
   );
 }
 
-/// Auth palsu: authenticated tetapi TANPA data user (role null).
 class _FakeAuthNoUserNotifier extends AuthNotifier {
   @override
   AuthState build() => const AuthState(status: AuthStatus.authenticated);
 }
 
-/// PlaceService palsu: mengembalikan data fixture.
 class _FakePlaceService extends PlaceService {
   _FakePlaceService() : super(ApiService());
 
-  /// Payload terakhir create/update — dipakai test untuk memeriksa
-  /// kontrak request (mis. harga promo null vs key di-omit).
   Map<String, dynamic>? lastCreatePayload;
   Map<String, dynamic>? lastUpdatePayload;
 
@@ -274,7 +246,6 @@ class _FakePlaceService extends PlaceService {
   }
 }
 
-/// UploadService palsu: mencatat jumlah upload, mengembalikan URL fixture.
 class _FakeUploadService extends UploadService {
   _FakeUploadService() : super(http.Client());
 
@@ -297,7 +268,6 @@ class _FakeUploadService extends UploadService {
   }
 }
 
-/// NotificationService palsu: mengembalikan data fixture.
 class _FakeNotificationService extends NotificationService {
   _FakeNotificationService() : super(ApiService());
 
@@ -325,7 +295,6 @@ class _FakeNotificationService extends NotificationService {
       const NotificationSummaryModel(total: 2, belumDibaca: 1);
 }
 
-/// BookingService palsu: mengembalikan riwayat fixture.
 class _FakeBookingService extends BookingService {
   _FakeBookingService() : super(ApiService());
 
@@ -350,7 +319,6 @@ class _FakeBookingService extends BookingService {
   ];
 }
 
-/// MaterialApp + ProviderScope dengan auth & service palsu (Penyewa).
 Widget _tenantApp(Widget home) => ProviderScope(
   overrides: [
     authNotifierProvider.overrideWith(() => _FakeAuthNotifier(_tenantUser())),
@@ -361,7 +329,6 @@ Widget _tenantApp(Widget home) => ProviderScope(
   child: MaterialApp(home: home),
 );
 
-/// MaterialApp + ProviderScope dengan auth & service palsu (Pemilik).
 Widget _hostApp(Widget home) => ProviderScope(
   overrides: [
     authNotifierProvider.overrideWith(() => _FakeAuthNotifier(_hostUser())),
@@ -372,12 +339,6 @@ Widget _hostApp(Widget home) => ProviderScope(
   child: MaterialApp(home: home),
 );
 
-// ---------------------------------------------------------------------------
-// Helper pump.
-// ---------------------------------------------------------------------------
-
-/// Mem-pump [create] pada setiap ukuran di [_screenSizes] dan memastikan
-/// tidak ada layout error (termasuk RenderFlex overflow).
 Future<void> _pumpOnAllSizes(
   WidgetTester tester,
   Widget Function() create,
@@ -400,8 +361,6 @@ Future<void> _pumpOnAllSizes(
   }
 }
 
-/// Mem-pump halaman dengan auth/service palsu pada satu ukuran layar
-/// (default 412x915). Set [host] `true` untuk skenario Pemilik.
 Future<void> _pumpSized(
   WidgetTester tester,
   Widget home, {
@@ -416,10 +375,6 @@ Future<void> _pumpSized(
   await tester.pumpAndSettle();
 }
 
-/// Mem-pump MaterialApp.router dengan service palsu Pemilik — dipakai test
-/// form tempat yang memanggil `context.pop` (butuh GoRouter) dan butuh
-/// akses ke [_FakePlaceService] untuk memeriksa payload yang dikirim.
-/// Set [fakeUpload] untuk juga mengganti UploadService.
 Future<void> _pumpFormRouter(
   WidgetTester tester, {
   required GoRouter router,
@@ -449,10 +404,6 @@ Future<void> _pumpFormRouter(
   await tester.pumpAndSettle();
 }
 
-// ---------------------------------------------------------------------------
-// Test.
-// ---------------------------------------------------------------------------
-
 void main() {
   testWidgets('App renders splash screen', (WidgetTester tester) async {
     await tester.pumpWidget(const ProviderScope(child: SpothApp()));
@@ -476,6 +427,142 @@ void main() {
       tester,
       () => ProviderScope(child: MaterialApp(home: const RegisterScreen())),
     );
+  });
+
+  testWidgets('Login: email dengan format salah menampilkan pesan error', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      const ProviderScope(child: MaterialApp(home: LoginScreen())),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextFormField).at(0), 'bukan-email');
+    await tester.enterText(find.byType(TextFormField).at(1), 'rahasia123');
+    await tester.tap(find.widgetWithText(ElevatedButton, 'Masuk'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Format email tidak valid'), findsOneWidget);
+  });
+
+  testWidgets('Login: tautan Daftar membuka halaman Register', (
+    WidgetTester tester,
+  ) async {
+    final router = GoRouter(
+      initialLocation: '/login',
+      routes: [
+        GoRoute(
+          path: '/login',
+          builder: (context, state) => const LoginScreen(),
+        ),
+        GoRoute(
+          path: '/register',
+          builder: (context, state) => const RegisterScreen(),
+        ),
+      ],
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(child: MaterialApp.router(routerConfig: router)),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.ensureVisible(find.text('Daftar'));
+    await tester.tap(find.text('Daftar'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Buat Akun Baru'), findsOneWidget);
+  });
+
+  testWidgets('Login: tautan Lupa Password membuka halaman lupa password', (
+    WidgetTester tester,
+  ) async {
+    final router = GoRouter(
+      initialLocation: '/login',
+      routes: [
+        GoRoute(
+          path: '/login',
+          builder: (context, state) => const LoginScreen(),
+        ),
+        GoRoute(
+          path: '/forgot-password',
+          builder: (context, state) => const ForgotPasswordScreen(),
+        ),
+      ],
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(child: MaterialApp.router(routerConfig: router)),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.ensureVisible(find.text('Lupa password?'));
+    await tester.tap(find.text('Lupa password?'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Lupa Password'), findsOneWidget);
+  });
+
+  testWidgets('Register: konfirmasi password harus sama', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      const ProviderScope(child: MaterialApp(home: RegisterScreen())),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextFormField).at(3), 'rahasia123');
+    await tester.enterText(find.byType(TextFormField).at(4), 'rahasia456');
+
+    final button = find.widgetWithText(ElevatedButton, 'Daftar');
+    await tester.ensureVisible(button);
+    await tester.tap(button);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Konfirmasi password tidak sama'), findsOneWidget);
+  });
+
+  testWidgets('Register: nomor telepon harus format Indonesia', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      const ProviderScope(child: MaterialApp(home: RegisterScreen())),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextFormField).at(2), '12345');
+
+    final button = find.widgetWithText(ElevatedButton, 'Daftar');
+    await tester.ensureVisible(button);
+    await tester.tap(button);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Gunakan format 08xxxxxxxxxx'), findsOneWidget);
+  });
+
+  testWidgets('Register: peran wajib dipilih sebelum daftar', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      const ProviderScope(child: MaterialApp(home: RegisterScreen())),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextFormField).at(0), 'Budi Santoso');
+    await tester.enterText(
+      find.byType(TextFormField).at(1),
+      'budi@contoh.test',
+    );
+    await tester.enterText(find.byType(TextFormField).at(2), '081234567890');
+    await tester.enterText(find.byType(TextFormField).at(3), 'rahasia123');
+    await tester.enterText(find.byType(TextFormField).at(4), 'rahasia123');
+
+    final button = find.widgetWithText(ElevatedButton, 'Daftar');
+    await tester.ensureVisible(button);
+    await tester.tap(button);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Pilih salah satu peran'), findsOneWidget);
   });
 
   testWidgets('Onboarding layout tanpa overflow pada semua ukuran layar', (
@@ -512,7 +599,6 @@ void main() {
 
     expect(find.textContaining('Tempat Usahamu'), findsOneWidget);
 
-    // Daftar tempat berasal dari service palsu (bukan data dummy UI).
     expect(find.text('Lapak Kuliner Baru'), findsOneWidget);
     expect(find.text('Booth Bazar Sekolah'), findsOneWidget);
   });
@@ -522,28 +608,22 @@ void main() {
     (WidgetTester tester) async {
       await _pumpSized(tester, const MainShell());
 
-      // Tab Tempat — katalog untuk Penyewa (pencarian + daftar).
       await tester.tap(find.text('Tempat'));
       await tester.pumpAndSettle();
       expect(find.text('Cari tempat, kota, atau lokasi...'), findsOneWidget);
       expect(find.text('Lapak Kuliner Baru'), findsOneWidget);
 
-      // Tab Booking — judul dan isi sesuai role Penyewa.
       await tester.tap(find.text('Booking'));
       await tester.pumpAndSettle();
       expect(find.text('Penyewaan Saya'), findsOneWidget);
-      // Jenis usaha tampil tergabung dengan kode booking pada setiap kartu.
       expect(find.textContaining('Warung Makan'), findsNWidgets(2));
       expect(find.text('Menunggu Bayar'), findsOneWidget);
 
-      // Tab Profil — data akun dari auth state.
       await tester.tap(find.text('Profil'));
       await tester.pumpAndSettle();
-      // Email tampil dua kali: di kartu kepala dan baris rincian Email.
       expect(find.text('budi@contoh.test'), findsNWidgets(2));
       expect(find.text('Keluar'), findsOneWidget);
 
-      // Kembali ke Beranda.
       await tester.tap(find.text('Beranda'));
       await tester.pumpAndSettle();
       expect(find.textContaining('Tempat Usahamu'), findsOneWidget);
@@ -555,14 +635,12 @@ void main() {
   ) async {
     await _pumpSized(tester, const HomeScreen(), host: true);
 
-    expect(find.text('SPOTH UMKM'), findsOneWidget);
+    expect(find.text('Spoth UMKM'), findsOneWidget);
 
-    // Ringkasan dashboard dari GET /places/mine/summary (fixture).
     expect(find.text('Total Tempat'), findsOneWidget);
     expect(find.text('Tempat Aktif'), findsOneWidget);
     expect(find.text('Rp 750.000'), findsOneWidget);
 
-    // Kartu ajakan ke tab Tempat — tombol tambah sudah dipindah ke tab Tempat.
     expect(find.text('Tempat Saya'), findsOneWidget);
     expect(find.text('Tambah Tempat'), findsNothing);
   });
@@ -576,6 +654,20 @@ void main() {
     expect(find.text('Tempat'), findsOneWidget);
     expect(find.text('Teras Dagang Pagi'), findsOneWidget);
     expect(find.text('Tambah Tempat'), findsOneWidget);
+  });
+
+  testWidgets('Tempat (pemilik) punya pencarian & filter status', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(_hostApp(const TempatScreen()));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Cari nama atau kota tempat...'), findsOneWidget);
+    expect(find.text('Semua'), findsOneWidget);
+    expect(find.text('Aktif'), findsOneWidget);
+    expect(find.text('Nonaktif'), findsOneWidget);
+
+    expect(find.text('1 tempat'), findsOneWidget);
   });
 
   testWidgets('Tempat (penyewa) menampilkan katalog tanpa tombol tambah', (
@@ -597,14 +689,12 @@ void main() {
 
     expect(find.byTooltip('Kembali'), findsOneWidget);
     expect(find.text('Lapak Kuliner Baru'), findsOneWidget);
-    // Indikator jumlah foto (fixture memuat 2 foto).
     expect(find.text('1 / 2'), findsOneWidget);
     expect(find.text('Fasilitas'), findsOneWidget);
     expect(find.text('Listrik'), findsOneWidget);
     expect(find.text('Kipas'), findsOneWidget);
     expect(find.text('Jadwal Sudah Dipesan'), findsOneWidget);
 
-    // CTA penyewaan khusus role Penyewa.
     expect(find.text('Sewa Tempat Ini'), findsOneWidget);
   });
 
@@ -633,11 +723,9 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Halaman error dengan tombol keluar (logout mekanisme yang sudah ada).
       expect(find.text('Role akun tidak dikenali'), findsOneWidget);
       expect(find.text('Keluar'), findsOneWidget);
 
-      // Konten Home Penyewa tidak ditampilkan.
       expect(find.text('Tempat Untuk Disewa'), findsNothing);
     },
   );
@@ -682,10 +770,8 @@ void main() {
       router.push('/place-form');
       await tester.pumpAndSettle();
 
-      // Form terisi dari data tempat (mode ubah).
       expect(find.text('Ubah Tempat'), findsOneWidget);
 
-      // Kosongkan harga promo dan fasilitas.
       await tester.enterText(
         find.widgetWithText(TextField, 'Harga Promo (Rp)'),
         '',
@@ -700,10 +786,8 @@ void main() {
 
       final payload = fakePlace.lastUpdatePayload;
       expect(payload, isNotNull);
-      // Key tetap dikirim dengan nilai null agar promo terhapus di backend.
       expect(payload!.containsKey('harga_promo'), isTrue);
       expect(payload['harga_promo'], isNull);
-      // Fasilitas dikirim sebagai string kosong (bukan key di-omit).
       expect(payload['fasilitas'], '');
       expect(payload['status'], 'AKTIF');
     },
@@ -733,7 +817,6 @@ void main() {
 
       expect(find.text('Tambah Tempat'), findsOneWidget);
 
-      // Isi field wajib.
       await tester.enterText(
         find.widgetWithText(TextField, 'Nama Tempat'),
         'Lapak Baru',
@@ -753,7 +836,6 @@ void main() {
 
       final payload = fakePlace.lastCreatePayload;
       expect(payload, isNotNull);
-      // Skema create backend tidak menerima null — key harus di-omit.
       expect(payload!.containsKey('harga_promo'), isFalse);
       expect(payload['fasilitas'], '');
     },
@@ -794,7 +876,6 @@ void main() {
     router.push('/place-form');
     await tester.pumpAndSettle();
 
-    // Dua foto existing dari fixture tampil dengan tombol hapus.
     expect(find.byIcon(Icons.close), findsNWidgets(2));
     await tester.tap(find.byIcon(Icons.close).first);
     await tester.pumpAndSettle();
@@ -805,7 +886,6 @@ void main() {
 
     final payload = fakePlace.lastUpdatePayload;
     expect(payload, isNotNull);
-    // Foto yang dihapus tidak dikirim; sisanya menjaga urutan.
     expect(payload!['foto'], ['https://cdn.example.test/b.jpg']);
   });
 

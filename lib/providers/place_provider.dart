@@ -5,7 +5,6 @@ import '../models/place_model.dart';
 import '../models/user_model.dart';
 import 'auth_provider.dart';
 
-/// State pencarian tempat untuk Penyewa (kata kunci + kategori aktif).
 class TenantSearchState {
   const TenantSearchState({this.keyword = '', this.kategori});
 
@@ -13,8 +12,6 @@ class TenantSearchState {
   final String? kategori;
 }
 
-/// Menyimpan filter pencarian. Perubahannya otomatis memuat ulang
-/// daftar tempat karena [TenantPlacesNotifier] mengawasi provider ini.
 class TenantSearchNotifier extends Notifier<TenantSearchState> {
   @override
   TenantSearchState build() => const TenantSearchState();
@@ -28,13 +25,11 @@ class TenantSearchNotifier extends Notifier<TenantSearchState> {
   }
 }
 
-/// Provider filter pencarian Penyewa.
 final tenantSearchProvider =
     NotifierProvider<TenantSearchNotifier, TenantSearchState>(
       TenantSearchNotifier.new,
     );
 
-/// Daftar tempat berstatus AKTIF untuk Penyewa (`GET /places`, publik).
 class TenantPlacesNotifier extends AsyncNotifier<List<PlaceModel>> {
   Future<List<PlaceModel>> _fetch() {
     final search = ref.read(tenantSearchProvider);
@@ -50,27 +45,49 @@ class TenantPlacesNotifier extends AsyncNotifier<List<PlaceModel>> {
 
   @override
   Future<List<PlaceModel>> build() async {
-    // Memuat ulang otomatis saat filter pencarian atau sesi berubah.
     ref.watch(tenantSearchProvider);
     ref.watch(authNotifierProvider.select((state) => state.token));
 
     return _fetch();
   }
 
-  /// Memuat ulang daftar secara manual (tarik-untuk-memuat).
   Future<void> refresh() async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(_fetch);
   }
 }
 
-/// Provider daftar tempat untuk Penyewa.
 final tenantPlacesProvider =
     AsyncNotifierProvider<TenantPlacesNotifier, List<PlaceModel>>(
       TenantPlacesNotifier.new,
     );
 
-/// Daftar tempat milik Host yang sedang login (`GET /places/mine`).
+class OwnerPlacesFilter {
+  const OwnerPlacesFilter({this.keyword = '', this.status});
+
+  final String keyword;
+
+  final String? status;
+}
+
+class OwnerPlacesFilterNotifier extends Notifier<OwnerPlacesFilter> {
+  @override
+  OwnerPlacesFilter build() => const OwnerPlacesFilter();
+
+  void setKeyword(String keyword) {
+    state = OwnerPlacesFilter(keyword: keyword, status: state.status);
+  }
+
+  void setStatus(String? status) {
+    state = OwnerPlacesFilter(keyword: state.keyword, status: status);
+  }
+}
+
+final ownerPlacesFilterProvider =
+    NotifierProvider<OwnerPlacesFilterNotifier, OwnerPlacesFilter>(
+      OwnerPlacesFilterNotifier.new,
+    );
+
 class MyPlacesNotifier extends AsyncNotifier<List<PlaceModel>> {
   Future<List<PlaceModel>> _fetch() {
     final token = ref.read(authNotifierProvider.select((state) => state.token));
@@ -79,13 +96,22 @@ class MyPlacesNotifier extends AsyncNotifier<List<PlaceModel>> {
       return Future.value(const <PlaceModel>[]);
     }
 
-    return ref.read(placeServiceProvider).getMyPlaces(token: token);
+    final filter = ref.read(ownerPlacesFilterProvider);
+
+    return ref
+        .read(placeServiceProvider)
+        .getMyPlaces(
+          token: token,
+          keyword: filter.keyword.trim().isEmpty ? null : filter.keyword.trim(),
+          status: filter.status,
+        );
   }
 
   @override
   Future<List<PlaceModel>> build() async {
-    // Hanya Host yang memuat daftar tempat miliknya (pembatasan role).
     ref.watch(authNotifierProvider.select((state) => state.user?.role));
+
+    ref.watch(ownerPlacesFilterProvider);
 
     final user = ref.read(authNotifierProvider.select((state) => state.user));
     if (user?.role != UserModel.roleHost) {
@@ -95,21 +121,17 @@ class MyPlacesNotifier extends AsyncNotifier<List<PlaceModel>> {
     return _fetch();
   }
 
-  /// Memuat ulang daftar tempat milik Host.
   Future<void> refresh() async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(_fetch);
   }
 }
 
-/// Provider daftar tempat milik Host.
 final myPlacesProvider =
     AsyncNotifierProvider<MyPlacesNotifier, List<PlaceModel>>(
       MyPlacesNotifier.new,
     );
 
-/// Ringkasan dashboard Host (`GET /places/mine/summary`).
-/// Bernilai `null` bila pengguna bukan Host (tidak memanggil API sama sekali).
 class HostSummaryNotifier extends AsyncNotifier<PlaceSummaryModel?> {
   Future<PlaceSummaryModel?> _fetch() async {
     final user = ref.read(authNotifierProvider.select((state) => state.user));
@@ -128,14 +150,12 @@ class HostSummaryNotifier extends AsyncNotifier<PlaceSummaryModel?> {
     return _fetch();
   }
 
-  /// Memuat ulang ringkasan dashboard.
   Future<void> refresh() async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(_fetch);
   }
 }
 
-/// Provider ringkasan dashboard Host.
 final hostSummaryProvider =
     AsyncNotifierProvider<HostSummaryNotifier, PlaceSummaryModel?>(
       HostSummaryNotifier.new,

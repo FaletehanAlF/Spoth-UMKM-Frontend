@@ -4,12 +4,6 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 import '../../models/notification_model.dart';
 
-/// Pembungkus `flutter_local_notifications` untuk menampilkan notifikasi
-/// perangkat saat aplikasi sedang aktif.
-///
-/// Catatan: aplikasi tujuan utama (SPOTH UMKM) berjalan di Android.
-/// Di Flutter Web, notifikasi lokal di-skip (web butuh Web Notification
-/// API yang berbeda) — event socket tetap memperbarui daftar & badge.
 class LocalNotificationService {
   LocalNotificationService._();
 
@@ -27,38 +21,31 @@ class LocalNotificationService {
     importance: Importance.high,
   );
 
-  /// Menyiapkan plugin + membuat channel Android + minta izin (Android 13+).
-  /// Aman dipanggil berkali-kali; hanya menjalankan sekali.
   Future<void> init() async {
     if (_initialized || kIsWeb) {
       return;
     }
 
     try {
-      // Icon kecil notifikasi (memakai mipmap launcher yang sudah ada).
       const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
       const initSettings = InitializationSettings(android: androidInit);
 
       await _plugin.initialize(settings: initSettings);
 
-      // Channel Android 8+ (wajib dibuat sebelum notifikasi ditampilkan).
       final android = _plugin
           .resolvePlatformSpecificImplementation<
             AndroidFlutterLocalNotificationsPlugin
           >();
       await android?.createNotificationChannel(_channel);
 
-      // Izin POST_NOTIFICATIONS pada Android 13+.
       await android?.requestNotificationsPermission();
 
       _initialized = true;
     } catch (error) {
-      // Notifikasi lokal tidak boleh membuat aplikasi crash.
       debugPrint('Gagal menyiapkan notifikasi lokal: $error');
     }
   }
 
-  /// Menampilkan notifikasi perangkat dari notifikasi backend.
   Future<void> showFromNotification(NotificationModel notification) async {
     if (kIsWeb) {
       return;

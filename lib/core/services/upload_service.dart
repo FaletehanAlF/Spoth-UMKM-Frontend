@@ -7,43 +7,25 @@ import 'package:http/http.dart' as http;
 import '../config/app_config.dart';
 import 'api_service.dart';
 
-/// Provider global untuk [UploadService].
-///
-/// Dipisah agar mudah di-mock/override saat testing (sama seperti service lain).
 final uploadServiceProvider = Provider<UploadService>((ref) {
   return UploadService(http.Client());
 });
 
-/// Hasil sukses upload foto ke endpoint `POST /uploads/photo`.
 class UploadResult {
   const UploadResult({required this.secureUrl, this.publicId});
 
-  /// URL gambar yang sudah tersimpan di Cloudinary (dikirim ke backend).
   final String secureUrl;
 
-  /// `public_id` gambar di Cloudinary (berguna bila kelak ada hapus foto).
   final String? publicId;
 }
 
-/// Akses ke endpoint upload foto backend SPOTH UMKM:
-///
-/// - `POST /api/uploads/photo` → butuh token HOST.
-/// - Content-Type: multipart/form-data, field `foto` (satu file gambar).
-/// - Format: JPG, JPEG, PNG, WEBP. Ukuran maksimal: 5 MB.
-/// - Respons: `data: { secure_url, public_id }` (lihat `upload.controller.ts`).
-///
-/// Service ini sengaja tidak menyentuh [ApiService] inti karena endpoint-nya
-/// memakai multipart/form-data, bukan JSON.
 class UploadService {
   UploadService(this._client);
 
   final http.Client _client;
 
-  /// Batas waktu maksimum untuk satu request upload (upload bisa lebih lama
-  /// daripada request biasa).
   static const Duration _timeout = Duration(seconds: 60);
 
-  /// Tipe konten yang diizinkan backend (harus konsisten dengan multer).
   static const Map<String, String> _mimeTypes = {
     '.jpg': 'image/jpeg',
     '.jpeg': 'image/jpeg',
@@ -51,7 +33,6 @@ class UploadService {
     '.webp': 'image/webp',
   };
 
-  /// Menebak MIME type dari ekstensi nama file.
   static String mimeTypeFor(String filename) {
     final titik = filename.lastIndexOf('.');
     if (titik < 0) {
@@ -61,10 +42,6 @@ class UploadService {
         'application/octet-stream';
   }
 
-  /// Mengunggah satu foto tempat.
-  ///
-  /// Backend meneruskan file ke Cloudinary (file tidak disimpan backend),
-  /// lalu mengembalikan `secure_url` untuk disimpan di data tempat.
   Future<UploadResult> uploadPhoto({
     required String token,
     required String filename,

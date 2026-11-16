@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../core/theme/app_colors.dart';
 
-/// Tombol utama dengan animasi scale saat ditekan dan dukungan loading.
 class PrimaryButton extends StatefulWidget {
   const PrimaryButton({
     super.key,
@@ -10,12 +9,16 @@ class PrimaryButton extends StatefulWidget {
     required this.onPressed,
     this.isLoading = false,
     this.enabled = true,
+    this.height = 48,
+    this.borderRadius = 12,
   });
 
   final String label;
   final VoidCallback? onPressed;
   final bool isLoading;
   final bool enabled;
+  final double height;
+  final double borderRadius;
 
   @override
   State<PrimaryButton> createState() => _PrimaryButtonState();
@@ -38,8 +41,13 @@ class _PrimaryButtonState extends State<PrimaryButton> {
         duration: const Duration(milliseconds: 100),
         child: SizedBox(
           width: double.infinity,
-          height: 48,
+          height: widget.height,
           child: ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(widget.borderRadius),
+              ),
+            ),
             onPressed: disabled ? null : widget.onPressed,
             child: widget.isLoading
                 ? const SizedBox(

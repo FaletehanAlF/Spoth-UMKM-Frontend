@@ -17,16 +17,6 @@ import '../../widgets/shimmer_loading.dart';
 import '../../widgets/spoth_app_bar.dart';
 import '../../widgets/spoth_sidebar_scaffold.dart';
 
-/// Form pemesanan tempat untuk **Penyewa (TENANT)**.
-///
-/// Alur sesuai backend:
-/// 1. Penyewa memilih tanggal mulai, lama sewa, dan jenis usaha.
-/// 2. "Cek Pratinjau Biaya" → `GET /bookings/preview-price` (mencakup
-///    pemeriksaan bentrok jadwal oleh server).
-/// 3. "Buat Pemesanan" → `POST /bookings`; backend yang menghitung total,
-///    membuat notifikasi, dan mengembalikan status MENUNGGU_PEMBAYARAN.
-///
-/// Hanya dapat diakses Penyewa — role lain melihat pesan pembatasan.
 class BookingFormScreen extends ConsumerStatefulWidget {
   const BookingFormScreen({super.key, required this.placeId});
 
@@ -176,7 +166,6 @@ class _BookingFormScreenState extends ConsumerState<BookingFormScreen> {
             },
           );
 
-      // Daftar penyewaan diperbarui agar tab Booking menampilkan data terbaru.
       await ref.read(bookingsProvider.notifier).refresh();
 
       if (!mounted) return;
@@ -188,7 +177,6 @@ class _BookingFormScreenState extends ConsumerState<BookingFormScreen> {
         ),
       );
 
-      // Arahkan ke tab Booking.
       ref.read(mainNavIndexProvider.notifier).setTab(2);
       context.go('/home');
     } catch (_) {
@@ -365,7 +353,6 @@ class _BookingFormScreenState extends ConsumerState<BookingFormScreen> {
   }
 }
 
-/// Kartu hasil pratinjau biaya dari backend.
 class _PreviewCard extends StatelessWidget {
   const _PreviewCard({required this.preview});
 
