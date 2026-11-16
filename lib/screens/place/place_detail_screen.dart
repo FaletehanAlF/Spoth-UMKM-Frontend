@@ -12,6 +12,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/place_provider.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/shimmer_loading.dart';
+import '../../widgets/spoth_app_bar.dart';
 import '../../widgets/spoth_sidebar_scaffold.dart';
 
 class PlaceDetailScreen extends ConsumerStatefulWidget {
@@ -190,6 +191,7 @@ class _PlaceDetailScreenState extends ConsumerState<PlaceDetailScreen> {
 
     final page = Scaffold(
       backgroundColor: AppColors.white,
+      appBar: const SpothAppBar(title: Text('Detail Tempat')),
       body: _loading
           ? const SingleChildScrollView(child: DetailSkeleton())
           : _error != null
@@ -259,8 +261,6 @@ class _DetailScrollView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final topInset = MediaQuery.paddingOf(context).top;
-
     return LayoutBuilder(
       builder: (context, constraints) {
         const paddingSamping = 20.0;
@@ -275,11 +275,9 @@ class _DetailScrollView extends StatelessWidget {
         final gallery = _HeroGallery(
           place: place,
           fotoIndex: fotoIndex,
-          topInset: duaKolom ? 0 : topInset,
           lebar: lebarKolom,
           tinggi: tinggiHero,
           onFotoChanged: onFotoChanged,
-          showChrome: !duaKolom,
         );
 
         return RefreshIndicator(
@@ -292,34 +290,9 @@ class _DetailScrollView extends StatelessWidget {
               children: [
                 if (duaKolom)
                   Padding(
-                    padding: EdgeInsets.fromLTRB(
-                      paddingSamping,
-                      topInset + 12,
-                      paddingSamping,
-                      14,
-                    ),
-                    child: _TopBar(
-                      fotoIndex: fotoIndex,
-                      jumlahFoto: place.foto.length,
-                    ),
-                  )
-                else ...[
-                  gallery,
-                  Transform.translate(
-                    offset: const Offset(0, -22),
-                    child: Center(
-                      child: ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 720),
-                        child: _DetailSheet(place: place),
-                      ),
-                    ),
-                  ),
-                ],
-                if (duaKolom)
-                  Padding(
                     padding: const EdgeInsets.fromLTRB(
                       paddingSamping,
-                      0,
+                      12,
                       paddingSamping,
                       28,
                     ),
@@ -334,7 +307,19 @@ class _DetailScrollView extends StatelessWidget {
                         ),
                       ],
                     ),
+                  )
+                else ...[
+                  gallery,
+                  Transform.translate(
+                    offset: const Offset(0, -22),
+                    child: Center(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 720),
+                        child: _DetailSheet(place: place),
+                      ),
+                    ),
                   ),
+                ],
               ],
             ),
           ),
@@ -344,62 +329,20 @@ class _DetailScrollView extends StatelessWidget {
   }
 }
 
-class _TopBar extends StatelessWidget {
-  const _TopBar({required this.fotoIndex, required this.jumlahFoto});
-
-  final int fotoIndex;
-  final int jumlahFoto;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        _CircleButton(
-          icon: Icons.arrow_back,
-          tooltip: 'Kembali',
-          onPressed: () => Navigator.of(context).maybePop(),
-        ),
-        const Spacer(),
-        if (jumlahFoto > 1)
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            decoration: BoxDecoration(
-              color: AppColors.lightOrange,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.softBorder),
-            ),
-            child: Text(
-              '$fotoIndex / $jumlahFoto',
-              style: const TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: AppColors.charcoal,
-              ),
-            ),
-          ),
-      ],
-    );
-  }
-}
-
 class _HeroGallery extends StatelessWidget {
   const _HeroGallery({
     required this.place,
     required this.fotoIndex,
-    required this.topInset,
     required this.lebar,
     required this.tinggi,
     required this.onFotoChanged,
-    this.showChrome = true,
   });
 
   final PlaceModel place;
   final int fotoIndex;
-  final double topInset;
   final double lebar;
   final double tinggi;
   final ValueChanged<int> onFotoChanged;
-  final bool showChrome;
 
   @override
   Widget build(BuildContext context) {
@@ -422,20 +365,6 @@ class _HeroGallery extends StatelessWidget {
                   errorBuilder: (_, _, _) => const _HeroPlaceholder(),
                 )
               : const _HeroPlaceholder(),
-          const DecoratedBox(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Color(0x66000000),
-                  Color(0x00000000),
-                  Color(0x4D000000),
-                ],
-                stops: [0, 0.42, 1],
-              ),
-            ),
-          ),
           if (adaNavigasi)
             GestureDetector(
               behavior: HitTestBehavior.translucent,
@@ -458,18 +387,7 @@ class _HeroGallery extends StatelessWidget {
                 ),
               ),
             ),
-          Positioned(
-            top: topInset + 12,
-            left: 16,
-            child: showChrome
-                ? _CircleButton(
-                    icon: Icons.arrow_back,
-                    tooltip: 'Kembali',
-                    onPressed: () => Navigator.of(context).maybePop(),
-                  )
-                : const SizedBox.shrink(),
-          ),
-          if (adaNavigasi && showChrome)
+          if (adaNavigasi)
             Positioned(
               bottom: 36,
               right: 16,
@@ -510,7 +428,7 @@ class _GalleryCue extends StatelessWidget {
         width: 32,
         height: 32,
         decoration: BoxDecoration(
-          color: Colors.black.withValues(alpha: 0.28),
+          color: Colors.black.withValues(alpha: 0.45),
           shape: BoxShape.circle,
         ),
         child: Icon(icon, size: 20, color: AppColors.white),
@@ -528,38 +446,6 @@ class _HeroPlaceholder extends StatelessWidget {
       color: AppColors.lightOrange,
       child: Center(
         child: Icon(Icons.storefront, size: 64, color: AppColors.primaryOrange),
-      ),
-    );
-  }
-}
-
-class _CircleButton extends StatelessWidget {
-  const _CircleButton({
-    required this.icon,
-    required this.tooltip,
-    required this.onPressed,
-  });
-
-  final IconData icon;
-  final String tooltip;
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    return Tooltip(
-      message: tooltip,
-      child: Material(
-        color: Colors.white.withValues(alpha: 0.92),
-        shape: const CircleBorder(),
-        child: InkWell(
-          customBorder: const CircleBorder(),
-          onTap: onPressed,
-          child: SizedBox(
-            width: 44,
-            height: 44,
-            child: Icon(icon, size: 21, color: AppColors.charcoal),
-          ),
-        ),
       ),
     );
   }
@@ -1194,7 +1080,16 @@ class _ActionBar extends StatelessWidget {
     final bottomInset = MediaQuery.paddingOf(context).bottom;
 
     Widget content;
-    if (isTenant) {
+    if (isOwner) {
+      content = SizedBox(
+        width: double.infinity,
+        child: ElevatedButton.icon(
+          onPressed: acting ? null : () => _showKelolaSheet(context),
+          icon: const Icon(Icons.tune),
+          label: Text(acting ? 'Memproses...' : 'Kelola Tempat'),
+        ),
+      );
+    } else if (isTenant) {
       if (place.isAktif) {
         content = SizedBox(
           width: double.infinity,
@@ -1223,43 +1118,23 @@ class _ActionBar extends StatelessWidget {
           ),
         );
       }
-    } else if (isOwner) {
+    } else {
       content = Row(
-        children: [
+        children: const [
+          Icon(Icons.info_outline, size: 18, color: AppColors.secondaryText),
+          SizedBox(width: 10),
           Expanded(
-            child: OutlinedButton.icon(
-              onPressed: acting ? null : onToggleStatus,
-              icon: Icon(
-                place.isAktif
-                    ? Icons.visibility_off_outlined
-                    : Icons.visibility_outlined,
-                size: 18,
+            child: Text(
+              'Tempat ini dikelola oleh akun lain.',
+              style: TextStyle(
+                fontSize: 13.5,
+                height: 1.4,
+                color: AppColors.secondaryText,
               ),
-              label: _ButtonLabel(
-                place.isAktif ? 'Nonaktifkan' : 'Aktifkan',
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: OutlinedButton.icon(
-              onPressed: acting ? null : onDelete,
-              icon: const Icon(Icons.delete_outline, size: 18),
-              label: const _ButtonLabel('Hapus'),
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: ElevatedButton.icon(
-              onPressed: acting ? null : onEdit,
-              icon: const Icon(Icons.edit_outlined, size: 18),
-              label: const _ButtonLabel('Edit'),
             ),
           ),
         ],
       );
-    } else {
-      content = const SizedBox.shrink();
     }
 
     return Container(
@@ -1276,18 +1151,178 @@ class _ActionBar extends StatelessWidget {
       ),
     );
   }
+
+  Future<void> _showKelolaSheet(BuildContext context) async {
+    final pilih = await showModalBottomSheet<_AksiKelola>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) => _KelolaSheet(place: place),
+    );
+
+    if (pilih == null) return;
+
+    switch (pilih) {
+      case _AksiKelola.ubah:
+        onEdit();
+      case _AksiKelola.ubahStatus:
+        onToggleStatus();
+      case _AksiKelola.hapus:
+        onDelete();
+    }
+  }
 }
 
-class _ButtonLabel extends StatelessWidget {
-  const _ButtonLabel(this.label);
+enum _AksiKelola { ubah, ubahStatus, hapus }
 
-  final String label;
+class _KelolaSheet extends StatelessWidget {
+  const _KelolaSheet({required this.place});
+
+  final PlaceModel place;
 
   @override
   Widget build(BuildContext context) {
-    return FittedBox(
-      fit: BoxFit.scaleDown,
-      child: Text(label, style: const TextStyle(fontSize: 12.5)),
+    return Container(
+      decoration: const BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      padding: EdgeInsets.fromLTRB(
+        20,
+        10,
+        20,
+        20 + MediaQuery.paddingOf(context).bottom,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Center(
+            child: Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: AppColors.softBorder,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Kelola Tempat',
+            style: AppFonts.heading(
+              fontSize: 20,
+              weight: 600,
+              color: AppColors.charcoal,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            place.namaTempat,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              fontSize: 13,
+              color: AppColors.secondaryText,
+            ),
+          ),
+          const SizedBox(height: 10),
+          _KelolaAction(
+            icon: Icons.edit_outlined,
+            label: 'Ubah Data Tempat',
+            keterangan: 'Ubah nama, harga, foto, dan keterangan tempat',
+            onTap: () => Navigator.of(context).pop(_AksiKelola.ubah),
+          ),
+          _KelolaAction(
+            icon: place.isAktif
+                ? Icons.visibility_off_outlined
+                : Icons.visibility_outlined,
+            label: place.isAktif ? 'Nonaktifkan Tempat' : 'Aktifkan Tempat',
+            keterangan: place.isAktif
+                ? 'Tempat tidak akan tampil untuk disewa'
+                : 'Tempat kembali tampil untuk disewa',
+            onTap: () => Navigator.of(context).pop(_AksiKelola.ubahStatus),
+          ),
+          _KelolaAction(
+            icon: Icons.delete_outline,
+            label: 'Hapus Tempat',
+            keterangan: 'Tempat yang dihapus tidak dapat dikembalikan',
+            warna: AppColors.primaryOrange,
+            onTap: () => Navigator.of(context).pop(_AksiKelola.hapus),
+          ),
+          const SizedBox(height: 6),
+          SizedBox(
+            width: double.infinity,
+            child: TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Batal'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _KelolaAction extends StatelessWidget {
+  const _KelolaAction({
+    required this.icon,
+    required this.label,
+    required this.keterangan,
+    required this.onTap,
+    this.warna = AppColors.charcoal,
+  });
+
+  final IconData icon;
+  final String label;
+  final String keterangan;
+  final VoidCallback onTap;
+  final Color warna;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: AppColors.white,
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(14),
+        onTap: onTap,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 56),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+            child: Row(
+              children: [
+                Icon(icon, size: 20, color: warna),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        label,
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: warna,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        keterangan,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          height: 1.35,
+                          color: AppColors.secondaryText,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
