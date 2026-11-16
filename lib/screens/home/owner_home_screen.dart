@@ -2,19 +2,25 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_fonts.dart';
 import '../../core/utils/format.dart';
+import '../../providers/auth_provider.dart';
 import '../../providers/nav_provider.dart';
 import '../../providers/place_provider.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/notification_icon.dart';
-import '../../widgets/spoth_app_bar.dart';
 import '../../widgets/shimmer_loading.dart';
+import '../../widgets/spoth_app_bar.dart';
 
 class OwnerHomeScreen extends ConsumerWidget {
   const OwnerHomeScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final sapaan = namaDepan(
+      ref.watch(authNotifierProvider.select((state) => state.user?.nama)),
+    );
+
     return Scaffold(
       backgroundColor: AppColors.white,
       appBar: SpothAppBar(
@@ -36,12 +42,33 @@ class OwnerHomeScreen extends ConsumerWidget {
         },
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              if (sapaan != null) ...[
+                Text(
+                  'Halo, $sapaan',
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: AppColors.secondaryText,
+                  ),
+                ),
+                const SizedBox(height: 6),
+              ],
+              Text(
+                'Ringkasan Usaha',
+                style: AppFonts.heading(
+                  fontSize: 26,
+                  weight: 600,
+                  height: 1.15,
+                  letterSpacing: -0.4,
+                  color: AppColors.charcoal,
+                ),
+              ),
+              const SizedBox(height: 16),
               const _SummarySection(),
-              const SizedBox(height: 18),
+              const SizedBox(height: 16),
               _ManagePlacesCard(
                 onTap: () => ref.read(mainNavIndexProvider.notifier).setTab(1),
               ),
@@ -61,19 +88,27 @@ class _ManagePlacesCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: AppColors.lightOrange,
+      color: AppColors.white,
       borderRadius: BorderRadius.circular(18),
       child: InkWell(
         borderRadius: BorderRadius.circular(18),
         onTap: onTap,
-        child: const Padding(
-          padding: EdgeInsets.all(16),
-          child: Row(
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: AppColors.softBorder),
+          ),
+          child: const Row(
             children: [
               CircleAvatar(
-                radius: 26,
-                backgroundColor: AppColors.primaryOrange,
-                child: Icon(Icons.storefront, color: AppColors.white, size: 24),
+                radius: 24,
+                backgroundColor: AppColors.lightOrange,
+                child: Icon(
+                  Icons.storefront,
+                  color: AppColors.primaryOrange,
+                  size: 22,
+                ),
               ),
               SizedBox(width: 14),
               Expanded(
@@ -88,18 +123,19 @@ class _ManagePlacesCard extends StatelessWidget {
                         color: AppColors.charcoal,
                       ),
                     ),
-                    SizedBox(height: 2),
+                    SizedBox(height: 3),
                     Text(
                       'Lihat, edit, dan kelola semua tempat usaha Anda',
                       style: TextStyle(
                         fontSize: 12,
+                        height: 1.35,
                         color: AppColors.secondaryText,
                       ),
                     ),
                   ],
                 ),
               ),
-              Icon(Icons.chevron_right, color: AppColors.charcoal),
+              Icon(Icons.chevron_right, color: AppColors.secondaryText),
             ],
           ),
         ),
@@ -116,14 +152,12 @@ class _SummarySection extends ConsumerWidget {
     final summary = ref.watch(hostSummaryProvider);
 
     return summary.when(
-      loading: () => const Padding(
-        padding: EdgeInsets.symmetric(vertical: 4),
-        child: SummarySkeleton(),
-      ),
+      loading: () => const SummarySkeleton(),
       error: (error, _) => EmptyState(
         icon: Icons.error_outline,
         title: 'Gagal memuat ringkasan',
-        message: 'Periksa koneksi internet Anda lalu tarik ke bawah untuk mencoba lagi.',
+        message:
+            'Periksa koneksi internet Anda lalu tarik ke bawah untuk mencoba lagi.',
       ),
       data: (value) {
         if (value == null) {
@@ -132,41 +166,27 @@ class _SummarySection extends ConsumerWidget {
 
         return Column(
           children: [
+            _RevenueCard(
+              pendapatan: value.totalPendapatan,
+              menungguBayar: value.pemesananMenunggu,
+              lunas: value.pemesananLunas,
+            ),
+            const SizedBox(height: 12),
             Row(
               children: [
                 Expanded(
-                  child: _SummaryCard(
+                  child: _StatCard(
                     icon: Icons.storefront,
                     label: 'Total Tempat',
                     value: '${value.totalTempat}',
                   ),
                 ),
-                const SizedBox(width: 10),
+                const SizedBox(width: 12),
                 Expanded(
-                  child: _SummaryCard(
+                  child: _StatCard(
                     icon: Icons.check_circle_outline,
                     label: 'Tempat Aktif',
                     value: '${value.tempatAktif}',
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                Expanded(
-                  child: _SummaryCard(
-                    icon: Icons.hourglass_top,
-                    label: 'Menunggu Bayar',
-                    value: '${value.pemesananMenunggu}',
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: _SummaryCard(
-                    icon: Icons.payments_outlined,
-                    label: 'Pendapatan',
-                    value: formatRupiah(value.totalPendapatan),
                   ),
                 ),
               ],
@@ -178,8 +198,122 @@ class _SummarySection extends ConsumerWidget {
   }
 }
 
-class _SummaryCard extends StatelessWidget {
-  const _SummaryCard({
+class _RevenueCard extends StatelessWidget {
+  const _RevenueCard({
+    required this.pendapatan,
+    required this.menungguBayar,
+    required this.lunas,
+  });
+
+  final double pendapatan;
+  final int menungguBayar;
+  final int lunas;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: AppColors.charcoal,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(
+                Icons.payments_outlined,
+                size: 17,
+                color: AppColors.primaryOrange,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Pendapatan',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.white.withValues(alpha: 0.72),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              formatRupiah(pendapatan),
+              style: AppFonts.heading(
+                fontSize: 28,
+                weight: 700,
+                letterSpacing: -0.6,
+                color: AppColors.white,
+              ),
+            ),
+          ),
+          const SizedBox(height: 14),
+          Container(
+            height: 1,
+            color: AppColors.white.withValues(alpha: 0.14),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: _RevenueFact(
+                  label: 'Menunggu Bayar',
+                  value: '$menungguBayar',
+                ),
+              ),
+              Expanded(
+                child: _RevenueFact(label: 'Lunas', value: '$lunas'),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RevenueFact extends StatelessWidget {
+  const _RevenueFact({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          value,
+          style: const TextStyle(
+            fontSize: 17,
+            fontWeight: FontWeight.w700,
+            color: AppColors.white,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            fontSize: 11.5,
+            color: AppColors.white.withValues(alpha: 0.72),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _StatCard extends StatelessWidget {
+  const _StatCard({
     required this.icon,
     required this.label,
     required this.value,
@@ -192,18 +326,11 @@ class _SummaryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: AppColors.white,
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: AppColors.softBorder),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
-          ),
-        ],
       ),
       child: Row(
         children: [
@@ -227,7 +354,7 @@ class _SummaryCard extends StatelessWidget {
                   child: Text(
                     value,
                     style: const TextStyle(
-                      fontSize: 17,
+                      fontSize: 18,
                       fontWeight: FontWeight.w700,
                       color: AppColors.charcoal,
                     ),
@@ -239,7 +366,7 @@ class _SummaryCard extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
-                    fontSize: 11,
+                    fontSize: 11.5,
                     color: AppColors.secondaryText,
                   ),
                 ),

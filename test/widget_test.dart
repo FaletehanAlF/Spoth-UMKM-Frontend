@@ -15,6 +15,7 @@ import 'package:spoth_umkm/models/notification_model.dart';
 import 'package:spoth_umkm/models/place_model.dart';
 import 'package:spoth_umkm/models/user_model.dart';
 import 'package:spoth_umkm/providers/auth_provider.dart';
+import 'package:spoth_umkm/providers/nav_provider.dart';
 import 'package:spoth_umkm/screens/auth/forgot_password_screen.dart';
 import 'package:spoth_umkm/screens/auth/login_screen.dart';
 import 'package:spoth_umkm/screens/auth/register_screen.dart';
@@ -598,6 +599,8 @@ void main() {
     await _pumpSized(tester, const HomeScreen());
 
     expect(find.textContaining('Tempat Usahamu'), findsOneWidget);
+    expect(find.textContaining('Cari tempat, kota, atau lokasi'), findsOneWidget);
+    expect(find.textContaining('Lihat Semua'), findsOneWidget);
 
     expect(find.text('Lapak Kuliner Baru'), findsOneWidget);
     expect(find.text('Booth Bazar Sekolah'), findsOneWidget);
@@ -924,5 +927,127 @@ void main() {
     final payload = fakePlace.lastUpdatePayload;
     expect(payload, isNotNull);
     expect(payload!['foto'], isEmpty);
+  });
+
+  testWidgets(
+    'Detail tempat tanpa overflow pada semua ukuran layar',
+    (WidgetTester tester) async {
+      await _pumpOnAllSizes(
+        tester,
+        () => _tenantApp(const PlaceDetailScreen(placeId: '101')),
+      );
+    },
+  );
+
+  testWidgets('Detail tempat menampilkan sapaan lokasi, host, dan aturan', (
+    WidgetTester tester,
+  ) async {
+    await _pumpSized(tester, const PlaceDetailScreen(placeId: '101'));
+
+    expect(find.byTooltip('Kembali'), findsOneWidget);
+    expect(find.text('Lapak Kuliner Baru'), findsOneWidget);
+    expect(find.text('1 / 2'), findsOneWidget);
+    expect(find.text('Jl. Merdeka 12, Bandung'), findsOneWidget);
+    expect(find.text('Sari Dewi'), findsOneWidget);
+    expect(find.text('Pemilik tempat'), findsOneWidget);
+    expect(find.text('Deskripsi'), findsOneWidget);
+    expect(find.text('Fasilitas'), findsOneWidget);
+    expect(find.text('Listrik'), findsOneWidget);
+    expect(find.text('Kipas'), findsOneWidget);
+    expect(find.text('Aturan'), findsOneWidget);
+    expect(find.text('Jadwal Sudah Dipesan'), findsOneWidget);
+    expect(find.text('Sewa Tempat Ini'), findsOneWidget);
+  });
+
+  testWidgets('Detail tempat: ketuk sisi kanan foto memajukan galeri', (
+    WidgetTester tester,
+  ) async {
+    await _pumpSized(tester, const PlaceDetailScreen(placeId: '101'));
+
+    expect(find.text('1 / 2'), findsOneWidget);
+
+    await tester.tapAt(const Offset(340, 180));
+    await tester.pumpAndSettle();
+
+    expect(find.text('2 / 2'), findsOneWidget);
+
+    await tester.tapAt(const Offset(340, 180));
+    await tester.pumpAndSettle();
+
+    expect(find.text('1 / 2'), findsOneWidget);
+  });
+
+  testWidgets('Detail tempat untuk pemilik menampilkan aksi kelola', (
+    WidgetTester tester,
+  ) async {
+    await _pumpSized(
+      tester,
+      const PlaceDetailScreen(placeId: '101'),
+      host: true,
+    );
+
+    expect(find.text('Nonaktifkan'), findsOneWidget);
+    expect(find.text('Hapus'), findsOneWidget);
+    expect(find.text('Edit'), findsOneWidget);
+    expect(find.text('Sewa Tempat Ini'), findsNothing);
+  });
+
+  testWidgets('Detail tempat: pemilik menonaktifkan mengirim status NONAKTIF', (
+    WidgetTester tester,
+  ) async {
+    final fakePlace = _FakePlaceService();
+
+    tester.view
+      ..devicePixelRatio = 1.0
+      ..physicalSize = const Size(412, 915);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          authNotifierProvider.overrideWith(() => _FakeAuthNotifier(_hostUser())),
+          placeServiceProvider.overrideWithValue(fakePlace),
+          notificationServiceProvider.overrideWithValue(
+            _FakeNotificationService(),
+          ),
+          bookingServiceProvider.overrideWithValue(_FakeBookingService()),
+        ],
+        child: const MaterialApp(
+          home: PlaceDetailScreen(placeId: '101'),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Nonaktifkan'));
+    await tester.pumpAndSettle();
+
+    expect(fakePlace.lastUpdatePayload, {'status': 'NONAKTIF'});
+  });
+
+  testWidgets('Home penyewa menampilkan sapaan dan shortcut pencarian', (
+    WidgetTester tester,
+  ) async {
+    await _pumpSized(tester, const HomeScreen());
+
+    expect(find.text('Halo, Budi'), findsOneWidget);
+    expect(find.textContaining('Tempat Usahamu'), findsOneWidget);
+    expect(find.textContaining('Cari tempat, kota, atau lokasi'), findsOneWidget);
+    expect(find.textContaining('Lihat Semua'), findsOneWidget);
+  });
+
+  testWidgets('Shortcut pencarian beranda membuka tab Tempat', (
+    WidgetTester tester,
+  ) async {
+    await _pumpSized(tester, const MainShell());
+
+    final context = tester.element(find.byType(MainShell));
+    final container = ProviderScope.containerOf(context);
+
+    expect(container.read(mainNavIndexProvider), 0);
+
+    await tester.tap(find.textContaining('Cari tempat, kota, atau lokasi'));
+    await tester.pumpAndSettle();
+
+    expect(container.read(mainNavIndexProvider), 1);
   });
 }

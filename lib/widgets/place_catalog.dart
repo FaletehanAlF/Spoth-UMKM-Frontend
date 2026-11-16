@@ -8,8 +8,7 @@ import '../core/theme/app_fonts.dart';
 import '../models/place_model.dart';
 import '../providers/place_provider.dart';
 import 'empty_state.dart';
-import 'place_grid_card.dart';
-import 'shimmer_loading.dart';
+import 'place_grid.dart';
 
 class PlaceCatalog extends ConsumerStatefulWidget {
   const PlaceCatalog({super.key});
@@ -316,7 +315,7 @@ class _CatalogGrid extends ConsumerWidget {
     final places = ref.watch(tenantPlacesProvider);
 
     return places.when(
-      loading: () => const PlaceListSkeleton(count: 4),
+      loading: () => const PlaceGridSkeleton(count: 4),
       error: (error, _) => EmptyState(
         icon: Icons.wifi_off,
         title: 'Gagal memuat tempat',
@@ -333,18 +332,7 @@ class _CatalogGrid extends ConsumerWidget {
           );
         }
 
-        return GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            mainAxisSpacing: 12,
-            crossAxisSpacing: 12,
-            childAspectRatio: 0.62,
-          ),
-          itemCount: items.length,
-          itemBuilder: (context, index) => PlaceGridCard(place: items[index]),
-        );
+        return PlaceGrid(places: items);
       },
     );
   }
