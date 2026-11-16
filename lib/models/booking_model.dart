@@ -1,5 +1,3 @@
-/// Model data pemesanan (penyewaan) sesuai respons backend SPOTH UMKM
-/// (`GET /bookings`, `POST /bookings`, `POST /bookings/:id/cancel`).
 class BookingModel {
   const BookingModel({
     required this.id,
@@ -39,7 +37,6 @@ class BookingModel {
   final String? namaHost;
   final List<String> foto;
 
-  /// Label status yang mudah dibaca (nilai asli tetap dari backend).
   String get statusLabel {
     switch (status) {
       case 'MENUNGGU_PEMBAYARAN':
@@ -53,7 +50,6 @@ class BookingModel {
     }
   }
 
-  /// Pemesanan yang masih bisa dibatalkan oleh Penyewa.
   bool get bisaDibatalkan => status == 'MENUNGGU_PEMBAYARAN';
 
   factory BookingModel.fromJson(Map<String, dynamic> json) {
@@ -95,8 +91,6 @@ class BookingModel {
   }
 }
 
-/// Hasil pratinjau biaya dari `GET /bookings/preview-price`
-/// (kunci JSON: `data.pratinjau`).
 class PricePreviewModel {
   const PricePreviewModel({
     required this.namaTempat,

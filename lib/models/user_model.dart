@@ -1,7 +1,3 @@
-/// Model data user sesuai respons backend SPOTH UMKM.
-///
-/// Backend mengirim: `id` (string), `nama`, `email`, `no_hp` (string|null),
-/// `role` (`HOST` atau `TENANT`), dan `created_at` (ISO-8601).
 class UserModel {
   const UserModel({
     required this.id,
@@ -19,7 +15,7 @@ class UserModel {
   final String nama;
   final String email;
   final String? noHp;
-  final String role; // 'HOST' | 'TENANT'
+  final String role;
   final DateTime createdAt;
 
   factory UserModel.fromJson(Map<String, dynamic> json) {

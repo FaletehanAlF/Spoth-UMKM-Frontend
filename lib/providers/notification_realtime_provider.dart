@@ -9,7 +9,6 @@ import '../models/notification_model.dart';
 import 'auth_provider.dart';
 import 'notification_provider.dart';
 
-/// Host backend tanpa suffix `/api` untuk koneksi Socket.IO.
 String _socketHost() {
   final base = AppConfig.baseUrl;
   const suffix = '/api';
@@ -18,19 +17,10 @@ String _socketHost() {
       : base;
 }
 
-/// Provider koneksi Socket.IO pusat.
 final notificationSocketServiceProvider = Provider<NotificationSocketService>(
   (ref) => NotificationSocketService(_socketHost()),
 );
 
-/// Sinkronisasi realtime notifikasi dengan sesi login:
-///
-/// - Login/restore sesi → konek ke Socket.IO (event `notification:new`).
-/// - Event masuk → refresh daftar + badge unread + tampilkan notifikasi lokal.
-/// - Logout → putus Socket.IO (listener dibersihkan).
-///
-/// Provider ini SENGAJA hanya di-watch oleh `SpothApp` agar lifecycle-nya
-/// mengikuti aplikasi, bukan per halaman.
 class NotificationRealtimeNotifier extends Notifier<bool> {
   NotificationSocketService get _service =>
       ref.read(notificationSocketServiceProvider);
@@ -60,13 +50,10 @@ class NotificationRealtimeNotifier extends Notifier<bool> {
       return;
     }
 
-    // Pasang callback sekali (connect sebelumnya membersihkan listener lama
-    // via disconnect()).
     _service.onNotification = _onNewNotification;
     _service.connect(token);
     state = true;
 
-    // Siapkan notifikasi lokal + izin Android 13+ (idempoten).
     unawaited(LocalNotificationService.instance.init());
   }
 
@@ -77,18 +64,15 @@ class NotificationRealtimeNotifier extends Notifier<bool> {
   }
 
   void _onNewNotification(NotificationModel notification) {
-    // Perbarui daftar & badge unread dari server (sumber kebenaran).
     unawaited(ref.read(notificationsProvider.notifier).refresh());
     unawaited(ref.read(notificationSummaryProvider.notifier).refresh());
 
-    // Tampilkan notifikasi lokal (no-op di Flutter Web).
     unawaited(
       LocalNotificationService.instance.showFromNotification(notification),
     );
   }
 }
 
-/// Provider sinkronisasi realtime (disaksikan oleh `SpothApp`).
 final notificationRealtimeProvider =
     NotifierProvider<NotificationRealtimeNotifier, bool>(
       NotificationRealtimeNotifier.new,

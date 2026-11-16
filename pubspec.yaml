@@ -57,6 +57,19 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
+  icons_launcher: ^3.1.0
+
+icons_launcher:
+  image_path: "assets/icons/spoth-umkm-logo.png"
+  platforms:
+    android:
+      enable: true
+      image_path: "assets/icons/spoth-umkm-logo.png"
+      adaptive_background_color: "#FFFFFF"
+      adaptive_foreground_image: "assets/icons/spoth-umkm-logo-foreground.png"
+    ios:
+      enable: true
+      image_path: "assets/icons/spoth-umkm-logo-ios.png"
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -70,14 +83,12 @@ flutter:
   uses-material-design: true
 
   assets:
-    - assets/images/
     - assets/icons/
 
   fonts:
-    # Serif elegan untuk judul halaman (lisensi OFL, Google Fonts).
-    - family: PlayfairDisplay
+    - family: Montserrat
       fonts:
-        - asset: assets/fonts/PlayfairDisplay-Variable.ttf
+        - asset: assets/fonts/Montserrat-Variable.ttf
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

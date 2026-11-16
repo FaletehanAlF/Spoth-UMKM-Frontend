@@ -3,20 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/booking_model.dart';
 import 'api_service.dart';
 
-/// Provider global untuk [BookingService].
 final bookingServiceProvider = Provider<BookingService>((ref) {
   return BookingService(ref.watch(apiServiceProvider));
 });
 
-/// Akses ke endpoint pemesanan backend SPOTH UMKM (semuanya butuh token):
-///
-/// - `GET  /bookings`              → riwayat: milik Tenant / pesanan masuk Host
-/// - `POST /bookings`              → pemesanan baru (hanya Tenant)
-/// - `GET  /bookings/preview-price`→ pratinjau biaya (kunci: `data.pratinjau`)
-/// - `POST /bookings/:id/cancel`   → batalkan (hanya Tenant, saat menunggu bayar)
-///
-/// Validasi jadwal & perhitungan harga dilakukan di backend; frontend
-/// tidak pernah menghitung/menganggap pemesanan berhasil sendiri.
 class BookingService {
   BookingService(this._apiService);
 
@@ -45,8 +35,6 @@ class BookingService {
     return BookingModel.fromJson(booking);
   }
 
-  /// Riwayat penyewaan. Backend otomatis menyesuaikan isi berdasarkan role:
-  /// Tenant melihat penyewaannya sendiri, Host melihat pesanan masuk.
   Future<List<BookingModel>> listBookings({
     required String token,
     String? status,
@@ -70,7 +58,6 @@ class BookingService {
         .toList();
   }
 
-  /// Pratinjau biaya sebelum memesan (memeriksa bentrok jadwal juga).
   Future<PricePreviewModel> previewPrice({
     required String token,
     required String placeId,
@@ -92,8 +79,6 @@ class BookingService {
     return PricePreviewModel.fromJson(pratinjau);
   }
 
-  /// Tenant membuat pemesanan baru. Backend membuat notifikasi untuk
-  /// Tenant dan Host serta menghitung total harga.
   Future<BookingModel> createBooking({
     required String token,
     required Map<String, dynamic> payload,
@@ -102,7 +87,6 @@ class BookingService {
     return _booking(body, 'pemesanan');
   }
 
-  /// Tenant membatalkan pemesanan yang masih menunggu pembayaran.
   Future<BookingModel> cancelBooking({
     required String token,
     required String id,

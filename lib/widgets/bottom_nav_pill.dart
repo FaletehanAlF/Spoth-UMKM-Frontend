@@ -3,10 +3,6 @@ import 'package:flutter/material.dart';
 import '../core/theme/app_colors.dart';
 import 'nav_items.dart';
 
-/// Bottom navigation berbentuk pill (rounded) dengan background putih.
-///
-/// Menu tidak aktif: ikon + label abu-abu. Menu aktif: ikon + label orange
-/// (identitas SPOTH UMKM). Dipakai di mobile/tablet; di web memakai sidebar.
 class SpothBottomNav extends StatelessWidget {
   const SpothBottomNav({
     super.key,
@@ -14,10 +10,8 @@ class SpothBottomNav extends StatelessWidget {
     required this.onChanged,
   });
 
-  /// Index tab aktif (0=Beranda, 1=Tempat, 2=Booking, 3=Notifikasi, 4=Profil).
   final int index;
 
-  /// Callback saat pengguna memilih tab baru.
   final ValueChanged<int> onChanged;
 
   @override
@@ -58,7 +52,6 @@ class SpothBottomNav extends StatelessWidget {
   }
 }
 
-/// Satu butir menu pada bottom navigation.
 class _NavItem extends StatelessWidget {
   const _NavItem({
     required this.item,

@@ -10,11 +10,9 @@ import '../../widgets/empty_state.dart';
 import '../../widgets/notification_icon.dart';
 import '../../widgets/spoth_app_bar.dart';
 
-/// Halaman Profil — data akun pengguna yang login dan tombol keluar.
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
 
-  /// Menampilkan dialog konfirmasi lalu logout bila disetujui.
   Future<void> _confirmAndLogout(BuildContext context, WidgetRef ref) async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -66,18 +64,19 @@ class ProfileScreen extends ConsumerWidget {
                 ),
               ),
             )
-          : Center(
+          : Align(
+              alignment: Alignment.topCenter,
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 560),
                 child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(20),
+                  padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       _ProfileHeader(user: user),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 20),
                       _ProfileInfo(user: user),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 28),
                       SizedBox(
                         width: double.infinity,
                         child: OutlinedButton.icon(
@@ -95,7 +94,6 @@ class ProfileScreen extends ConsumerWidget {
   }
 }
 
-/// Kartu kepala profil: avatar inisial, nama, dan email.
 class _ProfileHeader extends StatelessWidget {
   const _ProfileHeader({required this.user});
 
@@ -105,71 +103,78 @@ class _ProfileHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final nama = user.nama.trim();
     final initial = nama.isNotEmpty ? nama[0].toUpperCase() : 'S';
+    final peran = user.role == UserModel.roleHost
+        ? 'Pemilik'
+        : user.role == UserModel.roleTenant
+        ? 'Penyewa'
+        : user.role;
 
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: AppColors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: AppColors.softBorder),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
+    return Row(
+      children: [
+        CircleAvatar(
+          radius: 30,
+          backgroundColor: AppColors.primaryOrange,
+          child: Text(
+            initial,
+            style: const TextStyle(
+              color: AppColors.white,
+              fontSize: 22,
+              fontWeight: FontWeight.w700,
+            ),
           ),
-        ],
-      ),
-      child: Row(
-        children: [
-          CircleAvatar(
-            radius: 28,
-            backgroundColor: AppColors.primaryOrange,
-            child: Text(
-              initial,
-              style: const TextStyle(
-                color: AppColors.white,
-                fontSize: 20,
-                fontWeight: FontWeight.w700,
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                nama,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.darkText,
+                ),
               ),
-            ),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  nama,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+              const SizedBox(height: 3),
+              Text(
+                user.email,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: 13,
+                  color: AppColors.secondaryText,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.lightOrange,
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  peran,
                   style: const TextStyle(
-                    fontSize: 18,
+                    fontSize: 12,
                     fontWeight: FontWeight.w700,
-                    color: AppColors.darkText,
+                    color: AppColors.primaryOrange,
                   ),
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  user.email,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    color: AppColors.secondaryText,
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
 
-/// Kartu rincian akun: email, no. HP, peran, dan tanggal bergabung.
 class _ProfileInfo extends StatelessWidget {
   const _ProfileInfo({required this.user});
 
@@ -184,15 +189,8 @@ class _ProfileInfo extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       decoration: BoxDecoration(
         color: AppColors.white,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(color: AppColors.softBorder),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
-          ),
-        ],
       ),
       child: Column(
         children: [
@@ -201,15 +199,6 @@ class _ProfileInfo extends StatelessWidget {
             icon: Icons.phone_outlined,
             label: 'No. HP',
             value: user.noHp ?? '-',
-          ),
-          _InfoRow(
-            icon: Icons.badge_outlined,
-            label: 'Peran',
-            value: user.role == UserModel.roleHost
-                ? 'Pemilik'
-                : user.role == UserModel.roleTenant
-                ? 'Penyewa'
-                : user.role,
           ),
           _InfoRow(
             icon: Icons.calendar_today_outlined,
@@ -222,7 +211,6 @@ class _ProfileInfo extends StatelessWidget {
   }
 }
 
-/// Satu baris rincian akun: icon + label + nilai.
 class _InfoRow extends StatelessWidget {
   const _InfoRow({
     required this.icon,

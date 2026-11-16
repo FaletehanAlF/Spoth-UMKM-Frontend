@@ -14,13 +14,6 @@ import '../../widgets/empty_state.dart';
 import '../../widgets/shimmer_loading.dart';
 import '../../widgets/spoth_sidebar_scaffold.dart';
 
-/// Detail tempat usaha (`GET /places/:id` — publik).
-///
-/// Aksi menyesuaikan peran pengguna:
-/// - **Pemilik (HOST)** yang memiliki tempat ini → tombol Edit,
-///   Aktifkan/Nonaktifkan, Hapus. Tempat milik pemilik lain hanya bisa dilihat.
-/// - **Penyewa (TENANT)** → tombol "Sewa Tempat Ini" di bagian bawah.
-/// - Belum login → hanya melihat.
 class PlaceDetailScreen extends ConsumerStatefulWidget {
   const PlaceDetailScreen({super.key, required this.placeId});
 
@@ -160,6 +153,8 @@ class _PlaceDetailScreenState extends ConsumerState<PlaceDetailScreen> {
     final saved = await context.push('/place-form?id=${place.id}');
     if (saved == true && mounted) {
       await _load();
+      await ref.read(myPlacesProvider.notifier).refresh();
+      await ref.read(hostSummaryProvider.notifier).refresh();
     }
   }
 
@@ -225,7 +220,6 @@ class _PlaceDetailScreenState extends ConsumerState<PlaceDetailScreen> {
   }
 }
 
-/// Area scrollable detail: hero foto + kartu informasi.
 class _DetailScrollView extends StatelessWidget {
   const _DetailScrollView({
     required this.place,
@@ -273,7 +267,7 @@ class _DetailScrollView extends StatelessWidget {
                   const SizedBox(height: 12),
                   Text(
                     place.namaTempat,
-                    style: AppFonts.serif(
+                    style: AppFonts.heading(
                       fontSize: 27,
                       weight: 600,
                       height: 1.2,
@@ -396,7 +390,6 @@ class _DetailScrollView extends StatelessWidget {
   }
 }
 
-/// Hero foto lebar penuh dengan tombol kembali dan indikator jumlah foto.
 class _HeroPhoto extends StatelessWidget {
   const _HeroPhoto({
     required this.place,
@@ -430,7 +423,6 @@ class _HeroPhoto extends StatelessWidget {
                   errorBuilder: (_, _, _) => const _HeroPlaceholder(),
                 )
               : const _HeroPlaceholder(),
-          // Area sentuh kiri/kanan untuk mengganti foto.
           if (fotos.length > 1)
             Positioned.fill(
               child: GestureDetector(
@@ -481,7 +473,6 @@ class _HeroPhoto extends StatelessWidget {
   }
 }
 
-/// Placeholder konsisten ketika foto kosong atau gagal dimuat.
 class _HeroPlaceholder extends StatelessWidget {
   const _HeroPlaceholder();
 
@@ -496,7 +487,6 @@ class _HeroPlaceholder extends StatelessWidget {
   }
 }
 
-/// Tombol lingkaran putih/translasen untuk aksi di atas foto.
 class _CircleButton extends StatelessWidget {
   const _CircleButton({
     required this.icon,
@@ -529,7 +519,6 @@ class _CircleButton extends StatelessWidget {
   }
 }
 
-/// Badge kecil (kategori) berwarna lembut.
 class _InfoBadge extends StatelessWidget {
   const _InfoBadge({required this.label});
 
@@ -556,7 +545,6 @@ class _InfoBadge extends StatelessWidget {
   }
 }
 
-/// Badge status tempat (AKTIF / NONAKTIF).
 class _StatusBadge extends StatelessWidget {
   const _StatusBadge({required this.isAktif});
 
@@ -583,7 +571,6 @@ class _StatusBadge extends StatelessWidget {
   }
 }
 
-/// Blok harga: harga sewa, harga promo, dan harga normal dicoret.
 class _PriceBlock extends StatelessWidget {
   const _PriceBlock({required this.place});
 
@@ -657,7 +644,6 @@ class _PriceBlock extends StatelessWidget {
   }
 }
 
-/// Baris spesifikasi tempat (durasi, jumlah foto, jadwal terisi).
 class _SpecRow extends StatelessWidget {
   const _SpecRow({required this.place});
 
@@ -745,7 +731,6 @@ class _SpecDivider extends StatelessWidget {
   }
 }
 
-/// Daftar jadwal yang sudah dipesan (ketersediaan tempat).
 class _BookedSchedules extends StatelessWidget {
   const _BookedSchedules({required this.place});
 
@@ -802,7 +787,6 @@ class _BookedSchedules extends StatelessWidget {
   }
 }
 
-/// Bar aksi bawah: CTA Sewa untuk Penyewa / aksi kelola untuk Pemilik.
 class _ActionBar extends StatelessWidget {
   const _ActionBar({
     required this.place,
@@ -893,7 +877,6 @@ class _ActionBar extends StatelessWidget {
         ],
       );
     } else {
-      // Host lain atau belum login: lihat saja, tanpa aksi.
       content = const SizedBox.shrink();
     }
 

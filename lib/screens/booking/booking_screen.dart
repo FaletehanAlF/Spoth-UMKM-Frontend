@@ -12,14 +12,6 @@ import '../../widgets/notification_icon.dart';
 import '../../widgets/shimmer_loading.dart';
 import '../../widgets/spoth_app_bar.dart';
 
-/// Tab Booking — riwayat pemesanan dari `GET /bookings`.
-///
-/// Isi otomatis menyesuaikan role (dilakukan backend):
-/// - **Penyewa**: daftar penyewaannya sendiri, bisa membatalkan yang
-///   masih menunggu pembayaran.
-/// - **Pemilik**: daftar pesanan masuk untuk tempat miliknya.
-///
-/// Pembayaran/E-Pass menyusul pada fitur berikutnya.
 class BookingScreen extends ConsumerWidget {
   const BookingScreen({super.key});
 
@@ -149,7 +141,6 @@ class BookingScreen extends ConsumerWidget {
   }
 }
 
-/// Kartu satu pemesanan.
 class _BookingCard extends StatelessWidget {
   const _BookingCard({
     required this.booking,
@@ -247,7 +238,6 @@ class _BookingCard extends StatelessWidget {
   }
 }
 
-/// Badge status pemesanan (MENUNGGU_PEMBAYARAN / LUNAS / DIBATALKAN).
 class _StatusBadge extends StatelessWidget {
   const _StatusBadge({required this.status});
 

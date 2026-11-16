@@ -8,11 +8,6 @@ import '../../providers/auth_provider.dart';
 import 'owner_home_screen.dart';
 import 'tenant_home_screen.dart';
 
-/// Beranda aplikasi — memilih tampilan sesuai role pengguna yang
-/// tersimpan di backend (bukan dari pilihan sementara di frontend):
-///
-/// - `HOST` (Pemilik)   → dashboard kelola tempat usaha.
-/// - `TENANT` (Penyewa) → katalog & pencarian tempat.
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
@@ -21,9 +16,6 @@ class HomeScreen extends ConsumerWidget {
     final user = ref.watch(authNotifierProvider).user;
     final role = user?.role;
 
-    // Hanya role yang dikenal yang diarahkan ke tampilan masing-masing.
-    // Role tidak dikenal atau null tidak boleh otomatis masuk tampilan
-    // Penyewa; pengguna diarahkan keluar melalui logout yang tersedia.
     if (role == UserModel.roleHost) {
       return const OwnerHomeScreen();
     }

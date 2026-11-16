@@ -15,9 +15,6 @@ class SpothApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Sinkronisasi realtime notifikasi ↔ sesi login (connect saat login/
-    // restore sesi, disconnect saat logout). Disaksikan di level aplikasi
-    // agar tidak tergantung halaman mana pun.
     ref.watch(notificationRealtimeProvider);
 
     return MaterialApp.router(

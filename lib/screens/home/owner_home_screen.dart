@@ -10,13 +10,6 @@ import '../../widgets/notification_icon.dart';
 import '../../widgets/spoth_app_bar.dart';
 import '../../widgets/shimmer_loading.dart';
 
-/// Home untuk role **Pemilik Tempat (HOST)**:
-///
-/// - Ringkasan Total Tempat, Tempat Aktif, Menunggu Pembayaran, Pendapatan.
-/// - Kartu "Tempat Saya" menuju tab Tempat (daftar tempat milik akun ini).
-/// - Akses notifikasi.
-///
-/// Pengelolaan tempat (edit/hapus/status) dilakukan dari halaman detail tempat.
 class OwnerHomeScreen extends ConsumerWidget {
   const OwnerHomeScreen({super.key});
 
@@ -25,11 +18,10 @@ class OwnerHomeScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: AppColors.white,
       appBar: SpothAppBar(
-        centerTitle: true,
         title: const Text(
-          'SPOTH UMKM',
+          'Spoth UMKM',
           style: TextStyle(
-            color: AppColors.primaryOrange,
+            color: AppColors.darkText,
             fontSize: 18,
             fontWeight: FontWeight.w700,
           ),
@@ -61,7 +53,6 @@ class OwnerHomeScreen extends ConsumerWidget {
   }
 }
 
-/// Kartu ajakan untuk menuju tab Tempat (daftar tempat milik Pemilik).
 class _ManagePlacesCard extends StatelessWidget {
   const _ManagePlacesCard({required this.onTap});
 
@@ -117,7 +108,6 @@ class _ManagePlacesCard extends StatelessWidget {
   }
 }
 
-/// Kartu ringkasan dashboard Pemilik (data nyata dari backend).
 class _SummarySection extends ConsumerWidget {
   const _SummarySection();
 
@@ -188,7 +178,6 @@ class _SummarySection extends ConsumerWidget {
   }
 }
 
-/// Satu kartu ringkasan.
 class _SummaryCard extends StatelessWidget {
   const _SummaryCard({
     required this.icon,

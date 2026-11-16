@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
 import 'app_colors.dart';
+import 'app_fonts.dart';
 
-/// Tema dasar aplikasi SPOTH UMKM (Orange & White).
 class AppTheme {
   const AppTheme._();
 
@@ -17,13 +17,14 @@ class AppTheme {
 
     return ThemeData(
       useMaterial3: true,
+      fontFamily: AppFonts.fontFamily,
       colorScheme: colorScheme,
       scaffoldBackgroundColor: AppColors.white,
       appBarTheme: const AppBarTheme(
         backgroundColor: AppColors.white,
         foregroundColor: AppColors.darkText,
         elevation: 0,
-        centerTitle: false,
+        centerTitle: true,
         titleTextStyle: TextStyle(
           color: AppColors.darkText,
           fontSize: 18,

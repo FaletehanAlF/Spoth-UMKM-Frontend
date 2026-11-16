@@ -5,10 +5,6 @@ import '../core/theme/app_colors.dart';
 import '../core/utils/format.dart';
 import '../models/place_model.dart';
 
-/// Kartu tempat untuk Penyewa (foto di atas, info di bawah).
-///
-/// Dipakai bersama oleh Beranda Penyewa (preview) dan tab Tempat
-/// (katalog penuh), supaya tampilannya selalu sama.
 class PlaceGridCard extends StatelessWidget {
   const PlaceGridCard({super.key, required this.place});
 
@@ -242,7 +238,6 @@ class PlaceGridCard extends StatelessWidget {
   }
 }
 
-/// Placeholder konsisten ketika foto kosong atau gagal dimuat.
 class _PhotoPlaceholder extends StatelessWidget {
   const _PhotoPlaceholder();
 

@@ -1,6 +1,3 @@
-// Test parsing model user — memastikan parsing created_at tidak crash
-// saat key tidak tersedia atau bernilai null.
-
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:spoth_umkm/models/user_model.dart';
@@ -35,7 +32,6 @@ void main() {
     });
 
     expect(user.role, UserModel.roleHost);
-    // Fallback: waktu sekarang (backend respons normal selalu mengirim nilai).
     expect(
       user.createdAt.isAfter(
         sebelumPanggil.subtract(const Duration(minutes: 1)),

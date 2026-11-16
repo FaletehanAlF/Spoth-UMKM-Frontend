@@ -4,12 +4,6 @@ import '../core/theme/app_colors.dart';
 import '../core/theme/app_fonts.dart';
 import 'nav_items.dart';
 
-/// Sidebar navigasi untuk tampilan **web** SPOTH UMKM.
-///
-/// - Layar lebar (>= 1100 px): logo + ikon + label.
-/// - Layar sempit (< 1100 px): ikon saja (rail) dengan tooltip.
-///
-/// Di mobile/tablet, navigasi bawah ([SpothBottomNav]) yang dipakai.
 class SpothSidebar extends StatelessWidget {
   const SpothSidebar({
     super.key,
@@ -18,13 +12,10 @@ class SpothSidebar extends StatelessWidget {
     required this.expanded,
   });
 
-  /// Index tab aktif (0=Beranda, 1=Tempat, 2=Booking, 3=Profil).
   final int index;
 
-  /// Callback saat pengguna memilih menu baru.
   final ValueChanged<int> onChanged;
 
-  /// `true` untuk mode penuh (logo + label); `false` untuk mode ikon.
   final bool expanded;
 
   @override
@@ -51,7 +42,7 @@ class SpothSidebar extends StatelessWidget {
                           'SPOTH UMKM',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: AppFonts.serif(
+                          style: AppFonts.heading(
                             fontSize: 15,
                             weight: 700,
                             color: AppColors.charcoal,
@@ -82,8 +73,6 @@ class SpothSidebar extends StatelessWidget {
   }
 }
 
-/// Logo SPOTH UMKM (latar transparan, dari `assets/icons/spoth-umkm-logo.png`).
-/// Bila gambar gagal dimuat, tampilkan fallback ikon storefront orange.
 class _Logo extends StatelessWidget {
   const _Logo({required this.size});
 
@@ -95,7 +84,6 @@ class _Logo extends StatelessWidget {
       'assets/icons/spoth-umkm-logo.png',
       width: size,
       height: size,
-      // Latar transparan → pakai cover agar logo lebih penuh di sidebar.
       fit: BoxFit.contain,
       errorBuilder: (_, _, _) => Icon(
         Icons.storefront,
@@ -106,7 +94,6 @@ class _Logo extends StatelessWidget {
   }
 }
 
-/// Satu butir menu pada sidebar.
 class _SidebarItem extends StatelessWidget {
   const _SidebarItem({
     required this.item,

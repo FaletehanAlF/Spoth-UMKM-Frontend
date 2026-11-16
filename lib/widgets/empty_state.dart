@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../core/theme/app_colors.dart';
 
-/// Komponen tampilan kosong yang dipakai lintas halaman
-/// (beranda, booking, profil, detail) agar tampilannya konsisten.
 class EmptyState extends StatelessWidget {
   const EmptyState({
     super.key,
@@ -14,19 +12,14 @@ class EmptyState extends StatelessWidget {
     this.onAction,
   });
 
-  /// Icon Material yang menggambarkan kondisi kosong.
   final IconData icon;
 
-  /// Judul singkat kondisi kosong.
   final String title;
 
-  /// Penjelasan tambahan untuk pengguna.
   final String message;
 
-  /// Label tombol aksi opsional (mis. "Coba Lagi").
   final String? actionLabel;
 
-  /// Callback tombol aksi opsional.
   final VoidCallback? onAction;
 
   @override
