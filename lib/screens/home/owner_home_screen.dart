@@ -43,36 +43,70 @@ class OwnerHomeScreen extends ConsumerWidget {
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (sapaan != null) ...[
-                Text(
-                  'Halo, $sapaan',
-                  style: const TextStyle(
-                    fontSize: 13,
-                    color: AppColors.secondaryText,
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 1080),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (sapaan != null) ...[
+                    Text(
+                      'Halo, $sapaan',
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: AppColors.secondaryText,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                  ],
+                  Text(
+                    'Ringkasan Usaha',
+                    style: AppFonts.heading(
+                      fontSize: 26,
+                      weight: 600,
+                      height: 1.15,
+                      letterSpacing: -0.4,
+                      color: AppColors.charcoal,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 6),
-              ],
-              Text(
-                'Ringkasan Usaha',
-                style: AppFonts.heading(
-                  fontSize: 26,
-                  weight: 600,
-                  height: 1.15,
-                  letterSpacing: -0.4,
-                  color: AppColors.charcoal,
-                ),
+                  const SizedBox(height: 16),
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final lebar = constraints.maxWidth;
+                      final ringkasan = <Widget>[
+                        const _SummarySection(),
+                        const SizedBox(height: 12),
+                        _ManagePlacesCard(
+                          onTap: () => ref.read(
+                            mainNavIndexProvider.notifier,
+                          ).setTab(1),
+                        ),
+                      ];
+
+                      if (lebar < 720) {
+                        return Column(children: ringkasan);
+                      }
+
+                      return Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Expanded(flex: 3, child: _SummarySection()),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            flex: 2,
+                            child: _ManagePlacesCard(
+                              onTap: () => ref.read(
+                                mainNavIndexProvider.notifier,
+                              ).setTab(1),
+                            ),
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+                ],
               ),
-              const SizedBox(height: 16),
-              const _SummarySection(),
-              const SizedBox(height: 16),
-              _ManagePlacesCard(
-                onTap: () => ref.read(mainNavIndexProvider.notifier).setTab(1),
-              ),
-            ],
+            ),
           ),
         ),
       ),
@@ -215,8 +249,9 @@ class _RevenueCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: AppColors.charcoal,
+        color: AppColors.white,
         borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.softBorder),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -234,7 +269,7 @@ class _RevenueCard extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
-                  color: AppColors.white.withValues(alpha: 0.72),
+                  color: AppColors.secondaryText,
                 ),
               ),
             ],
@@ -249,15 +284,12 @@ class _RevenueCard extends StatelessWidget {
                 fontSize: 28,
                 weight: 700,
                 letterSpacing: -0.6,
-                color: AppColors.white,
+                color: AppColors.charcoal,
               ),
             ),
           ),
           const SizedBox(height: 14),
-          Container(
-            height: 1,
-            color: AppColors.white.withValues(alpha: 0.14),
-          ),
+          Container(height: 1, color: AppColors.softBorder),
           const SizedBox(height: 12),
           Row(
             children: [
@@ -294,7 +326,7 @@ class _RevenueFact extends StatelessWidget {
           style: const TextStyle(
             fontSize: 17,
             fontWeight: FontWeight.w700,
-            color: AppColors.white,
+            color: AppColors.charcoal,
           ),
         ),
         const SizedBox(height: 2),
@@ -302,9 +334,9 @@ class _RevenueFact extends StatelessWidget {
           label,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: TextStyle(
+          style: const TextStyle(
             fontSize: 11.5,
-            color: AppColors.white.withValues(alpha: 0.72),
+            color: AppColors.secondaryText,
           ),
         ),
       ],

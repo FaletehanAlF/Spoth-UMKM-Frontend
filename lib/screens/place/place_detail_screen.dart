@@ -263,7 +263,24 @@ class _DetailScrollView extends StatelessWidget {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final tinggiHero = (constraints.maxWidth * 0.72).clamp(240.0, 420.0);
+        const paddingSamping = 20.0;
+        const jarakKolom = 20.0;
+        final ruang = constraints.maxWidth - paddingSamping * 2;
+        final duaKolom = ruang >= 860;
+        final lebarKolom = duaKolom
+            ? (ruang - jarakKolom) / 2
+            : constraints.maxWidth;
+        final tinggiHero = (lebarKolom * 0.62).clamp(220.0, 460.0);
+
+        final gallery = _HeroGallery(
+          place: place,
+          fotoIndex: fotoIndex,
+          topInset: duaKolom ? 0 : topInset,
+          lebar: lebarKolom,
+          tinggi: tinggiHero,
+          onFotoChanged: onFotoChanged,
+          showChrome: !duaKolom,
+        );
 
         return RefreshIndicator(
           color: AppColors.primaryOrange,
@@ -273,23 +290,94 @@ class _DetailScrollView extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _HeroGallery(
-                  place: place,
-                  fotoIndex: fotoIndex,
-                  topInset: topInset,
-                  lebar: constraints.maxWidth,
-                  tinggi: tinggiHero,
-                  onFotoChanged: onFotoChanged,
-                ),
-                Transform.translate(
-                  offset: const Offset(0, -22),
-                  child: _DetailSheet(place: place),
-                ),
+                if (duaKolom)
+                  Padding(
+                    padding: EdgeInsets.fromLTRB(
+                      paddingSamping,
+                      topInset + 12,
+                      paddingSamping,
+                      14,
+                    ),
+                    child: _TopBar(
+                      fotoIndex: fotoIndex,
+                      jumlahFoto: place.foto.length,
+                    ),
+                  )
+                else ...[
+                  gallery,
+                  Transform.translate(
+                    offset: const Offset(0, -22),
+                    child: Center(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 720),
+                        child: _DetailSheet(place: place),
+                      ),
+                    ),
+                  ),
+                ],
+                if (duaKolom)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                      paddingSamping,
+                      0,
+                      paddingSamping,
+                      28,
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        SizedBox(width: lebarKolom, child: gallery),
+                        const SizedBox(width: jarakKolom),
+                        SizedBox(
+                          width: lebarKolom,
+                          child: _DetailSheet(place: place),
+                        ),
+                      ],
+                    ),
+                  ),
               ],
             ),
           ),
         );
       },
+    );
+  }
+}
+
+class _TopBar extends StatelessWidget {
+  const _TopBar({required this.fotoIndex, required this.jumlahFoto});
+
+  final int fotoIndex;
+  final int jumlahFoto;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        _CircleButton(
+          icon: Icons.arrow_back,
+          tooltip: 'Kembali',
+          onPressed: () => Navigator.of(context).maybePop(),
+        ),
+        const Spacer(),
+        if (jumlahFoto > 1)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: AppColors.lightOrange,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColors.softBorder),
+            ),
+            child: Text(
+              '$fotoIndex / $jumlahFoto',
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: AppColors.charcoal,
+              ),
+            ),
+          ),
+      ],
     );
   }
 }
@@ -302,6 +390,7 @@ class _HeroGallery extends StatelessWidget {
     required this.lebar,
     required this.tinggi,
     required this.onFotoChanged,
+    this.showChrome = true,
   });
 
   final PlaceModel place;
@@ -310,6 +399,7 @@ class _HeroGallery extends StatelessWidget {
   final double lebar;
   final double tinggi;
   final ValueChanged<int> onFotoChanged;
+  final bool showChrome;
 
   @override
   Widget build(BuildContext context) {
@@ -371,13 +461,15 @@ class _HeroGallery extends StatelessWidget {
           Positioned(
             top: topInset + 12,
             left: 16,
-            child: _CircleButton(
-              icon: Icons.arrow_back,
-              tooltip: 'Kembali',
-              onPressed: () => Navigator.of(context).maybePop(),
-            ),
+            child: showChrome
+                ? _CircleButton(
+                    icon: Icons.arrow_back,
+                    tooltip: 'Kembali',
+                    onPressed: () => Navigator.of(context).maybePop(),
+                  )
+                : const SizedBox.shrink(),
           ),
-          if (adaNavigasi)
+          if (adaNavigasi && showChrome)
             Positioned(
               bottom: 36,
               right: 16,

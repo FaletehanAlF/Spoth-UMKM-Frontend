@@ -939,6 +939,31 @@ void main() {
     },
   );
 
+  testWidgets(
+    'Detail tempat tanpa overflow pada lebar web',
+    (WidgetTester tester) async {
+      const ukuranWeb = [Size(1440, 900), Size(1920, 1080)];
+      for (final size in ukuranWeb) {
+        tester.view
+          ..devicePixelRatio = 1.0
+          ..physicalSize = size;
+
+        await tester.pumpWidget(
+          _tenantApp(const PlaceDetailScreen(placeId: '101')),
+        );
+        await tester.pumpAndSettle();
+
+        expect(
+          tester.takeException(),
+          isNull,
+          reason: 'Layout error pada ukuran ${size.width}x${size.height}',
+        );
+
+        tester.view.reset();
+      }
+    },
+  );
+
   testWidgets('Detail tempat menampilkan sapaan lokasi, host, dan aturan', (
     WidgetTester tester,
   ) async {

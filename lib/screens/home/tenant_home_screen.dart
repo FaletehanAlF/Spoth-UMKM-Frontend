@@ -41,56 +41,63 @@ class TenantHomeScreen extends ConsumerWidget {
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (sapaan != null) ...[
-                Text(
-                  'Halo, $sapaan',
-                  style: const TextStyle(
-                    fontSize: 13,
-                    color: AppColors.secondaryText,
-                  ),
-                ),
-                const SizedBox(height: 6),
-              ],
-              Text(
-                'Temukan\nTempat Usahamu',
-                style: AppFonts.heading(
-                  fontSize: 30,
-                  weight: 600,
-                  height: 1.15,
-                  letterSpacing: -0.5,
-                  color: AppColors.charcoal,
-                ),
-              ),
-              const SizedBox(height: 20),
-              _SearchShortcut(
-                onTap: () => ref.read(mainNavIndexProvider.notifier).setTab(1),
-              ),
-              const SizedBox(height: 16),
-              Row(
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 1080),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Expanded(
-                    child: Text(
-                      'Tempat Usaha',
-                      style: TextStyle(
-                        fontSize: 17,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.charcoal,
+                  if (sapaan != null) ...[
+                    Text(
+                      'Halo, $sapaan',
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: AppColors.secondaryText,
                       ),
                     ),
+                    const SizedBox(height: 6),
+                  ],
+                  Text(
+                    'Temukan\nTempat Usahamu',
+                    style: AppFonts.heading(
+                      fontSize: 30,
+                      weight: 600,
+                      height: 1.15,
+                      letterSpacing: -0.5,
+                      color: AppColors.charcoal,
+                    ),
                   ),
-                  _SectionLink(
-                    label: 'Lihat Semua',
+                  const SizedBox(height: 20),
+                  _SearchShortcut(
                     onTap: () =>
                         ref.read(mainNavIndexProvider.notifier).setTab(1),
                   ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      const Expanded(
+                        child: Text(
+                          'Tempat Usaha',
+                          style: TextStyle(
+                            fontSize: 17,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.charcoal,
+                          ),
+                        ),
+                      ),
+                      _SectionLink(
+                        label: 'Lihat Semua',
+                        onTap: () => ref.read(
+                          mainNavIndexProvider.notifier,
+                        ).setTab(1),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  const _PlacePreviewGrid(),
                 ],
               ),
-              const SizedBox(height: 4),
-              const _PlacePreviewGrid(),
-            ],
+            ),
           ),
         ),
       ),
