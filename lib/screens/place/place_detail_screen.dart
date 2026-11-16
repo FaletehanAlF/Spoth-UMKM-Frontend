@@ -12,6 +12,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/place_provider.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/shimmer_loading.dart';
+import '../../widgets/spoth_app_bar.dart';
 import '../../widgets/spoth_sidebar_scaffold.dart';
 
 class PlaceDetailScreen extends ConsumerStatefulWidget {
@@ -58,6 +59,26 @@ class _PlaceDetailScreenState extends ConsumerState<PlaceDetailScreen> {
       setState(() => _error = 'Gagal memuat detail tempat');
     } finally {
       if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _refresh() async {
+    try {
+      final token = ref.read(authNotifierProvider.select((s) => s.token));
+      final place = await ref
+          .read(placeServiceProvider)
+          .getPlaceDetail(id: widget.placeId, token: token);
+
+      if (!mounted) return;
+      setState(() {
+        _place = place;
+        _fotoIndex = 0;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Gagal memperbarui detail tempat.')),
+      );
     }
   }
 
@@ -170,8 +191,9 @@ class _PlaceDetailScreenState extends ConsumerState<PlaceDetailScreen> {
 
     final page = Scaffold(
       backgroundColor: AppColors.white,
+      appBar: const SpothAppBar(title: Text('Detail Tempat')),
       body: _loading
-          ? const DetailSkeleton()
+          ? const SingleChildScrollView(child: DetailSkeleton())
           : _error != null
           ? Center(
               child: SingleChildScrollView(
@@ -187,10 +209,13 @@ class _PlaceDetailScreenState extends ConsumerState<PlaceDetailScreen> {
             )
           : place == null
           ? const Center(
-              child: EmptyState(
-                icon: Icons.storefront,
-                title: 'Tempat tidak ditemukan',
-                message: 'Data tempat tidak tersedia di server.',
+              child: SingleChildScrollView(
+                padding: EdgeInsets.all(20),
+                child: EmptyState(
+                  icon: Icons.storefront,
+                  title: 'Tempat tidak ditemukan',
+                  message: 'Data tempat tidak tersedia di server.',
+                ),
               ),
             )
           : Column(
@@ -201,6 +226,7 @@ class _PlaceDetailScreenState extends ConsumerState<PlaceDetailScreen> {
                     fotoIndex: _fotoIndex,
                     onFotoChanged: (index) =>
                         setState(() => _fotoIndex = index),
+                    onRefresh: _refresh,
                   ),
                 ),
                 _ActionBar(
@@ -225,270 +251,227 @@ class _DetailScrollView extends StatelessWidget {
     required this.place,
     required this.fotoIndex,
     required this.onFotoChanged,
+    required this.onRefresh,
   });
 
   final PlaceModel place;
   final int fotoIndex;
   final ValueChanged<int> onFotoChanged;
+  final Future<void> Function() onRefresh;
 
   @override
   Widget build(BuildContext context) {
-    final topInset = MediaQuery.paddingOf(context).top;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final ruang = constraints.maxWidth;
+          const jarakKolom = 32.0;
+          final duaKolom = ruang >= 840;
+          final lebarKiri = duaKolom ? (ruang - jarakKolom) * 0.46 : ruang;
+          final lebarKanan = duaKolom ? ruang - jarakKolom - lebarKiri : ruang;
 
-    return SingleChildScrollView(
-      physics: const AlwaysScrollableScrollPhysics(),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _HeroPhoto(
+          final gallery = _HeroGallery(
             place: place,
             fotoIndex: fotoIndex,
-            topInset: topInset,
+            lebar: lebarKiri,
+            tinggi: duaKolom
+                ? (lebarKiri * 0.78).clamp(230.0, 430.0)
+                : (ruang * 0.56).clamp(200.0, 320.0),
             onFotoChanged: onFotoChanged,
-          ),
-          Transform.translate(
-            offset: const Offset(0, -24),
-            child: Container(
-              decoration: const BoxDecoration(
-                color: AppColors.white,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(26)),
-              ),
-              padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      _InfoBadge(label: place.kategoriLabel),
-                      const SizedBox(width: 8),
-                      _StatusBadge(isAktif: place.isAktif),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    place.namaTempat,
-                    style: AppFonts.heading(
-                      fontSize: 27,
-                      weight: 600,
-                      height: 1.2,
-                      letterSpacing: -0.4,
-                      color: AppColors.charcoal,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.location_on_outlined,
-                        size: 16,
-                        color: AppColors.secondaryText,
-                      ),
-                      const SizedBox(width: 4),
-                      Expanded(
-                        child: Text(
-                          '${place.alamat}, ${place.kota}',
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontSize: 13,
-                            color: AppColors.secondaryText,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 14),
-                  _PriceBlock(place: place),
-                  const SizedBox(height: 16),
-                  _SpecRow(place: place),
-                  const SizedBox(height: 18),
-                  if (place.deskripsi != null &&
-                      place.deskripsi!.isNotEmpty) ...[
-                    const Text(
-                      'Deskripsi',
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.charcoal,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      place.deskripsi!,
-                      style: const TextStyle(
-                        fontSize: 13.5,
-                        height: 1.5,
-                        color: AppColors.secondaryText,
-                      ),
-                    ),
-                    const SizedBox(height: 18),
-                  ],
-                  if (place.fasilitasList.isNotEmpty) ...[
-                    const Text(
-                      'Fasilitas',
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.charcoal,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
+          );
+
+          return RefreshIndicator(
+            color: AppColors.primaryOrange,
+            onRefresh: onRefresh,
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              child: duaKolom
+                  ? Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        for (final fasilitas in place.fasilitasList)
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 6,
-                            ),
-                            decoration: BoxDecoration(
-                              color: AppColors.lightOrange,
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            child: Text(
-                              fasilitas,
-                              style: const TextStyle(
-                                fontSize: 12,
-                                color: AppColors.charcoal,
-                              ),
-                            ),
-                          ),
+                        gallery,
+                        const SizedBox(width: jarakKolom),
+                        SizedBox(
+                          width: lebarKanan,
+                          child: _DetailSheet(place: place),
+                        ),
+                      ],
+                    )
+                  : Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        gallery,
+                        const SizedBox(height: 16),
+                        _DetailSheet(place: place),
+                        const SizedBox(height: 24),
                       ],
                     ),
-                    const SizedBox(height: 18),
-                  ],
-                  if (place.aturan != null && place.aturan!.isNotEmpty) ...[
-                    const Text(
-                      'Aturan',
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.charcoal,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      place.aturan!,
-                      style: const TextStyle(
-                        fontSize: 13.5,
-                        height: 1.5,
-                        color: AppColors.secondaryText,
-                      ),
-                    ),
-                    const SizedBox(height: 18),
-                  ],
-                  _BookedSchedules(place: place),
-                ],
-              ),
             ),
-          ),
-        ],
+          );
+        },
       ),
     );
   }
 }
 
-class _HeroPhoto extends StatelessWidget {
-  const _HeroPhoto({
+class _HeroGallery extends StatelessWidget {
+  const _HeroGallery({
     required this.place,
     required this.fotoIndex,
-    required this.topInset,
+    required this.lebar,
+    required this.tinggi,
     required this.onFotoChanged,
   });
 
   final PlaceModel place;
   final int fotoIndex;
-  final double topInset;
+  final double lebar;
+  final double tinggi;
   final ValueChanged<int> onFotoChanged;
 
   @override
   Widget build(BuildContext context) {
     final fotos = place.foto;
-    final aktif = fotos.isNotEmpty
-        ? fotos[fotoIndex.clamp(0, fotos.length - 1)]
-        : null;
+    final index = fotos.isEmpty ? 0 : fotoIndex.clamp(0, fotos.length - 1);
+    final aktif = fotos.isNotEmpty ? fotos[index] : null;
+    final adaNavigasi = fotos.length > 1;
 
     return SizedBox(
-      height: 280,
-      width: double.infinity,
-      child: Stack(
-        fit: StackFit.expand,
+      width: lebar,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          aktif != null
-              ? Image.network(
-                  aktif,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, _, _) => const _HeroPlaceholder(),
-                )
-              : const _HeroPlaceholder(),
-          if (fotos.length > 1)
-            Positioned.fill(
-              child: GestureDetector(
-                behavior: HitTestBehavior.translucent,
-                onTapDown: (details) {
-                  final lebar = MediaQuery.sizeOf(context).width;
-                  final keKanan = details.localPosition.dx > lebar / 2;
-                  final baru = (fotoIndex + (keKanan ? 1 : -1)) % fotos.length;
-                  onFotoChanged(baru < 0 ? fotos.length - 1 : baru);
+          ClipRRect(
+            borderRadius: BorderRadius.circular(18),
+            child: SizedBox(
+              height: tinggi,
+              width: lebar,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  aktif != null
+                      ? Image.network(
+                          aktif,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, _, _) => const _HeroPlaceholder(),
+                        )
+                      : const _HeroPlaceholder(),
+                  if (adaNavigasi)
+                    GestureDetector(
+                      behavior: HitTestBehavior.translucent,
+                      onTapDown: (details) {
+                        final keKanan = details.localPosition.dx > lebar / 2;
+                        final baru =
+                            (index + (keKanan ? 1 : -1)) % fotos.length;
+                        onFotoChanged(baru < 0 ? fotos.length - 1 : baru);
+                      },
+                    ),
+                  if (adaNavigasi)
+                    IgnorePointer(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: const [
+                            _GalleryCue(icon: Icons.chevron_left),
+                            _GalleryCue(icon: Icons.chevron_right),
+                          ],
+                        ),
+                      ),
+                    ),
+                  if (aktif != null)
+                    Positioned(
+                      top: 12,
+                      right: 12,
+                      child: _GalleryButton(
+                        icon: Icons.open_in_full,
+                        tooltip: 'Perbesar foto',
+                        onPressed: () => _bukaFoto(context, fotos, index),
+                      ),
+                    ),
+                  if (adaNavigasi)
+                    Positioned(
+                      bottom: 12,
+                      right: 12,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 9,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withValues(alpha: 0.55),
+                          borderRadius: BorderRadius.circular(9),
+                        ),
+                        child: Text(
+                          '${index + 1} / ${fotos.length}',
+                          style: const TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+          if (adaNavigasi) ...[
+            const SizedBox(height: 10),
+            SizedBox(
+              height: 58,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: fotos.length,
+                separatorBuilder: (_, _) => const SizedBox(width: 8),
+                itemBuilder: (context, i) {
+                  final dipilih = i == index;
+
+                  return GestureDetector(
+                    key: ValueKey('galeri-thumb-$i'),
+                    onTap: () => onFotoChanged(i),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 150),
+                      width: 78,
+                      clipBehavior: Clip.antiAlias,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: dipilih
+                              ? AppColors.primaryOrange
+                              : AppColors.softBorder,
+                          width: dipilih ? 2 : 1,
+                        ),
+                      ),
+                      child: Image.network(
+                        fotos[i],
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, _, _) =>
+                            const _HeroPlaceholder(iconSize: 22),
+                      ),
+                    ),
+                  );
                 },
               ),
             ),
-          Positioned(
-            top: topInset + 12,
-            left: 16,
-            child: _CircleButton(
-              icon: Icons.arrow_back,
-              tooltip: 'Kembali',
-              onPressed: () => Navigator.of(context).maybePop(),
-            ),
-          ),
-          if (fotos.length > 1)
-            Positioned(
-              bottom: 34,
-              right: 16,
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 5,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.55),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  '${fotoIndex + 1} / ${fotos.length}',
-                  style: const TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.white,
-                  ),
-                ),
-              ),
-            ),
+          ],
         ],
       ),
     );
   }
-}
 
-class _HeroPlaceholder extends StatelessWidget {
-  const _HeroPlaceholder();
-
-  @override
-  Widget build(BuildContext context) {
-    return const ColoredBox(
-      color: AppColors.lightOrange,
-      child: Center(
-        child: Icon(Icons.storefront, size: 64, color: AppColors.primaryOrange),
-      ),
+  Future<void> _bukaFoto(BuildContext context, List<String> fotos, int mulai) {
+    return showDialog<void>(
+      context: context,
+      barrierColor: Colors.black.withValues(alpha: 0.9),
+      builder: (_) => _PhotoViewer(fotos: fotos, initialIndex: mulai),
     );
   }
 }
 
-class _CircleButton extends StatelessWidget {
-  const _CircleButton({
+class _GalleryButton extends StatelessWidget {
+  const _GalleryButton({
     required this.icon,
     required this.tooltip,
     required this.onPressed,
@@ -503,17 +486,391 @@ class _CircleButton extends StatelessWidget {
     return Tooltip(
       message: tooltip,
       child: Material(
-        color: Colors.white.withValues(alpha: 0.92),
+        color: Colors.black.withValues(alpha: 0.45),
         shape: const CircleBorder(),
         child: InkWell(
           customBorder: const CircleBorder(),
           onTap: onPressed,
           child: SizedBox(
-            width: 40,
-            height: 40,
-            child: Icon(icon, size: 20, color: AppColors.charcoal),
+            width: 36,
+            height: 36,
+            child: Icon(icon, size: 18, color: AppColors.white),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _PhotoViewer extends StatefulWidget {
+  const _PhotoViewer({required this.fotos, required this.initialIndex});
+
+  final List<String> fotos;
+  final int initialIndex;
+
+  @override
+  State<_PhotoViewer> createState() => _PhotoViewerState();
+}
+
+class _PhotoViewerState extends State<_PhotoViewer> {
+  late int _index = widget.initialIndex.clamp(0, widget.fotos.length - 1);
+
+  void _geser(int arah) {
+    setState(() {
+      _index = (_index + arah) % widget.fotos.length;
+      if (_index < 0) _index = widget.fotos.length - 1;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final adaNavigasi = widget.fotos.length > 1;
+
+    return SizedBox.expand(
+      child: ColoredBox(
+        color: Colors.black,
+        child: Stack(
+          children: [
+            Positioned.fill(
+              child: InteractiveViewer(
+                minScale: 1,
+                maxScale: 4,
+                child: Image.network(
+                  widget.fotos[_index],
+                  fit: BoxFit.contain,
+                  errorBuilder: (_, _, _) =>
+                      const Center(child: _HeroPlaceholder()),
+                ),
+              ),
+            ),
+            Positioned(
+              top: 12,
+              right: 12,
+              child: _ViewerButton(
+                icon: Icons.close,
+                tooltip: 'Tutup',
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+            ),
+            if (adaNavigasi) ...[
+              Positioned(
+                left: 12,
+                top: 0,
+                bottom: 0,
+                child: Center(
+                  child: _ViewerButton(
+                    icon: Icons.chevron_left,
+                    tooltip: 'Foto sebelumnya',
+                    onPressed: () => _geser(-1),
+                  ),
+                ),
+              ),
+              Positioned(
+                right: 12,
+                top: 0,
+                bottom: 0,
+                child: Center(
+                  child: _ViewerButton(
+                    icon: Icons.chevron_right,
+                    tooltip: 'Foto berikutnya',
+                    onPressed: () => _geser(1),
+                  ),
+                ),
+              ),
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 24,
+                child: Center(
+                  child: Text(
+                    '${_index + 1} / ${widget.fotos.length}',
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.white,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ViewerButton extends StatelessWidget {
+  const _ViewerButton({
+    required this.icon,
+    required this.tooltip,
+    required this.onPressed,
+  });
+
+  final IconData icon;
+  final String tooltip;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: tooltip,
+      child: Material(
+        color: Colors.white.withValues(alpha: 0.16),
+        shape: const CircleBorder(),
+        child: InkWell(
+          customBorder: const CircleBorder(),
+          onTap: onPressed,
+          child: SizedBox(
+            width: 44,
+            height: 44,
+            child: Icon(icon, size: 22, color: AppColors.white),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _GalleryCue extends StatelessWidget {
+  const _GalleryCue({required this.icon});
+
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Container(
+        width: 32,
+        height: 32,
+        decoration: BoxDecoration(
+          color: Colors.black.withValues(alpha: 0.45),
+          shape: BoxShape.circle,
+        ),
+        child: Icon(icon, size: 20, color: AppColors.white),
+      ),
+    );
+  }
+}
+
+class _HeroPlaceholder extends StatelessWidget {
+  const _HeroPlaceholder({this.iconSize = 64});
+
+  final double iconSize;
+
+  @override
+  Widget build(BuildContext context) {
+    return ColoredBox(
+      color: AppColors.lightOrange,
+      child: Center(
+        child: Icon(
+          Icons.storefront,
+          size: iconSize,
+          color: AppColors.primaryOrange,
+        ),
+      ),
+    );
+  }
+}
+
+class _DetailSheet extends StatelessWidget {
+  const _DetailSheet({required this.place});
+
+  final PlaceModel place;
+
+  @override
+  Widget build(BuildContext context) {
+    final namaHost = place.namaHost?.trim();
+    final adaDeskripsi =
+        place.deskripsi != null && place.deskripsi!.trim().isNotEmpty;
+    final adaFasilitas = place.fasilitasList.isNotEmpty;
+    final adaAturan = place.aturan != null && place.aturan!.trim().isNotEmpty;
+
+    final ringkasan = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            _InfoBadge(label: place.kategoriLabel),
+            _StatusBadge(isAktif: place.isAktif),
+          ],
+        ),
+        const SizedBox(height: 14),
+        Text(
+          place.namaTempat,
+          style: AppFonts.heading(
+            fontSize: 27,
+            weight: 600,
+            height: 1.2,
+            letterSpacing: -0.4,
+            color: AppColors.charcoal,
+          ),
+        ),
+        const SizedBox(height: 10),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Padding(
+              padding: EdgeInsets.only(top: 2),
+              child: Icon(
+                Icons.location_on_outlined,
+                size: 17,
+                color: AppColors.secondaryText,
+              ),
+            ),
+            const SizedBox(width: 6),
+            Expanded(
+              child: Text(
+                '${place.alamat}, ${place.kota}',
+                style: const TextStyle(
+                  fontSize: 13.5,
+                  height: 1.4,
+                  color: AppColors.secondaryText,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 22),
+        _PriceBlock(place: place),
+        const SizedBox(height: 22),
+        _SpecRow(place: place),
+        if (namaHost != null && namaHost.isNotEmpty) ...[
+          const SizedBox(height: 22),
+          _HostRow(namaHost: namaHost),
+        ],
+      ],
+    );
+
+    final rincian = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (adaDeskripsi) ...[
+          const _SectionTitle('Deskripsi'),
+          const SizedBox(height: 10),
+          Text(
+            place.deskripsi!.trim(),
+            style: const TextStyle(
+              fontSize: 14,
+              height: 1.65,
+              color: AppColors.secondaryText,
+            ),
+          ),
+        ],
+        if (adaFasilitas) ...[
+          const SizedBox(height: 26),
+          const _SectionTitle('Fasilitas'),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final fasilitas in place.fasilitasList)
+                _FasilitasChip(label: fasilitas),
+            ],
+          ),
+        ],
+        if (adaAturan) ...[
+          const SizedBox(height: 26),
+          const _SectionTitle('Aturan'),
+          const SizedBox(height: 12),
+          _CatatanBox(isi: place.aturan!.trim()),
+        ],
+        const SizedBox(height: 26),
+        _BookedSchedules(place: place),
+        if (place.updatedAt != null) ...[
+          const SizedBox(height: 20),
+          Text(
+            'Terakhir diperbarui ${formatTanggal(place.updatedAt)}',
+            style: const TextStyle(
+              fontSize: 11.5,
+              color: AppColors.secondaryText,
+            ),
+          ),
+        ],
+      ],
+    );
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(24, 26, 24, 28),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.softBorder),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ringkasan,
+          const SizedBox(height: 24),
+          Container(height: 1, color: AppColors.softBorder),
+          const SizedBox(height: 24),
+          rincian,
+        ],
+      ),
+    );
+  }
+}
+
+class _CatatanBox extends StatelessWidget {
+  const _CatatanBox({required this.isi});
+
+  final String isi;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.lightOrange,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.softBorder),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Padding(
+            padding: EdgeInsets.only(top: 1),
+            child: Icon(
+              Icons.info_outline,
+              size: 17,
+              color: AppColors.primaryOrange,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              isi,
+              style: const TextStyle(
+                fontSize: 13.5,
+                height: 1.5,
+                color: AppColors.charcoal,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SectionTitle extends StatelessWidget {
+  const _SectionTitle(this.label);
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      label,
+      style: const TextStyle(
+        fontSize: 15,
+        fontWeight: FontWeight.w600,
+        color: AppColors.charcoal,
       ),
     );
   }
@@ -527,7 +884,7 @@ class _InfoBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
         color: AppColors.lightOrange,
         borderRadius: BorderRadius.circular(14),
@@ -536,7 +893,7 @@ class _InfoBadge extends StatelessWidget {
       child: Text(
         label,
         style: const TextStyle(
-          fontSize: 11,
+          fontSize: 11.5,
           fontWeight: FontWeight.w600,
           color: AppColors.charcoal,
         ),
@@ -553,7 +910,7 @@ class _StatusBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
         color: isAktif ? AppColors.primaryOrange : AppColors.lightOrange,
         borderRadius: BorderRadius.circular(14),
@@ -561,7 +918,7 @@ class _StatusBadge extends StatelessWidget {
       child: Text(
         isAktif ? 'AKTIF' : 'NONAKTIF',
         style: TextStyle(
-          fontSize: 10,
+          fontSize: 10.5,
           fontWeight: FontWeight.w700,
           letterSpacing: 0.4,
           color: isAktif ? AppColors.white : AppColors.secondaryText,
@@ -578,7 +935,7 @@ class _PriceBlock extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final promo = place.hasPromo ? place.hargaPromo : null;
+    final diskon = formatDiskonPersen(place.hargaNormal, place.hargaPromo);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -586,18 +943,25 @@ class _PriceBlock extends StatelessWidget {
         Row(
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
-            Text(
-              formatRupiah(place.hargaEfektif),
-              style: const TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.w700,
-                letterSpacing: -0.5,
-                color: AppColors.charcoal,
+            Flexible(
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  formatRupiah(place.hargaEfektif),
+                  maxLines: 1,
+                  style: AppFonts.heading(
+                    fontSize: 26,
+                    weight: 700,
+                    letterSpacing: -0.6,
+                    color: AppColors.charcoal,
+                  ),
+                ),
               ),
             ),
             const SizedBox(width: 6),
             Padding(
-              padding: const EdgeInsets.only(bottom: 3),
+              padding: const EdgeInsets.only(bottom: 4),
               child: Text(
                 '/${place.durasiLabel.toLowerCase()}',
                 style: const TextStyle(
@@ -608,8 +972,8 @@ class _PriceBlock extends StatelessWidget {
             ),
           ],
         ),
-        if (promo != null) ...[
-          const SizedBox(height: 2),
+        if (diskon != null) ...[
+          const SizedBox(height: 4),
           Row(
             children: [
               Text(
@@ -622,15 +986,15 @@ class _PriceBlock extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
                 decoration: BoxDecoration(
                   color: AppColors.primaryOrange,
-                  borderRadius: BorderRadius.circular(6),
+                  borderRadius: BorderRadius.circular(7),
                 ),
-                child: const Text(
-                  'PROMO',
-                  style: TextStyle(
-                    fontSize: 9,
+                child: Text(
+                  diskon,
+                  style: const TextStyle(
+                    fontSize: 10,
                     fontWeight: FontWeight.w800,
                     color: AppColors.white,
                   ),
@@ -656,7 +1020,7 @@ class _SpecRow extends StatelessWidget {
         color: AppColors.lightOrange,
         borderRadius: BorderRadius.circular(16),
       ),
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
       child: Row(
         children: [
           Expanded(
@@ -666,7 +1030,7 @@ class _SpecRow extends StatelessWidget {
               label: 'Durasi',
             ),
           ),
-          _SpecDivider(),
+          const _SpecDivider(),
           Expanded(
             child: _SpecItem(
               icon: Icons.photo_library_outlined,
@@ -674,7 +1038,7 @@ class _SpecRow extends StatelessWidget {
               label: 'Foto',
             ),
           ),
-          _SpecDivider(),
+          const _SpecDivider(),
           Expanded(
             child: _SpecItem(
               icon: Icons.event_busy_outlined,
@@ -704,7 +1068,7 @@ class _SpecItem extends StatelessWidget {
     return Column(
       children: [
         Icon(icon, size: 18, color: AppColors.primaryOrange),
-        const SizedBox(height: 4),
+        const SizedBox(height: 5),
         Text(
           value,
           maxLines: 1,
@@ -715,9 +1079,15 @@ class _SpecItem extends StatelessWidget {
             color: AppColors.charcoal,
           ),
         ),
+        const SizedBox(height: 1),
         Text(
           label,
-          style: const TextStyle(fontSize: 10, color: AppColors.secondaryText),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(
+            fontSize: 10.5,
+            color: AppColors.secondaryText,
+          ),
         ),
       ],
     );
@@ -725,9 +1095,106 @@ class _SpecItem extends StatelessWidget {
 }
 
 class _SpecDivider extends StatelessWidget {
+  const _SpecDivider();
+
   @override
   Widget build(BuildContext context) {
-    return Container(width: 1, height: 34, color: AppColors.softBorder);
+    return Container(width: 1, height: 38, color: AppColors.softBorder);
+  }
+}
+
+class _HostRow extends StatelessWidget {
+  const _HostRow({required this.namaHost});
+
+  final String namaHost;
+
+  @override
+  Widget build(BuildContext context) {
+    final inisial = namaHost.characters.first.toUpperCase();
+
+    return Row(
+      children: [
+        Container(
+          width: 40,
+          height: 40,
+          alignment: Alignment.center,
+          decoration: const BoxDecoration(
+            color: AppColors.lightOrange,
+            shape: BoxShape.circle,
+          ),
+          child: Text(
+            inisial,
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: AppColors.primaryOrange,
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                namaHost,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.charcoal,
+                ),
+              ),
+              const SizedBox(height: 1),
+              const Text(
+                'Pemilik tempat',
+                style: TextStyle(
+                  fontSize: 11.5,
+                  color: AppColors.secondaryText,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _FasilitasChip extends StatelessWidget {
+  const _FasilitasChip({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: AppColors.lightOrange,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(
+            Icons.check_circle_outline,
+            size: 15,
+            color: AppColors.primaryOrange,
+          ),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 12.5,
+              fontWeight: FontWeight.w500,
+              color: AppColors.charcoal,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 
@@ -741,48 +1208,102 @@ class _BookedSchedules extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Jadwal Sudah Dipesan',
-          style: TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.w600,
-            color: AppColors.charcoal,
-          ),
-        ),
-        const SizedBox(height: 8),
+        const _SectionTitle('Jadwal Sudah Dipesan'),
+        const SizedBox(height: 10),
         if (place.jadwalTerpakai.isEmpty)
-          const Text(
-            'Belum ada jadwal yang terisi.',
-            style: TextStyle(fontSize: 13.5, color: AppColors.secondaryText),
-          )
-        else
-          ...place.jadwalTerpakai.map(
-            (jadwal) => Padding(
-              padding: const EdgeInsets.only(bottom: 6),
-              child: Row(
-                children: [
-                  const Icon(
-                    Icons.event_busy,
-                    size: 17,
-                    color: AppColors.primaryOrange,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      '${formatDateString(jadwal.tanggalMulai)} – '
-                      '${formatDateString(jadwal.tanggalSelesai)}'
-                      '${jadwal.status == null ? '' : ' (${jadwal.status})'}',
-                      style: const TextStyle(
-                        fontSize: 12.5,
-                        color: AppColors.secondaryText,
-                      ),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: AppColors.softBorder),
+            ),
+            child: const Row(
+              children: [
+                Icon(
+                  Icons.event_available_outlined,
+                  size: 18,
+                  color: AppColors.primaryOrange,
+                ),
+                SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'Belum ada jadwal yang terisi. Semua tanggal masih tersedia.',
+                    style: TextStyle(
+                      fontSize: 13,
+                      height: 1.45,
+                      color: AppColors.secondaryText,
                     ),
                   ),
-                ],
+                ),
+              ],
+            ),
+          )
+        else
+          for (var i = 0; i < place.jadwalTerpakai.length; i++) ...[
+            if (i > 0) const SizedBox(height: 8),
+            _BookedScheduleRow(jadwal: place.jadwalTerpakai[i]),
+          ],
+      ],
+    );
+  }
+}
+
+class _BookedScheduleRow extends StatelessWidget {
+  const _BookedScheduleRow({required this.jadwal});
+
+  final BookedRange jadwal;
+
+  @override
+  Widget build(BuildContext context) {
+    final status = jadwal.status?.trim();
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.softBorder),
+      ),
+      child: Row(
+        children: [
+          const Icon(
+            Icons.event_busy,
+            size: 18,
+            color: AppColors.primaryOrange,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              '${formatDateString(jadwal.tanggalMulai)} – '
+              '${formatDateString(jadwal.tanggalSelesai)}',
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                color: AppColors.charcoal,
               ),
             ),
           ),
-      ],
+          if (status != null && status.isNotEmpty) ...[
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: AppColors.lightOrange,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(
+                status,
+                style: const TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.3,
+                  color: AppColors.secondaryText,
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
     );
   }
 }
@@ -811,15 +1332,50 @@ class _ActionBar extends StatelessWidget {
     final bottomInset = MediaQuery.paddingOf(context).bottom;
 
     Widget content;
-    if (isTenant) {
+    if (isOwner) {
+      final tombol = ElevatedButton.icon(
+        onPressed: acting ? null : () => _showKelolaSheet(context),
+        icon: const Icon(Icons.tune, size: 18),
+        label: Text(acting ? 'Memproses...' : 'Kelola Tempat'),
+      );
+
+      content = LayoutBuilder(
+        builder: (context, constraints) {
+          if (constraints.maxWidth >= 520) {
+            return Row(
+              children: [
+                Expanded(child: _BarStatus(place: place)),
+                const SizedBox(width: 24),
+                SizedBox(width: 260, height: 48, child: tombol),
+              ],
+            );
+          }
+
+          return SizedBox(width: double.infinity, height: 48, child: tombol);
+        },
+      );
+    } else if (isTenant) {
       if (place.isAktif) {
-        content = SizedBox(
-          width: double.infinity,
-          child: ElevatedButton.icon(
-            onPressed: () => context.push('/booking-form?id=${place.id}'),
-            icon: const Icon(Icons.event_available),
-            label: const Text('Sewa Tempat Ini'),
-          ),
+        final tombol = ElevatedButton.icon(
+          onPressed: () => context.push('/booking-form?id=${place.id}'),
+          icon: const Icon(Icons.event_available, size: 18),
+          label: const Text('Sewa Tempat Ini'),
+        );
+
+        content = LayoutBuilder(
+          builder: (context, constraints) {
+            if (constraints.maxWidth >= 520) {
+              return Row(
+                children: [
+                  Expanded(child: _BarHarga(place: place)),
+                  const SizedBox(width: 24),
+                  SizedBox(width: 240, height: 48, child: tombol),
+                ],
+              );
+            }
+
+            return SizedBox(width: double.infinity, height: 48, child: tombol);
+          },
         );
       } else {
         content = Container(
@@ -840,44 +1396,23 @@ class _ActionBar extends StatelessWidget {
           ),
         );
       }
-    } else if (isOwner) {
+    } else {
       content = Row(
-        children: [
+        children: const [
+          Icon(Icons.info_outline, size: 18, color: AppColors.secondaryText),
+          SizedBox(width: 10),
           Expanded(
-            child: OutlinedButton.icon(
-              onPressed: acting ? null : onToggleStatus,
-              icon: Icon(
-                place.isAktif
-                    ? Icons.visibility_off_outlined
-                    : Icons.visibility_outlined,
-                size: 18,
+            child: Text(
+              'Tempat ini dikelola oleh akun lain.',
+              style: TextStyle(
+                fontSize: 13.5,
+                height: 1.4,
+                color: AppColors.secondaryText,
               ),
-              label: Text(
-                place.isAktif ? 'Nonaktifkan' : 'Aktifkan',
-                style: const TextStyle(fontSize: 12),
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: OutlinedButton.icon(
-              onPressed: acting ? null : onDelete,
-              icon: const Icon(Icons.delete_outline, size: 18),
-              label: const Text('Hapus', style: TextStyle(fontSize: 12)),
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: ElevatedButton.icon(
-              onPressed: acting ? null : onEdit,
-              icon: const Icon(Icons.edit_outlined, size: 18),
-              label: const Text('Edit', style: TextStyle(fontSize: 12)),
             ),
           ),
         ],
       );
-    } else {
-      content = const SizedBox.shrink();
     }
 
     return Container(
@@ -886,7 +1421,278 @@ class _ActionBar extends StatelessWidget {
         border: Border(top: BorderSide(color: AppColors.softBorder)),
       ),
       padding: EdgeInsets.fromLTRB(16, 12, 16, bottomInset + 12),
-      child: content,
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 720),
+          child: content,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showKelolaSheet(BuildContext context) async {
+    final pilih = await showModalBottomSheet<_AksiKelola>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) => _KelolaSheet(place: place),
+    );
+
+    if (pilih == null) return;
+
+    switch (pilih) {
+      case _AksiKelola.ubah:
+        onEdit();
+      case _AksiKelola.ubahStatus:
+        onToggleStatus();
+      case _AksiKelola.hapus:
+        onDelete();
+    }
+  }
+}
+
+class _BarStatus extends StatelessWidget {
+  const _BarStatus({required this.place});
+
+  final PlaceModel place;
+
+  @override
+  Widget build(BuildContext context) {
+    final aktif = place.isAktif;
+
+    return Row(
+      children: [
+        Container(
+          width: 8,
+          height: 8,
+          decoration: BoxDecoration(
+            color: aktif ? AppColors.primaryOrange : AppColors.neutralBorder,
+            shape: BoxShape.circle,
+          ),
+        ),
+        const SizedBox(width: 9),
+        Flexible(
+          child: Text(
+            aktif
+                ? 'Tempat aktif dan tampil di pencarian'
+                : 'Tempat nonaktif, tidak tampil di pencarian',
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              fontSize: 13,
+              height: 1.35,
+              color: AppColors.secondaryText,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _BarHarga extends StatelessWidget {
+  const _BarHarga({required this.place});
+
+  final PlaceModel place;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Harga sewa',
+          style: TextStyle(fontSize: 11.5, color: AppColors.secondaryText),
+        ),
+        const SizedBox(height: 2),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Flexible(
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  formatRupiah(place.hargaEfektif),
+                  maxLines: 1,
+                  style: const TextStyle(
+                    fontSize: 19,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -0.3,
+                    color: AppColors.charcoal,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 4),
+            Padding(
+              padding: const EdgeInsets.only(bottom: 2),
+              child: Text(
+                '/${place.durasiLabel.toLowerCase()}',
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: AppColors.secondaryText,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+enum _AksiKelola { ubah, ubahStatus, hapus }
+
+class _KelolaSheet extends StatelessWidget {
+  const _KelolaSheet({required this.place});
+
+  final PlaceModel place;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      padding: EdgeInsets.fromLTRB(
+        20,
+        10,
+        20,
+        20 + MediaQuery.paddingOf(context).bottom,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Center(
+            child: Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: AppColors.softBorder,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Kelola Tempat',
+            style: AppFonts.heading(
+              fontSize: 20,
+              weight: 600,
+              color: AppColors.charcoal,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            place.namaTempat,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              fontSize: 13,
+              color: AppColors.secondaryText,
+            ),
+          ),
+          const SizedBox(height: 10),
+          _KelolaAction(
+            icon: Icons.edit_outlined,
+            label: 'Ubah Data Tempat',
+            keterangan: 'Ubah nama, harga, foto, dan keterangan tempat',
+            onTap: () => Navigator.of(context).pop(_AksiKelola.ubah),
+          ),
+          _KelolaAction(
+            icon: place.isAktif
+                ? Icons.visibility_off_outlined
+                : Icons.visibility_outlined,
+            label: place.isAktif ? 'Nonaktifkan Tempat' : 'Aktifkan Tempat',
+            keterangan: place.isAktif
+                ? 'Tempat tidak akan tampil untuk disewa'
+                : 'Tempat kembali tampil untuk disewa',
+            onTap: () => Navigator.of(context).pop(_AksiKelola.ubahStatus),
+          ),
+          _KelolaAction(
+            icon: Icons.delete_outline,
+            label: 'Hapus Tempat',
+            keterangan: 'Tempat yang dihapus tidak dapat dikembalikan',
+            warna: Theme.of(context).colorScheme.error,
+            onTap: () => Navigator.of(context).pop(_AksiKelola.hapus),
+          ),
+          const SizedBox(height: 6),
+          SizedBox(
+            width: double.infinity,
+            child: TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Batal'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _KelolaAction extends StatelessWidget {
+  const _KelolaAction({
+    required this.icon,
+    required this.label,
+    required this.keterangan,
+    required this.onTap,
+    this.warna = AppColors.charcoal,
+  });
+
+  final IconData icon;
+  final String label;
+  final String keterangan;
+  final VoidCallback onTap;
+  final Color warna;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: AppColors.white,
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(14),
+        onTap: onTap,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 56),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+            child: Row(
+              children: [
+                Icon(icon, size: 20, color: warna),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        label,
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: warna,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        keterangan,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          height: 1.35,
+                          color: AppColors.secondaryText,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

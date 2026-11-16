@@ -288,40 +288,92 @@ class DetailSkeleton extends StatelessWidget {
         children: [
           Container(
             width: double.infinity,
-            height: 200,
+            height: 240,
             color: AppColors.lightOrange,
           ),
-          Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(height: 20, width: 220, color: AppColors.lightOrange),
-                const SizedBox(height: 8),
-                Container(height: 13, width: 150, color: AppColors.lightOrange),
-                const SizedBox(height: 16),
-                Container(
-                  height: 70,
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    color: AppColors.lightOrange,
-                    borderRadius: BorderRadius.circular(12),
+          Transform.translate(
+            offset: const Offset(0, -22),
+            child: Container(
+              decoration: const BoxDecoration(
+                color: AppColors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+              ),
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 720),
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 22, 20, 28),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            _SkeletonBar(
+                              height: 24,
+                              width: 96,
+                              radius: 14,
+                            ),
+                            SizedBox(width: 8),
+                            _SkeletonBar(
+                              height: 24,
+                              width: 72,
+                              radius: 14,
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: 14),
+                        _SkeletonBar(height: 24, width: 220),
+                        SizedBox(height: 10),
+                        _SkeletonBar(height: 13, width: 180),
+                        SizedBox(height: 18),
+                        _SkeletonBar(height: 28, width: 150),
+                        SizedBox(height: 18),
+                        _SkeletonBar(
+                          height: 76,
+                          width: double.infinity,
+                          radius: 16,
+                        ),
+                        SizedBox(height: 22),
+                        _SkeletonBar(height: 14, width: 90),
+                        SizedBox(height: 10),
+                        _SkeletonBar(
+                          height: 12,
+                          width: double.infinity,
+                        ),
+                        SizedBox(height: 6),
+                        _SkeletonBar(height: 12, width: 260),
+                      ],
+                    ),
                   ),
                 ),
-                const SizedBox(height: 20),
-                Container(height: 14, width: 80, color: AppColors.lightOrange),
-                const SizedBox(height: 8),
-                Container(
-                  height: 12,
-                  width: double.infinity,
-                  color: AppColors.lightOrange,
-                ),
-                const SizedBox(height: 4),
-                Container(height: 12, width: 260, color: AppColors.lightOrange),
-              ],
+              ),
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _SkeletonBar extends StatelessWidget {
+  const _SkeletonBar({
+    required this.height,
+    required this.width,
+    this.radius = 8,
+  });
+
+  final double height;
+  final double width;
+  final double radius;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: height,
+      width: width,
+      decoration: BoxDecoration(
+        color: AppColors.lightOrange,
+        borderRadius: BorderRadius.circular(radius),
       ),
     );
   }
