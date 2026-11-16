@@ -261,70 +261,58 @@ class _DetailScrollView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        const paddingSamping = 20.0;
-        const jarakKolom = 20.0;
-        final ruang = constraints.maxWidth - paddingSamping * 2;
-        final duaKolom = ruang >= 860;
-        final lebarKolom = duaKolom
-            ? (ruang - jarakKolom) / 2
-            : constraints.maxWidth;
-        final tinggiHero = (lebarKolom * 0.62).clamp(220.0, 460.0);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final ruang = constraints.maxWidth;
+          const jarakKolom = 32.0;
+          final duaKolom = ruang >= 840;
+          final lebarKiri = duaKolom ? (ruang - jarakKolom) * 0.46 : ruang;
+          final lebarKanan = duaKolom ? ruang - jarakKolom - lebarKiri : ruang;
 
-        final gallery = _HeroGallery(
-          place: place,
-          fotoIndex: fotoIndex,
-          lebar: lebarKolom,
-          tinggi: tinggiHero,
-          onFotoChanged: onFotoChanged,
-        );
+          final gallery = _HeroGallery(
+            place: place,
+            fotoIndex: fotoIndex,
+            lebar: lebarKiri,
+            tinggi: duaKolom
+                ? (lebarKiri * 0.78).clamp(230.0, 430.0)
+                : (ruang * 0.56).clamp(200.0, 320.0),
+            onFotoChanged: onFotoChanged,
+          );
 
-        return RefreshIndicator(
-          color: AppColors.primaryOrange,
-          onRefresh: onRefresh,
-          child: SingleChildScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (duaKolom)
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(
-                      paddingSamping,
-                      12,
-                      paddingSamping,
-                      28,
-                    ),
-                    child: Row(
+          return RefreshIndicator(
+            color: AppColors.primaryOrange,
+            onRefresh: onRefresh,
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              child: duaKolom
+                  ? Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        SizedBox(width: lebarKolom, child: gallery),
+                        gallery,
                         const SizedBox(width: jarakKolom),
                         SizedBox(
-                          width: lebarKolom,
+                          width: lebarKanan,
                           child: _DetailSheet(place: place),
                         ),
                       ],
+                    )
+                  : Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        gallery,
+                        Transform.translate(
+                          offset: const Offset(0, -20),
+                          child: _DetailSheet(place: place),
+                        ),
+                        const SizedBox(height: 24),
+                      ],
                     ),
-                  )
-                else ...[
-                  gallery,
-                  Transform.translate(
-                    offset: const Offset(0, -22),
-                    child: Center(
-                      child: ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 720),
-                        child: _DetailSheet(place: place),
-                      ),
-                    ),
-                  ),
-                ],
-              ],
             ),
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
 }
@@ -352,65 +340,68 @@ class _HeroGallery extends StatelessWidget {
         : null;
     final adaNavigasi = fotos.length > 1;
 
-    return SizedBox(
-      height: tinggi,
-      width: lebar,
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          aktif != null
-              ? Image.network(
-                  aktif,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, _, _) => const _HeroPlaceholder(),
-                )
-              : const _HeroPlaceholder(),
-          if (adaNavigasi)
-            GestureDetector(
-              behavior: HitTestBehavior.translucent,
-              onTapDown: (details) {
-                final keKanan = details.localPosition.dx > lebar / 2;
-                final baru = (fotoIndex + (keKanan ? 1 : -1)) % fotos.length;
-                onFotoChanged(baru < 0 ? fotos.length - 1 : baru);
-              },
-            ),
-          if (adaNavigasi)
-            IgnorePointer(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: const [
-                    _GalleryCue(icon: Icons.chevron_left),
-                    _GalleryCue(icon: Icons.chevron_right),
-                  ],
-                ),
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(18),
+      child: SizedBox(
+        height: tinggi,
+        width: lebar,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            aktif != null
+                ? Image.network(
+                    aktif,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, _, _) => const _HeroPlaceholder(),
+                  )
+                : const _HeroPlaceholder(),
+            if (adaNavigasi)
+              GestureDetector(
+                behavior: HitTestBehavior.translucent,
+                onTapDown: (details) {
+                  final keKanan = details.localPosition.dx > lebar / 2;
+                  final baru = (fotoIndex + (keKanan ? 1 : -1)) % fotos.length;
+                  onFotoChanged(baru < 0 ? fotos.length - 1 : baru);
+                },
               ),
-            ),
-          if (adaNavigasi)
-            Positioned(
-              bottom: 36,
-              right: 16,
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 5,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.55),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  '${fotoIndex + 1} / ${fotos.length}',
-                  style: const TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.white,
+            if (adaNavigasi)
+              IgnorePointer(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: const [
+                      _GalleryCue(icon: Icons.chevron_left),
+                      _GalleryCue(icon: Icons.chevron_right),
+                    ],
                   ),
                 ),
               ),
-            ),
-        ],
+            if (adaNavigasi)
+              Positioned(
+                bottom: 14,
+                right: 14,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 9,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.55),
+                    borderRadius: BorderRadius.circular(9),
+                  ),
+                  child: Text(
+                    '${fotoIndex + 1} / ${fotos.length}',
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.white,
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -459,148 +450,172 @@ class _DetailSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final namaHost = place.namaHost?.trim();
+    final adaDeskripsi =
+        place.deskripsi != null && place.deskripsi!.trim().isNotEmpty;
+    final adaFasilitas = place.fasilitasList.isNotEmpty;
+    final adaAturan = place.aturan != null && place.aturan!.trim().isNotEmpty;
 
-    return Container(
-      decoration: const BoxDecoration(
-        color: AppColors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-      ),
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 720),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 22, 20, 28),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    _InfoBadge(label: place.kategoriLabel),
-                    const SizedBox(width: 8),
-                    _StatusBadge(isAktif: place.isAktif),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  place.namaTempat,
-                  style: AppFonts.heading(
-                    fontSize: 27,
-                    weight: 600,
-                    height: 1.2,
-                    letterSpacing: -0.4,
-                    color: AppColors.charcoal,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Padding(
-                      padding: EdgeInsets.only(top: 1),
-                      child: Icon(
-                        Icons.location_on_outlined,
-                        size: 17,
-                        color: AppColors.secondaryText,
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    Expanded(
-                      child: Text(
-                        '${place.alamat}, ${place.kota}',
-                        style: const TextStyle(
-                          fontSize: 13.5,
-                          height: 1.4,
-                          color: AppColors.secondaryText,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 18),
-                _PriceBlock(place: place),
-                const SizedBox(height: 18),
-                _SpecRow(place: place),
-                if (namaHost != null && namaHost.isNotEmpty) ...[
-                  const SizedBox(height: 18),
-                  _HostRow(namaHost: namaHost),
-                ],
-                if (place.deskripsi != null &&
-                    place.deskripsi!.trim().isNotEmpty) ...[
-                  const SizedBox(height: 22),
-                  const _SectionTitle('Deskripsi'),
-                  const SizedBox(height: 8),
-                  Text(
-                    place.deskripsi!.trim(),
-                    style: const TextStyle(
-                      fontSize: 14,
-                      height: 1.6,
-                      color: AppColors.secondaryText,
-                    ),
-                  ),
-                ],
-                if (place.fasilitasList.isNotEmpty) ...[
-                  const SizedBox(height: 22),
-                  const _SectionTitle('Fasilitas'),
-                  const SizedBox(height: 10),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      for (final fasilitas in place.fasilitasList)
-                        _FasilitasChip(label: fasilitas),
-                    ],
-                  ),
-                ],
-                if (place.aturan != null && place.aturan!.trim().isNotEmpty) ...[
-                  const SizedBox(height: 22),
-                  const _SectionTitle('Aturan'),
-                  const SizedBox(height: 8),
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: AppColors.lightOrange,
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Icon(
-                          Icons.info_outline,
-                          size: 18,
-                          color: AppColors.primaryOrange,
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Text(
-                            place.aturan!.trim(),
-                            style: const TextStyle(
-                              fontSize: 13.5,
-                              height: 1.5,
-                              color: AppColors.charcoal,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-                const SizedBox(height: 22),
-                _BookedSchedules(place: place),
-                if (place.updatedAt != null) ...[
-                  const SizedBox(height: 20),
-                  Text(
-                    'Terakhir diperbarui ${formatTanggal(place.updatedAt)}',
-                    style: const TextStyle(
-                      fontSize: 11.5,
-                      color: AppColors.secondaryText,
-                    ),
-                  ),
-                ],
-              ],
-            ),
+    final ringkasan = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            _InfoBadge(label: place.kategoriLabel),
+            _StatusBadge(isAktif: place.isAktif),
+          ],
+        ),
+        const SizedBox(height: 14),
+        Text(
+          place.namaTempat,
+          style: AppFonts.heading(
+            fontSize: 27,
+            weight: 600,
+            height: 1.2,
+            letterSpacing: -0.4,
+            color: AppColors.charcoal,
           ),
         ),
+        const SizedBox(height: 10),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Padding(
+              padding: EdgeInsets.only(top: 2),
+              child: Icon(
+                Icons.location_on_outlined,
+                size: 17,
+                color: AppColors.secondaryText,
+              ),
+            ),
+            const SizedBox(width: 6),
+            Expanded(
+              child: Text(
+                '${place.alamat}, ${place.kota}',
+                style: const TextStyle(
+                  fontSize: 13.5,
+                  height: 1.4,
+                  color: AppColors.secondaryText,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 22),
+        _PriceBlock(place: place),
+        const SizedBox(height: 22),
+        _SpecRow(place: place),
+        if (namaHost != null && namaHost.isNotEmpty) ...[
+          const SizedBox(height: 22),
+          _HostRow(namaHost: namaHost),
+        ],
+      ],
+    );
+
+    final rincian = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (adaDeskripsi) ...[
+          const _SectionTitle('Deskripsi'),
+          const SizedBox(height: 10),
+          Text(
+            place.deskripsi!.trim(),
+            style: const TextStyle(
+              fontSize: 14,
+              height: 1.65,
+              color: AppColors.secondaryText,
+            ),
+          ),
+        ],
+        if (adaFasilitas) ...[
+          const SizedBox(height: 26),
+          const _SectionTitle('Fasilitas'),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final fasilitas in place.fasilitasList)
+                _FasilitasChip(label: fasilitas),
+            ],
+          ),
+        ],
+        if (adaAturan) ...[
+          const SizedBox(height: 26),
+          const _SectionTitle('Aturan'),
+          const SizedBox(height: 12),
+          _CatatanBox(isi: place.aturan!.trim()),
+        ],
+        const SizedBox(height: 26),
+        _BookedSchedules(place: place),
+        if (place.updatedAt != null) ...[
+          const SizedBox(height: 20),
+          Text(
+            'Terakhir diperbarui ${formatTanggal(place.updatedAt)}',
+            style: const TextStyle(
+              fontSize: 11.5,
+              color: AppColors.secondaryText,
+            ),
+          ),
+        ],
+      ],
+    );
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(24, 26, 24, 28),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.softBorder),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [ringkasan, const SizedBox(height: 26), rincian],
+      ),
+    );
+  }
+}
+
+class _CatatanBox extends StatelessWidget {
+  const _CatatanBox({required this.isi});
+
+  final String isi;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.lightOrange,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.softBorder),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Padding(
+            padding: EdgeInsets.only(top: 1),
+            child: Icon(
+              Icons.info_outline,
+              size: 17,
+              color: AppColors.primaryOrange,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              isi,
+              style: const TextStyle(
+                fontSize: 13.5,
+                height: 1.5,
+                color: AppColors.charcoal,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
