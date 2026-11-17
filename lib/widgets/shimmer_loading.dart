@@ -308,17 +308,9 @@ class DetailSkeleton extends StatelessWidget {
                       children: [
                         Row(
                           children: [
-                            _SkeletonBar(
-                              height: 24,
-                              width: 96,
-                              radius: 14,
-                            ),
+                            _SkeletonBar(height: 24, width: 96, radius: 14),
                             SizedBox(width: 8),
-                            _SkeletonBar(
-                              height: 24,
-                              width: 72,
-                              radius: 14,
-                            ),
+                            _SkeletonBar(height: 24, width: 72, radius: 14),
                           ],
                         ),
                         SizedBox(height: 14),
@@ -336,10 +328,7 @@ class DetailSkeleton extends StatelessWidget {
                         SizedBox(height: 22),
                         _SkeletonBar(height: 14, width: 90),
                         SizedBox(height: 10),
-                        _SkeletonBar(
-                          height: 12,
-                          width: double.infinity,
-                        ),
+                        _SkeletonBar(height: 12, width: double.infinity),
                         SizedBox(height: 6),
                         _SkeletonBar(height: 12, width: 260),
                       ],

@@ -8,11 +8,14 @@ class SpothSidebar extends StatelessWidget {
   const SpothSidebar({
     super.key,
     required this.index,
+    required this.items,
     required this.onChanged,
     required this.expanded,
   });
 
   final int index;
+
+  final List<NavItemData> items;
 
   final ValueChanged<int> onChanged;
 
@@ -58,9 +61,9 @@ class SpothSidebar extends StatelessWidget {
                     ),
                   ),
           ),
-          for (var i = 0; i < kNavItems.length; i++) ...[
+          for (var i = 0; i < items.length; i++) ...[
             _SidebarItem(
-              item: kNavItems[i],
+              item: items[i],
               selected: index == i,
               expanded: expanded,
               onTap: () => onChanged(i),

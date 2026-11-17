@@ -37,6 +37,49 @@ String formatDateString(String? tanggal) {
   return nilai == null ? '-' : DateFormat('dd MMM yyyy').format(nilai);
 }
 
+DateTime tanggalSelesaiSewa(
+  DateTime tanggalMulai,
+  String tipeDurasi,
+  int jumlahDurasi,
+) {
+  final mulai = DateTime.utc(
+    tanggalMulai.year,
+    tanggalMulai.month,
+    tanggalMulai.day,
+  );
+
+  if (jumlahDurasi < 1) {
+    return mulai;
+  }
+
+  switch (tipeDurasi) {
+    case 'HARIAN':
+      return mulai.add(Duration(days: jumlahDurasi - 1));
+    case 'MINGGUAN':
+      return mulai.add(Duration(days: jumlahDurasi * 7 - 1));
+    case 'BULANAN':
+      final bulanTujuan = DateTime.utc(
+        mulai.year,
+        mulai.month + jumlahDurasi,
+        1,
+      );
+      final hariTerakhir = DateTime.utc(
+        bulanTujuan.year,
+        bulanTujuan.month + 1,
+        0,
+      ).day;
+      final hari = mulai.day > hariTerakhir ? hariTerakhir : mulai.day;
+
+      return DateTime.utc(
+        bulanTujuan.year,
+        bulanTujuan.month,
+        hari,
+      ).subtract(const Duration(days: 1));
+    default:
+      return mulai;
+  }
+}
+
 String formatTanggal(DateTime? tanggal) {
   return tanggal == null ? '-' : DateFormat('dd MMM yyyy').format(tanggal);
 }

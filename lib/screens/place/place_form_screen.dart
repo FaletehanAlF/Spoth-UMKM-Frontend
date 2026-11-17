@@ -11,6 +11,7 @@ import '../../core/theme/app_colors.dart';
 import '../../models/place_model.dart';
 import '../../models/user_model.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/nav_provider.dart';
 import '../../providers/place_provider.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/shimmer_loading.dart';
@@ -385,7 +386,7 @@ class _PlaceFormScreenState extends ConsumerState<PlaceFormScreen> {
         ),
       );
 
-      return SpothSidebarScaffold(child: page);
+      return SpothSidebarScaffold(activeTab: MainTab.kelolaTempat, child: page);
     }
 
     final page = Scaffold(
@@ -649,7 +650,7 @@ class _PlaceFormScreenState extends ConsumerState<PlaceFormScreen> {
             ),
     );
 
-    return SpothSidebarScaffold(child: page);
+    return SpothSidebarScaffold(activeTab: MainTab.kelolaTempat, child: page);
   }
 }
 

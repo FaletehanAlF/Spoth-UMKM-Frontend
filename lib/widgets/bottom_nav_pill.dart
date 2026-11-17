@@ -7,10 +7,13 @@ class SpothBottomNav extends StatelessWidget {
   const SpothBottomNav({
     super.key,
     required this.index,
+    required this.items,
     required this.onChanged,
   });
 
   final int index;
+
+  final List<NavItemData> items;
 
   final ValueChanged<int> onChanged;
 
@@ -39,9 +42,9 @@ class SpothBottomNav extends StatelessWidget {
         ),
         child: Row(
           children: [
-            for (var i = 0; i < kNavItems.length; i++)
+            for (var i = 0; i < items.length; i++)
               _NavItem(
-                item: kNavItems[i],
+                item: items[i],
                 selected: index == i,
                 onTap: () => onChanged(i),
               ),
@@ -68,29 +71,18 @@ class _NavItem extends StatelessWidget {
     final color = selected ? AppColors.primaryOrange : AppColors.secondaryText;
 
     return Expanded(
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(24),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 10),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                selected ? item.activeIcon : item.icon,
-                size: 22,
-                color: color,
-              ),
-              const SizedBox(height: 3),
-              Text(
-                item.label,
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
-                  color: color,
-                ),
-              ),
-            ],
+      child: Tooltip(
+        message: item.label,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(24),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 13),
+            child: Icon(
+              selected ? item.activeIcon : item.icon,
+              size: 24,
+              color: color,
+            ),
           ),
         ),
       ),

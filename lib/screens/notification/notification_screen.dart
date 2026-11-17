@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/format.dart';
 import '../../models/notification_model.dart';
+import '../../providers/nav_provider.dart';
 import '../../providers/notification_provider.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/shimmer_loading.dart';
@@ -98,7 +99,7 @@ class NotificationScreen extends ConsumerWidget {
       ),
     );
 
-    return SpothSidebarScaffold(activeNavIndex: 1, child: page);
+    return SpothSidebarScaffold(activeTab: MainTab.tempat, child: page);
   }
 }
 

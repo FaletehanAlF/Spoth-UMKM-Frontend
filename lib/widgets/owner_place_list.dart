@@ -4,9 +4,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../core/theme/app_colors.dart';
+import '../../core/services/place_service.dart';
+import '../../core/theme/app_colors.dart';
+import '../core/theme/app_fonts.dart';
 import '../core/utils/format.dart';
 import '../models/place_model.dart';
+import '../providers/auth_provider.dart';
 import '../providers/place_provider.dart';
 import 'empty_state.dart';
 import 'shimmer_loading.dart';
@@ -254,10 +257,129 @@ class _EmptyPlaces extends StatelessWidget {
   }
 }
 
-class _OwnerPlaceCard extends StatelessWidget {
+class _OwnerPlaceCard extends ConsumerStatefulWidget {
   const _OwnerPlaceCard({required this.place});
 
   final PlaceModel place;
+
+  @override
+  ConsumerState<_OwnerPlaceCard> createState() => _OwnerPlaceCardState();
+}
+
+class _OwnerPlaceCardState extends ConsumerState<_OwnerPlaceCard> {
+  bool _acting = false;
+
+  PlaceModel get place => widget.place;
+
+  Future<void> _toggleStatus() async {
+    if (_acting) return;
+
+    setState(() => _acting = true);
+    try {
+      final token = ref.read(authNotifierProvider.select((s) => s.token));
+      if (token == null) return;
+
+      await ref
+          .read(placeServiceProvider)
+          .updatePlace(
+            token: token,
+            id: place.id,
+            payload: {'status': place.isAktif ? 'NONAKTIF' : 'AKTIF'},
+          );
+
+      await ref.read(myPlacesProvider.notifier).refresh();
+      await ref.read(hostSummaryProvider.notifier).refresh();
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Gagal mengubah status tempat.')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _acting = false);
+    }
+  }
+
+  Future<void> _delete() async {
+    if (_acting) return;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Hapus tempat ini?'),
+        content: const Text('Tempat yang dihapus tidak dapat dikembalikan.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Batal'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text(
+              'Hapus',
+              style: TextStyle(color: AppColors.primaryOrange),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    setState(() => _acting = true);
+    try {
+      final token = ref.read(authNotifierProvider.select((s) => s.token));
+      if (token == null) return;
+
+      await ref
+          .read(placeServiceProvider)
+          .deletePlace(token: token, id: place.id);
+      await ref.read(myPlacesProvider.notifier).refresh();
+      await ref.read(hostSummaryProvider.notifier).refresh();
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Tempat berhasil dihapus')));
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Gagal menghapus tempat.')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _acting = false);
+    }
+  }
+
+  Future<void> _edit() async {
+    if (_acting) return;
+
+    final saved = await context.push('/place-form?id=${place.id}');
+    if (saved == true && mounted) {
+      await ref.read(myPlacesProvider.notifier).refresh();
+      await ref.read(hostSummaryProvider.notifier).refresh();
+    }
+  }
+
+  Future<void> _showKelolaSheet() async {
+    final pilih = await showModalBottomSheet<_AksiKelola>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) => _KelolaSheet(place: place),
+    );
+
+    if (pilih == null) return;
+
+    switch (pilih) {
+      case _AksiKelola.ubah:
+        await _edit();
+      case _AksiKelola.ubahStatus:
+        await _toggleStatus();
+      case _AksiKelola.hapus:
+        await _delete();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -382,7 +504,12 @@ class _OwnerPlaceCard extends StatelessWidget {
                   ],
                 ),
               ),
-              const Icon(Icons.chevron_right, color: AppColors.secondaryText),
+              IconButton(
+                onPressed: _acting ? null : _showKelolaSheet,
+                icon: const Icon(Icons.more_vert),
+                tooltip: 'Kelola Tempat',
+                color: AppColors.secondaryText,
+              ),
             ],
           ),
         ),
@@ -425,6 +552,163 @@ class _PhotoPlaceholder extends StatelessWidget {
     return const ColoredBox(
       color: AppColors.lightOrange,
       child: Icon(Icons.storefront, size: 26, color: AppColors.primaryOrange),
+    );
+  }
+}
+
+enum _AksiKelola { ubah, ubahStatus, hapus }
+
+class _KelolaSheet extends StatelessWidget {
+  const _KelolaSheet({required this.place});
+
+  final PlaceModel place;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      padding: EdgeInsets.fromLTRB(
+        20,
+        10,
+        20,
+        20 + MediaQuery.paddingOf(context).bottom,
+      ),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: AppColors.softBorder,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Aksi Tempat',
+              style: AppFonts.heading(
+                fontSize: 20,
+                weight: 600,
+                color: AppColors.charcoal,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              place.namaTempat,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 13,
+                color: AppColors.secondaryText,
+              ),
+            ),
+            const SizedBox(height: 10),
+            _KelolaAction(
+              icon: Icons.edit_outlined,
+              label: 'Ubah Data Tempat',
+              keterangan: 'Ubah nama, harga, foto, dan keterangan tempat',
+              onTap: () => Navigator.of(context).pop(_AksiKelola.ubah),
+            ),
+            _KelolaAction(
+              icon: place.isAktif
+                  ? Icons.visibility_off_outlined
+                  : Icons.visibility_outlined,
+              label: place.isAktif ? 'Nonaktifkan Tempat' : 'Aktifkan Tempat',
+              keterangan: place.isAktif
+                  ? 'Tempat tidak akan tampil untuk disewa'
+                  : 'Tempat kembali tampil untuk disewa',
+              onTap: () => Navigator.of(context).pop(_AksiKelola.ubahStatus),
+            ),
+            _KelolaAction(
+              icon: Icons.delete_outline,
+              label: 'Hapus Tempat',
+              keterangan: 'Tempat yang dihapus tidak dapat dikembalikan',
+              warna: Theme.of(context).colorScheme.error,
+              onTap: () => Navigator.of(context).pop(_AksiKelola.hapus),
+            ),
+            const SizedBox(height: 6),
+            SizedBox(
+              width: double.infinity,
+              child: TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('Batal'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _KelolaAction extends StatelessWidget {
+  const _KelolaAction({
+    required this.icon,
+    required this.label,
+    required this.keterangan,
+    required this.onTap,
+    this.warna = AppColors.charcoal,
+  });
+
+  final IconData icon;
+  final String label;
+  final String keterangan;
+  final VoidCallback onTap;
+  final Color warna;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: AppColors.white,
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(14),
+        onTap: onTap,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 56),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+            child: Row(
+              children: [
+                Icon(icon, size: 20, color: warna),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        label,
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: warna,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        keterangan,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          height: 1.35,
+                          color: AppColors.secondaryText,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
