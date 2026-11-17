@@ -50,8 +50,6 @@ class BookingModel {
     }
   }
 
-  bool get bisaDibatalkan => status == 'MENUNGGU_PEMBAYARAN';
-
   factory BookingModel.fromJson(Map<String, dynamic> json) {
     return BookingModel(
       id: json['id']?.toString() ?? '',
@@ -94,31 +92,53 @@ class BookingModel {
 class PricePreviewModel {
   const PricePreviewModel({
     required this.namaTempat,
+    required this.tanggalMulai,
     required this.tanggalSelesai,
     required this.tipeDurasi,
+    required this.jumlahDurasi,
     required this.hargaSatuan,
+    required this.hargaNormal,
+    required this.hargaPromo,
     required this.totalHarga,
+    required this.komisiPlatform,
+    required this.pendapatanHost,
     required this.tersedia,
     required this.jumlahKonflik,
   });
 
   final String namaTempat;
+  final String tanggalMulai;
   final String tanggalSelesai;
   final String tipeDurasi;
+  final int jumlahDurasi;
   final double hargaSatuan;
+  final double hargaNormal;
+  final double? hargaPromo;
   final double totalHarga;
+  final double komisiPlatform;
+  final double pendapatanHost;
   final bool tersedia;
   final int jumlahKonflik;
 
   factory PricePreviewModel.fromJson(Map<String, dynamic> json) {
     double toDouble(dynamic value) => value is num ? value.toDouble() : 0;
 
+    final hargaPromo = json['harga_promo'];
+
     return PricePreviewModel(
       namaTempat: json['nama_tempat'] as String? ?? '',
+      tanggalMulai: json['tanggal_mulai']?.toString() ?? '',
       tanggalSelesai: json['tanggal_selesai']?.toString() ?? '',
       tipeDurasi: json['tipe_durasi'] as String? ?? '',
+      jumlahDurasi: (json['jumlah_durasi'] is num)
+          ? (json['jumlah_durasi'] as num).toInt()
+          : 0,
       hargaSatuan: toDouble(json['harga_satuan']),
+      hargaNormal: toDouble(json['harga_normal']),
+      hargaPromo: hargaPromo == null ? null : toDouble(hargaPromo),
       totalHarga: toDouble(json['total_harga']),
+      komisiPlatform: toDouble(json['komisi_platform']),
+      pendapatanHost: toDouble(json['pendapatan_host']),
       tersedia: json['tersedia'] as bool? ?? false,
       jumlahKonflik: (json['konflik'] as List<dynamic>?)?.length ?? 0,
     );

@@ -78,9 +78,9 @@ class OwnerHomeScreen extends ConsumerWidget {
                         const _SummarySection(),
                         const SizedBox(height: 12),
                         _ManagePlacesCard(
-                          onTap: () => ref.read(
-                            mainNavIndexProvider.notifier,
-                          ).setTab(1),
+                          onTap: () => ref
+                              .read(mainNavIndexProvider.notifier)
+                              .setTab(MainTab.kelolaTempat),
                         ),
                       ];
 
@@ -96,9 +96,9 @@ class OwnerHomeScreen extends ConsumerWidget {
                           Expanded(
                             flex: 2,
                             child: _ManagePlacesCard(
-                              onTap: () => ref.read(
-                                mainNavIndexProvider.notifier,
-                              ).setTab(1),
+                              onTap: () => ref
+                                  .read(mainNavIndexProvider.notifier)
+                                  .setTab(MainTab.kelolaTempat),
                             ),
                           ),
                         ],
@@ -120,9 +120,9 @@ class OwnerHomeScreen extends ConsumerWidget {
                       ),
                       _SectionLink(
                         label: 'Lihat Semua',
-                        onTap: () => ref.read(
-                          mainNavIndexProvider.notifier,
-                        ).setTab(1),
+                        onTap: () => ref
+                            .read(mainNavIndexProvider.notifier)
+                            .setTab(MainTab.tempat),
                       ),
                     ],
                   ),
@@ -238,7 +238,7 @@ class _ManagePlacesCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Tempat Saya',
+                      'Kelola Tempat',
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w700,
@@ -278,8 +278,7 @@ class _SummarySection extends ConsumerWidget {
       error: (error, _) => EmptyState(
         icon: Icons.error_outline,
         title: 'Gagal memuat ringkasan',
-        message:
-            'Periksa koneksi internet Anda lalu tarik ke bawah untuk mencoba lagi.',
+        message: 'Periksa koneksi internet Anda lalu tarik ke bawah untuk mencoba lagi.',
       ),
       data: (value) {
         if (value == null) {

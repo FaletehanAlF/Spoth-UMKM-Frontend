@@ -19,11 +19,13 @@ import 'package:spoth_umkm/providers/nav_provider.dart';
 import 'package:spoth_umkm/screens/auth/forgot_password_screen.dart';
 import 'package:spoth_umkm/screens/auth/login_screen.dart';
 import 'package:spoth_umkm/screens/auth/register_screen.dart';
+import 'package:spoth_umkm/screens/booking/booking_form_screen.dart';
 import 'package:spoth_umkm/screens/home/home_screen.dart';
 import 'package:spoth_umkm/screens/main/main_shell.dart';
 import 'package:spoth_umkm/screens/notification/notification_screen.dart';
 import 'package:spoth_umkm/screens/onboarding/onboarding_screen.dart';
 import 'package:spoth_umkm/screens/place/place_detail_screen.dart';
+import 'package:spoth_umkm/screens/place/kelola_tempat_screen.dart';
 import 'package:spoth_umkm/screens/place/tempat_screen.dart';
 import 'package:spoth_umkm/screens/place/place_form_screen.dart';
 
@@ -630,6 +632,13 @@ void main() {
     await _pumpOnAllSizes(tester, () => _tenantApp(const MainShell()));
   });
 
+  testWidgets(
+    'Main shell pemilik (bottom bar) tanpa overflow pada semua ukuran',
+    (WidgetTester tester) async {
+      await _pumpOnAllSizes(tester, () => _hostApp(const MainShell()));
+    },
+  );
+
   testWidgets('Home pemilik tanpa overflow pada semua ukuran layar', (
     WidgetTester tester,
   ) async {
@@ -657,27 +666,39 @@ void main() {
     (WidgetTester tester) async {
       await _pumpSized(tester, const MainShell());
 
-      await tester.tap(find.text('Tempat'));
+      await tester.tap(find.byTooltip('Tempat'));
       await tester.pumpAndSettle();
       expect(find.text('Cari tempat, kota, atau lokasi...'), findsOneWidget);
       expect(find.text('Lapak Kuliner Baru'), findsOneWidget);
 
-      await tester.tap(find.text('Booking'));
+      await tester.tap(find.byTooltip('Booking'));
       await tester.pumpAndSettle();
       expect(find.text('Penyewaan Saya'), findsOneWidget);
       expect(find.textContaining('Warung Makan'), findsNWidgets(2));
       expect(find.text('Menunggu Bayar'), findsOneWidget);
 
-      await tester.tap(find.text('Profil'));
+      await tester.tap(find.byTooltip('Profil'));
       await tester.pumpAndSettle();
       expect(find.text('budi@contoh.test'), findsNWidgets(2));
       expect(find.text('Keluar'), findsOneWidget);
 
-      await tester.tap(find.text('Beranda'));
+      await tester.tap(find.byTooltip('Beranda'));
       await tester.pumpAndSettle();
       expect(find.textContaining('Tempat Usahamu'), findsOneWidget);
     },
   );
+
+  testWidgets('Bottom bar pemilik menampilkan menu Kelola Tempat', (
+    WidgetTester tester,
+  ) async {
+    await _pumpSized(tester, const MainShell(), host: true);
+
+    await tester.tap(find.byIcon(Icons.business_outlined));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Teras Dagang Pagi'), findsOneWidget);
+    expect(find.text('Tambah Tempat'), findsOneWidget);
+  });
 
   testWidgets('Home pemilik menampilkan ringkasan dan daftar tempat miliknya', (
     WidgetTester tester,
@@ -690,7 +711,7 @@ void main() {
     expect(find.text('Tempat Aktif'), findsOneWidget);
     expect(find.text('Rp 750.000'), findsOneWidget);
 
-    expect(find.text('Tempat Saya'), findsOneWidget);
+    expect(find.text('Kelola Tempat'), findsOneWidget);
     expect(find.text('Tambah Tempat'), findsNothing);
   });
 
@@ -706,21 +727,22 @@ void main() {
     expect(find.text('Booth Bazar Sekolah'), findsOneWidget);
   });
 
-  testWidgets('Tempat (pemilik) menampilkan daftar miliknya + tombol tambah', (
+  testWidgets(
+    'Kelola Tempat (pemilik) menampilkan daftar miliknya + tombol tambah',
+    (WidgetTester tester) async {
+      await tester.pumpWidget(_hostApp(const KelolaTempatScreen()));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Kelola Tempat'), findsOneWidget);
+      expect(find.text('Teras Dagang Pagi'), findsOneWidget);
+      expect(find.text('Tambah Tempat'), findsOneWidget);
+    },
+  );
+
+  testWidgets('Kelola Tempat (pemilik) punya pencarian & filter status', (
     WidgetTester tester,
   ) async {
-    await tester.pumpWidget(_hostApp(const TempatScreen()));
-    await tester.pumpAndSettle();
-
-    expect(find.text('Tempat'), findsOneWidget);
-    expect(find.text('Teras Dagang Pagi'), findsOneWidget);
-    expect(find.text('Tambah Tempat'), findsOneWidget);
-  });
-
-  testWidgets('Tempat (pemilik) punya pencarian & filter status', (
-    WidgetTester tester,
-  ) async {
-    await tester.pumpWidget(_hostApp(const TempatScreen()));
+    await tester.pumpWidget(_hostApp(const KelolaTempatScreen()));
     await tester.pumpAndSettle();
 
     expect(find.text('Cari nama atau kota tempat...'), findsOneWidget);
@@ -729,6 +751,18 @@ void main() {
     expect(find.text('Nonaktif'), findsOneWidget);
 
     expect(find.text('1 tempat'), findsOneWidget);
+  });
+
+  testWidgets('Tempat (pemilik) menampilkan katalog tempat lain', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(_hostApp(const TempatScreen()));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Tempat'), findsOneWidget);
+    expect(find.text('Cari tempat, kota, atau lokasi...'), findsOneWidget);
+    expect(find.text('Lapak Kuliner Baru'), findsOneWidget);
+    expect(find.text('Tambah Tempat'), findsNothing);
   });
 
   testWidgets('Tempat (penyewa) menampilkan katalog tanpa tombol tambah', (
@@ -1047,18 +1081,18 @@ void main() {
 
     expect(find.text('1 / 2'), findsOneWidget);
 
-    await tester.tap(find.byIcon(Icons.chevron_right));
+    await tester.tap(find.byIcon(Icons.chevron_right), warnIfMissed: false);
     await tester.pumpAndSettle();
 
     expect(find.text('2 / 2'), findsOneWidget);
 
-    await tester.tap(find.byIcon(Icons.chevron_right));
+    await tester.tap(find.byIcon(Icons.chevron_right), warnIfMissed: false);
     await tester.pumpAndSettle();
 
     expect(find.text('1 / 2'), findsOneWidget);
   });
 
-  testWidgets('Detail tempat untuk pemilik menampilkan aksi kelola', (
+  testWidgets('Detail tempat untuk pemilik tanpa tombol kelola', (
     WidgetTester tester,
   ) async {
     await _pumpSized(
@@ -1068,15 +1102,21 @@ void main() {
     );
 
     expect(find.text('Detail Tempat'), findsOneWidget);
-    expect(find.text('Kelola Tempat'), findsOneWidget);
+    expect(find.text('Kelola Tempat'), findsNothing);
     expect(find.text('Sewa Tempat Ini'), findsNothing);
+    expect(find.text('Tempat aktif dan tampil di pencarian'), findsOneWidget);
+  });
 
-    expect(find.text('Nonaktifkan Tempat'), findsNothing);
-    expect(find.text('Hapus Tempat'), findsNothing);
+  testWidgets('Kelola Tempat: pemilik membuka aksi kelola dari daftar', (
+    WidgetTester tester,
+  ) async {
+    await _pumpSized(tester, const KelolaTempatScreen(), host: true);
 
-    await tester.tap(find.text('Kelola Tempat'));
+    await tester.tap(find.byIcon(Icons.more_vert));
     await tester.pumpAndSettle();
 
+    expect(find.text('Kelola Tempat'), findsOneWidget);
+    expect(find.text('Aksi Tempat'), findsOneWidget);
     expect(find.text('Ubah Data Tempat'), findsOneWidget);
     expect(find.text('Nonaktifkan Tempat'), findsOneWidget);
     expect(find.text('Hapus Tempat'), findsOneWidget);
@@ -1110,6 +1150,30 @@ void main() {
     );
 
     expect(bergradien, findsNothing);
+  });
+
+  testWidgets('Form penyewaan tanpa overflow pada semua ukuran layar', (
+    WidgetTester tester,
+  ) async {
+    await _pumpOnAllSizes(
+      tester,
+      () => _tenantApp(const BookingFormScreen(placeId: '101')),
+    );
+  });
+
+  testWidgets('Form penyewaan di web dua kolom menampilkan ringkasan tempat', (
+    WidgetTester tester,
+  ) async {
+    await _pumpSized(
+      tester,
+      const BookingFormScreen(placeId: '101'),
+      size: const Size(1200, 900),
+    );
+
+    expect(find.text('Lapak Kuliner Baru'), findsOneWidget);
+    expect(find.text('Tanggal Mulai'), findsOneWidget);
+    expect(find.text('Lama Sewa'), findsOneWidget);
+    expect(find.text('Jenis Usaha'), findsOneWidget);
   });
 
   testWidgets('Detail tempat: thumbnail galeri memilih foto lain', (
@@ -1168,23 +1232,79 @@ void main() {
     );
 
     expect(find.text('Tempat aktif dan tampil di pencarian'), findsOneWidget);
-    expect(find.text('Kelola Tempat'), findsOneWidget);
   });
 
-  testWidgets('Detail tempat: pemilik menonaktifkan mengirim status NONAKTIF', (
+  testWidgets('Kelola Tempat: pemilik menonaktifkan mengirim status NONAKTIF', (
     WidgetTester tester,
   ) async {
     final fakePlace = _FakePlaceService();
 
-    await _pumpDetail(tester, fakePlace: fakePlace, host: true);
+    tester.view
+      ..devicePixelRatio = 1.0
+      ..physicalSize = const Size(412, 915);
 
-    await tester.tap(find.text('Kelola Tempat'));
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          authNotifierProvider.overrideWith(
+            () => _FakeAuthNotifier(_hostUser()),
+          ),
+          placeServiceProvider.overrideWithValue(fakePlace),
+          notificationServiceProvider.overrideWithValue(
+            _FakeNotificationService(),
+          ),
+          bookingServiceProvider.overrideWithValue(_FakeBookingService()),
+        ],
+        child: const MaterialApp(home: KelolaTempatScreen()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byIcon(Icons.more_vert));
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('Nonaktifkan Tempat'));
     await tester.pumpAndSettle();
 
     expect(fakePlace.lastUpdatePayload, {'status': 'NONAKTIF'});
+  });
+
+  testWidgets('Sheet aksi kelola dan dialog hapus tanpa overflow', (
+    WidgetTester tester,
+  ) async {
+    for (final size in _screenSizes) {
+      tester.view
+        ..devicePixelRatio = 1.0
+        ..physicalSize = size;
+
+      await tester.pumpWidget(_hostApp(const KelolaTempatScreen()));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byIcon(Icons.more_vert));
+      await tester.pumpAndSettle();
+
+      expect(
+        tester.takeException(),
+        isNull,
+        reason: 'Sheet aksi kelola overflow pada ${size.width}x${size.height}',
+      );
+
+      await tester.ensureVisible(find.text('Hapus Tempat'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Hapus Tempat'));
+      await tester.pumpAndSettle();
+
+      expect(
+        tester.takeException(),
+        isNull,
+        reason: 'Dialog hapus overflow pada ${size.width}x${size.height}',
+      );
+      expect(find.text('Hapus tempat ini?'), findsOneWidget);
+
+      tester.view.reset();
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pumpAndSettle();
+    }
   });
 
   testWidgets('Home penyewa menampilkan sapaan dan shortcut pencarian', (
@@ -1209,11 +1329,11 @@ void main() {
     final context = tester.element(find.byType(MainShell));
     final container = ProviderScope.containerOf(context);
 
-    expect(container.read(mainNavIndexProvider), 0);
+    expect(container.read(mainNavIndexProvider), MainTab.beranda);
 
     await tester.tap(find.textContaining('Cari tempat, kota, atau lokasi'));
     await tester.pumpAndSettle();
 
-    expect(container.read(mainNavIndexProvider), 1);
+    expect(container.read(mainNavIndexProvider), MainTab.tempat);
   });
 }

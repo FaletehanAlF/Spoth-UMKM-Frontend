@@ -34,6 +34,41 @@ void main() {
     });
   });
 
+  group('tanggalSelesaiSewa', () {
+    test('menghitung durasi harian secara inklusif', () {
+      expect(
+        tanggalSelesaiSewa(DateTime(2026, 12, 1), 'HARIAN', 3),
+        DateTime.utc(2026, 12, 3),
+      );
+      expect(
+        tanggalSelesaiSewa(DateTime(2026, 12, 1), 'HARIAN', 1),
+        DateTime.utc(2026, 12, 1),
+      );
+    });
+
+    test('menghitung durasi mingguan dalam hari', () {
+      expect(
+        tanggalSelesaiSewa(DateTime(2026, 12, 1), 'MINGGUAN', 2),
+        DateTime.utc(2026, 12, 14),
+      );
+    });
+
+    test('menghitung durasi bulanan dan menyesuaikan akhir bulan', () {
+      expect(
+        tanggalSelesaiSewa(DateTime(2026, 12, 1), 'BULANAN', 1),
+        DateTime.utc(2026, 12, 31),
+      );
+      expect(
+        tanggalSelesaiSewa(DateTime(2026, 1, 31), 'BULANAN', 1),
+        DateTime.utc(2026, 2, 27),
+      );
+      expect(
+        tanggalSelesaiSewa(DateTime(2026, 3, 31), 'BULANAN', 1),
+        DateTime.utc(2026, 4, 29),
+      );
+    });
+  });
+
   group('namaDepan', () {
     test('mengambil kata pertama dari nama lengkap', () {
       expect(namaDepan('Budi Santoso'), 'Budi');

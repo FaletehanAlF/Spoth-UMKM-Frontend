@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../providers/nav_provider.dart';
+
 class NavItemData {
   const NavItemData({
     required this.icon,
@@ -12,25 +14,30 @@ class NavItemData {
   final String label;
 }
 
-const List<NavItemData> kNavItems = [
-  NavItemData(
+const Map<MainTab, NavItemData> kNavItems = {
+  MainTab.beranda: NavItemData(
     icon: Icons.home_outlined,
     activeIcon: Icons.home,
     label: 'Beranda',
   ),
-  NavItemData(
+  MainTab.tempat: NavItemData(
     icon: Icons.storefront_outlined,
     activeIcon: Icons.storefront,
     label: 'Tempat',
   ),
-  NavItemData(
+  MainTab.kelolaTempat: NavItemData(
+    icon: Icons.business_outlined,
+    activeIcon: Icons.business,
+    label: 'Kelola Tempat',
+  ),
+  MainTab.booking: NavItemData(
     icon: Icons.receipt_long_outlined,
     activeIcon: Icons.receipt_long,
     label: 'Booking',
   ),
-  NavItemData(
+  MainTab.profil: NavItemData(
     icon: Icons.person_outline,
     activeIcon: Icons.person,
     label: 'Profil',
   ),
-];
+};

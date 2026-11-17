@@ -2,11 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_colors.dart';
+import '../../providers/auth_provider.dart';
 import '../../providers/nav_provider.dart';
 import '../../widgets/bottom_nav_pill.dart';
+import '../../widgets/nav_items.dart';
 import '../../widgets/spoth_sidebar.dart';
 import '../booking/booking_screen.dart';
 import '../home/home_screen.dart';
+import '../place/kelola_tempat_screen.dart';
 import '../place/tempat_screen.dart';
 import '../profile/profile_screen.dart';
 
@@ -15,19 +18,33 @@ class MainShell extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final index = ref.watch(mainNavIndexProvider);
-    final width = MediaQuery.sizeOf(context).width;
-    final showSidebar = width >= 900;
+    final user = ref.watch(authNotifierProvider).user;
+    final tabs = tabsForRole(user);
+    final tab = ref.watch(mainNavIndexProvider);
+
+    var index = tabs.indexOf(tab);
+    if (index < 0) {
+      index = 0;
+    }
+
+    final items = [for (final item in tabs) kNavItems[item]!];
 
     final content = IndexedStack(
       index: index,
-      children: const [
-        HomeScreen(),
-        TempatScreen(),
-        BookingScreen(),
-        ProfileScreen(),
+      children: [
+        for (final item in tabs)
+          switch (item) {
+            MainTab.beranda => const HomeScreen(),
+            MainTab.tempat => const TempatScreen(),
+            MainTab.kelolaTempat => const KelolaTempatScreen(),
+            MainTab.booking => const BookingScreen(),
+            MainTab.profil => const ProfileScreen(),
+          },
       ],
     );
+
+    final width = MediaQuery.sizeOf(context).width;
+    final showSidebar = width >= 900;
 
     if (showSidebar) {
       return Scaffold(
@@ -36,9 +53,10 @@ class MainShell extends ConsumerWidget {
           children: [
             SpothSidebar(
               index: index,
+              items: items,
               expanded: width >= 1100,
               onChanged: (value) =>
-                  ref.read(mainNavIndexProvider.notifier).setTab(value),
+                  ref.read(mainNavIndexProvider.notifier).setTab(tabs[value]),
             ),
             Expanded(
               child: Padding(
@@ -71,8 +89,9 @@ class MainShell extends ConsumerWidget {
       ),
       bottomNavigationBar: SpothBottomNav(
         index: index,
+        items: items,
         onChanged: (value) =>
-            ref.read(mainNavIndexProvider.notifier).setTab(value),
+            ref.read(mainNavIndexProvider.notifier).setTab(tabs[value]),
       ),
     );
   }

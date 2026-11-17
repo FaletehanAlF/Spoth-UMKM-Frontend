@@ -70,7 +70,7 @@ class TenantHomeScreen extends ConsumerWidget {
                   const SizedBox(height: 20),
                   _SearchShortcut(
                     onTap: () =>
-                        ref.read(mainNavIndexProvider.notifier).setTab(1),
+                        ref.read(mainNavIndexProvider.notifier).setTab(MainTab.tempat),
                   ),
                   const SizedBox(height: 16),
                   Row(
@@ -87,9 +87,8 @@ class TenantHomeScreen extends ConsumerWidget {
                       ),
                       _SectionLink(
                         label: 'Lihat Semua',
-                        onTap: () => ref.read(
-                          mainNavIndexProvider.notifier,
-                        ).setTab(1),
+                        onTap: () =>
+                            ref.read(mainNavIndexProvider.notifier).setTab(MainTab.tempat),
                       ),
                     ],
                   ),
