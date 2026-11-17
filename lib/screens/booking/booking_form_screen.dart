@@ -12,6 +12,7 @@ import '../../models/user_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/booking_provider.dart';
 import '../../providers/nav_provider.dart';
+import '../../widgets/app_button.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/shimmer_loading.dart';
 import '../../widgets/spoth_app_bar.dart';
@@ -194,6 +195,99 @@ class _BookingFormScreenState extends ConsumerState<BookingFormScreen> {
     }
   }
 
+  InputDecoration _inputDecoration(String label, String hint) {
+    return InputDecoration(labelText: label, hintText: hint);
+  }
+
+  Widget _buildFields() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        TextFormField(
+          readOnly: true,
+          controller: TextEditingController(
+            text: _tanggalMulai == null
+                ? ''
+                : formatDateString(_tanggalText(_tanggalMulai!)),
+          ),
+          decoration:
+              _inputDecoration(
+                'Tanggal Mulai',
+                'Pilih tanggal mulai sewa',
+              ).copyWith(
+                prefixIcon: const Icon(
+                  Icons.calendar_today_outlined,
+                  color: AppColors.secondaryText,
+                ),
+                suffixIcon: IconButton(
+                  icon: const Icon(Icons.edit_calendar_outlined),
+                  tooltip: 'Pilih tanggal',
+                  onPressed: _pickTanggal,
+                ),
+              ),
+          onTap: _pickTanggal,
+          validator: (value) =>
+              _tanggalMulai == null ? 'Tanggal mulai wajib dipilih' : null,
+        ),
+        const SizedBox(height: 16),
+        TextFormField(
+          controller: _durasiController,
+          keyboardType: TextInputType.number,
+          decoration: _inputDecoration(
+            'Lama Sewa',
+            'Jumlah satuan durasi, mis: 3',
+          ),
+          onChanged: (_) => setState(() => _preview = null),
+          validator: (value) {
+            final jumlah = int.tryParse(value?.trim() ?? '') ?? 0;
+            if (jumlah < 1) {
+              return 'Lama sewa minimal 1';
+            }
+            if (jumlah > 365) {
+              return 'Lama sewa maksimal 365';
+            }
+            return null;
+          },
+        ),
+        const SizedBox(height: 16),
+        TextFormField(
+          controller: _jenisUsahaController,
+          textCapitalization: TextCapitalization.words,
+          decoration: _inputDecoration('Jenis Usaha', 'Contoh: Warung Makan'),
+          validator: (value) => (value == null || value.trim().isEmpty)
+              ? 'Jenis usaha wajib diisi'
+              : null,
+        ),
+        const SizedBox(height: 20),
+        SizedBox(
+          width: double.infinity,
+          height: 48,
+          child: OutlinedButton.icon(
+            onPressed: _checkingPreview ? null : _checkPreview,
+            icon: _checkingPreview
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.calculate_outlined),
+            label: Text(
+              _checkingPreview ? 'Menghitung...' : 'Cek Pratinjau Biaya',
+            ),
+          ),
+        ),
+        const SizedBox(height: 20),
+        PrimaryButton(
+          label: 'Buat Pemesanan',
+          isLoading: _submitting,
+          height: 52,
+          borderRadius: 14,
+          onPressed: _submit,
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final user = ref.watch(authNotifierProvider).user;
@@ -216,7 +310,10 @@ class _BookingFormScreenState extends ConsumerState<BookingFormScreen> {
               ),
             )
           : _loadingPlace
-          ? const Padding(padding: EdgeInsets.all(20), child: DetailSkeleton())
+          ? const SingleChildScrollView(
+              padding: EdgeInsets.all(20),
+              child: DetailSkeleton(),
+            )
           : _loadError != null
           ? Center(
               child: EmptyState(
@@ -227,124 +324,58 @@ class _BookingFormScreenState extends ConsumerState<BookingFormScreen> {
                 onAction: _loadPlace,
               ),
             )
-          : Form(
-              key: _formKey,
-              child: ListView(
-                padding: const EdgeInsets.all(20),
-                children: [
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: AppColors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: AppColors.softBorder),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          _place?.namaTempat ?? '-',
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.darkText,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          '${formatRupiah(_place?.hargaEfektif ?? 0)} '
-                          '/${_place?.durasiLabel ?? '-'}',
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.primaryOrange,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  TextFormField(
-                    readOnly: true,
-                    controller: TextEditingController(
-                      text: _tanggalMulai == null
-                          ? ''
-                          : formatDateString(_tanggalMulai.toString()),
-                    ),
-                    decoration: InputDecoration(
-                      labelText: 'Tanggal Mulai',
-                      hintText: 'Pilih tanggal mulai sewa',
-                      prefixIcon: const Icon(
-                        Icons.calendar_today_outlined,
-                        color: AppColors.secondaryText,
-                      ),
-                      suffixIcon: IconButton(
-                        icon: const Icon(Icons.edit_calendar_outlined),
-                        tooltip: 'Pilih tanggal',
-                        onPressed: _pickTanggal,
-                      ),
-                    ),
-                    onTap: _pickTanggal,
-                    validator: (value) => _tanggalMulai == null
-                        ? 'Tanggal mulai wajib dipilih'
-                        : null,
-                  ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: _durasiController,
-                    keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(
-                      labelText: 'Lama Sewa',
-                      hintText: 'Jumlah satuan durasi, mis: 3',
-                    ),
-                    onChanged: (_) => setState(() => _preview = null),
-                    validator: (value) {
-                      final jumlah = int.tryParse(value?.trim() ?? '') ?? 0;
-                      if (jumlah < 1) {
-                        return 'Lama sewa minimal 1';
+          : Align(
+              alignment: Alignment.topCenter,
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 960),
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final lebarKolomWeb = constraints.maxWidth >= 860;
+
+                      if (!lebarKolomWeb) {
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _TempatCard(place: _place!),
+                            const SizedBox(height: 20),
+                            Form(key: _formKey, child: _buildFields()),
+                            if (_preview != null) ...[
+                              const SizedBox(height: 20),
+                              _PreviewCard(preview: _preview!),
+                            ],
+                          ],
+                        );
                       }
-                      if (jumlah > 365) {
-                        return 'Lama sewa maksimal 365';
-                      }
-                      return null;
+
+                      return Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            flex: 7,
+                            child: Form(key: _formKey, child: _buildFields()),
+                          ),
+                          const SizedBox(width: 28),
+                          Expanded(
+                            flex: 5,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                _TempatCard(place: _place!),
+                                if (_preview != null) ...[
+                                  const SizedBox(height: 16),
+                                  _PreviewCard(preview: _preview!),
+                                ],
+                              ],
+                            ),
+                          ),
+                        ],
+                      );
                     },
                   ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: _jenisUsahaController,
-                    textCapitalization: TextCapitalization.words,
-                    decoration: const InputDecoration(
-                      labelText: 'Jenis Usaha',
-                      hintText: 'Contoh: Warung Makan',
-                    ),
-                    validator: (value) =>
-                        (value == null || value.trim().isEmpty)
-                        ? 'Jenis usaha wajib diisi'
-                        : null,
-                  ),
-                  const SizedBox(height: 20),
-                  OutlinedButton(
-                    onPressed: _checkingPreview ? null : _checkPreview,
-                    child: Text(
-                      _checkingPreview
-                          ? 'Menghitung...'
-                          : 'Cek Pratinjau Biaya',
-                    ),
-                  ),
-                  if (_preview != null) ...[
-                    const SizedBox(height: 16),
-                    _PreviewCard(preview: _preview!),
-                  ],
-                  const SizedBox(height: 24),
-                  ElevatedButton(
-                    onPressed: _submitting ? null : _submit,
-                    child: Text(
-                      _submitting ? 'Memproses...' : 'Buat Pemesanan',
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                ],
+                ),
               ),
             ),
     );
@@ -353,10 +384,10 @@ class _BookingFormScreenState extends ConsumerState<BookingFormScreen> {
   }
 }
 
-class _PreviewCard extends StatelessWidget {
-  const _PreviewCard({required this.preview});
+class _TempatCard extends StatelessWidget {
+  const _TempatCard({required this.place});
 
-  final PricePreviewModel preview;
+  final PlaceModel place;
 
   @override
   Widget build(BuildContext context) {
@@ -372,30 +403,176 @@ class _PreviewCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            preview.tersedia ? 'Jadwal tersedia' : 'Jadwal bentrok',
-            style: TextStyle(
-              fontSize: 14,
+            place.namaTempat,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              fontSize: 16,
               fontWeight: FontWeight.w700,
-              color: preview.tersedia
-                  ? AppColors.primaryOrange
-                  : AppColors.secondaryText,
+              color: AppColors.darkText,
             ),
           ),
-          const SizedBox(height: 8),
-          _PreviewRow(
-            label: 'Selesai pada',
-            value: formatDateString(preview.tanggalSelesai),
+          const SizedBox(height: 4),
+          Text(
+            '${place.kategoriLabel} • ${place.durasiLabel}',
+            style: const TextStyle(
+              fontSize: 12.5,
+              color: AppColors.secondaryText,
+            ),
           ),
-          _PreviewRow(
-            label: 'Harga satuan',
-            value: formatRupiah(preview.hargaSatuan),
+          if (place.alamat.trim().isNotEmpty ||
+              place.kota.trim().isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(
+                  Icons.location_on_outlined,
+                  size: 15,
+                  color: AppColors.secondaryText,
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    '${place.alamat}, ${place.kota}',
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 12.5,
+                      height: 1.4,
+                      color: AppColors.secondaryText,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+          const SizedBox(height: 12),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Flexible(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    formatRupiah(place.hargaEfektif),
+                    maxLines: 1,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.charcoal,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 4),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 2),
+                child: Text(
+                  '/${place.durasiLabel.toLowerCase()}',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: AppColors.secondaryText,
+                  ),
+                ),
+              ),
+            ],
           ),
-          _PreviewRow(
+        ],
+      ),
+    );
+  }
+}
+
+class _PreviewCard extends StatelessWidget {
+  const _PreviewCard({required this.preview});
+
+  final PricePreviewModel preview;
+
+  @override
+  Widget build(BuildContext context) {
+    final promo = preview.hargaPromo;
+    final adaPromo = promo != null && promo > 0 && promo < preview.hargaNormal;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: preview.tersedia
+              ? AppColors.neutralBorder
+              : AppColors.softBorder,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                preview.tersedia
+                    ? Icons.check_circle_outline
+                    : Icons.info_outline,
+                size: 18,
+                color: preview.tersedia
+                    ? AppColors.primaryOrange
+                    : AppColors.secondaryText,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  preview.tersedia ? 'Jadwal tersedia' : 'Jadwal bentrok',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: preview.tersedia
+                        ? AppColors.charcoal
+                        : AppColors.secondaryText,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          _Row(label: 'Tempat', value: preview.namaTempat),
+          _Row(
+            label: 'Tanggal',
+            value:
+                '${formatDateString(preview.tanggalMulai)} – '
+                '${formatDateString(preview.tanggalSelesai)}',
+          ),
+          _Row(
+            label: 'Lama Sewa',
+            value:
+                '${preview.jumlahDurasi} × ${preview.tipeDurasi.toLowerCase()}',
+          ),
+          if (adaPromo)
+            _Row(
+              label: 'Harga Normal',
+              value: formatRupiah(preview.hargaNormal),
+              coret: true,
+            ),
+          _Row(
+            label: 'Harga Sewa',
+            value:
+                '${formatRupiah(preview.hargaSatuan)} '
+                '/${preview.tipeDurasi.toLowerCase()}',
+          ),
+          const _Divider(),
+          _Row(
             label: 'Total',
             value: formatRupiah(preview.totalHarga),
             bold: true,
           ),
-          if (!preview.tersedia)
+          _Row(
+            label: 'Komisi Platform',
+            value: formatRupiah(preview.komisiPlatform),
+          ),
+          if (!preview.tersedia) ...[
+            const SizedBox(height: 10),
             Text(
               preview.jumlahKonflik > 0
                   ? 'Terdapat ${preview.jumlahKonflik} jadwal yang sudah '
@@ -406,48 +583,71 @@ class _PreviewCard extends StatelessWidget {
                 color: AppColors.secondaryText,
               ),
             ),
+          ],
         ],
       ),
     );
   }
 }
 
-class _PreviewRow extends StatelessWidget {
-  const _PreviewRow({
+class _Row extends StatelessWidget {
+  const _Row({
     required this.label,
     required this.value,
     this.bold = false,
+    this.coret = false,
   });
 
   final String label;
   final String value;
   final bool bold;
+  final bool coret;
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 4),
+      padding: const EdgeInsets.only(bottom: 6),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Expanded(
             child: Text(
               label,
-              style: const TextStyle(
-                fontSize: 13,
-                color: AppColors.secondaryText,
+              style: TextStyle(
+                fontSize: 12.5,
+                color: bold ? AppColors.charcoal : AppColors.secondaryText,
+                fontWeight: bold ? FontWeight.w600 : FontWeight.w400,
               ),
             ),
           ),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: bold ? FontWeight.w700 : FontWeight.w500,
-              color: AppColors.darkText,
+          Flexible(
+            child: Text(
+              value,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.right,
+              style: TextStyle(
+                fontSize: bold ? 14 : 12.5,
+                fontWeight: bold ? FontWeight.w700 : FontWeight.w500,
+                color: bold ? AppColors.charcoal : AppColors.darkText,
+                decoration: coret ? TextDecoration.lineThrough : null,
+              ),
             ),
           ),
         ],
       ),
+    );
+  }
+}
+
+class _Divider extends StatelessWidget {
+  const _Divider();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Padding(
+      padding: EdgeInsets.symmetric(vertical: 6),
+      child: Divider(height: 1, thickness: 1, color: AppColors.softBorder),
     );
   }
 }

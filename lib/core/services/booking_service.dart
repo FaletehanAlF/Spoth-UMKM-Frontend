@@ -86,16 +86,4 @@ class BookingService {
     final body = await _apiService.post('/bookings', payload, token: token);
     return _booking(body, 'pemesanan');
   }
-
-  Future<BookingModel> cancelBooking({
-    required String token,
-    required String id,
-  }) async {
-    final body = await _apiService.post(
-      '/bookings/$id/cancel',
-      {},
-      token: token,
-    );
-    return _booking(body, 'pembatalan');
-  }
 }

@@ -25,17 +25,6 @@ class BookingsNotifier extends AsyncNotifier<List<BookingModel>> {
     state = const AsyncLoading();
     state = await AsyncValue.guard(_fetch);
   }
-
-  Future<void> cancel(String id) async {
-    final token = ref.read(authNotifierProvider.select((state) => state.token));
-
-    if (token == null) {
-      return;
-    }
-
-    await ref.read(bookingServiceProvider).cancelBooking(token: token, id: id);
-    await refresh();
-  }
 }
 
 final bookingsProvider =

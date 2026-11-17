@@ -19,6 +19,7 @@ import 'package:spoth_umkm/providers/nav_provider.dart';
 import 'package:spoth_umkm/screens/auth/forgot_password_screen.dart';
 import 'package:spoth_umkm/screens/auth/login_screen.dart';
 import 'package:spoth_umkm/screens/auth/register_screen.dart';
+import 'package:spoth_umkm/screens/booking/booking_form_screen.dart';
 import 'package:spoth_umkm/screens/home/home_screen.dart';
 import 'package:spoth_umkm/screens/main/main_shell.dart';
 import 'package:spoth_umkm/screens/notification/notification_screen.dart';
@@ -1110,6 +1111,30 @@ void main() {
     );
 
     expect(bergradien, findsNothing);
+  });
+
+  testWidgets('Form penyewaan tanpa overflow pada semua ukuran layar', (
+    WidgetTester tester,
+  ) async {
+    await _pumpOnAllSizes(
+      tester,
+      () => _tenantApp(const BookingFormScreen(placeId: '101')),
+    );
+  });
+
+  testWidgets('Form penyewaan di web dua kolom menampilkan ringkasan tempat', (
+    WidgetTester tester,
+  ) async {
+    await _pumpSized(
+      tester,
+      const BookingFormScreen(placeId: '101'),
+      size: const Size(1200, 900),
+    );
+
+    expect(find.text('Lapak Kuliner Baru'), findsOneWidget);
+    expect(find.text('Tanggal Mulai'), findsOneWidget);
+    expect(find.text('Lama Sewa'), findsOneWidget);
+    expect(find.text('Jenis Usaha'), findsOneWidget);
   });
 
   testWidgets('Detail tempat: thumbnail galeri memilih foto lain', (
