@@ -351,12 +351,29 @@ class _PilihanMetode {
 
 const _pilihanMetode = <_PilihanMetode>[
   _PilihanMetode(
-    'TRANSFER',
-    'Transfer Bank',
-    'Simulasi transfer bank',
-    Icons.account_balance_outlined,
+    'DANA',
+    'DANA',
+    'Bayar dengan saldo DANA',
+    Icons.account_balance_wallet_outlined,
   ),
-  _PilihanMetode('QRIS', 'QRIS', 'Simulasi bayar dengan QR', Icons.qr_code_2),
+  _PilihanMetode(
+    'OVO',
+    'OVO',
+    'Bayar dengan saldo OVO',
+    Icons.phone_android_outlined,
+  ),
+  _PilihanMetode(
+    'GOPAY',
+    'GoPay',
+    'Bayar dengan saldo GoPay',
+    Icons.payments_outlined,
+  ),
+  _PilihanMetode(
+    'SHOPEEPAY',
+    'ShopeePay',
+    'Bayar dengan saldo ShopeePay',
+    Icons.shopping_bag_outlined,
+  ),
 ];
 
 class _RingkasanCard extends StatelessWidget {

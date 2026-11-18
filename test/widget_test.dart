@@ -591,17 +591,16 @@ Future<void> _pumpRiwayatRouter(
   final router = GoRouter(
     initialLocation: '/riwayat',
     routes: [
-      GoRoute(
-        path: '/riwayat',
-        builder: (_, _) => const RiwayatScreen(),
-      ),
+      GoRoute(path: '/riwayat', builder: (_, _) => const RiwayatScreen()),
     ],
   );
 
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
-        authNotifierProvider.overrideWith(() => _FakeAuthNotifier(_tenantUser())),
+        authNotifierProvider.overrideWith(
+          () => _FakeAuthNotifier(_tenantUser()),
+        ),
         placeServiceProvider.overrideWithValue(_FakePlaceService()),
         notificationServiceProvider.overrideWithValue(
           _FakeNotificationService(),
@@ -621,7 +620,6 @@ Future<void> _pumpRiwayatRouter(
   );
   await tester.pumpAndSettle();
 }
-
 
 Future<void> _pumpDetail(
   WidgetTester tester, {
@@ -651,7 +649,6 @@ Future<void> _pumpDetail(
   );
   await tester.pumpAndSettle();
 }
-
 
 void main() {
   testWidgets('App renders splash screen', (WidgetTester tester) async {
@@ -1519,9 +1516,13 @@ void main() {
     expect(find.text('Lapak Kuliner Baru'), findsOneWidget);
     expect(find.text('Ringkasan Pemesanan'), findsOneWidget);
     expect(find.text('Metode Pembayaran'), findsOneWidget);
+    expect(find.text('DANA'), findsOneWidget);
+    expect(find.text('OVO'), findsOneWidget);
+    expect(find.text('GoPay'), findsOneWidget);
+    expect(find.text('ShopeePay'), findsOneWidget);
+    expect(find.text('Transfer Bank'), findsNothing);
+    expect(find.text('QRIS'), findsNothing);
     expect(find.text('Simulasi'), findsNothing);
-    expect(find.text('Transfer Bank'), findsOneWidget);
-    expect(find.text('QRIS'), findsOneWidget);
     expect(find.text('Tunai'), findsNothing);
     expect(find.text('Bayar Sekarang'), findsOneWidget);
     expect(find.text('Rp 600.000'), findsNWidgets(2));
@@ -1552,13 +1553,13 @@ void main() {
 
     await _pumpPaymentRouter(tester, '/payment?id=301', fakePayment: fake);
 
-    await tester.tap(find.text('QRIS'));
+    await tester.tap(find.text('GoPay'));
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('Bayar Sekarang'));
     await tester.pumpAndSettle();
 
-    expect(fake.lastMetode, 'QRIS');
+    expect(fake.lastMetode, 'GOPAY');
     expect(find.text('Pembayaran Berhasil'), findsOneWidget);
     expect(find.text('SPOTH-301'), findsOneWidget);
     expect(find.text('Selesai'), findsOneWidget);
@@ -1673,7 +1674,7 @@ void main() {
     fakePayment.paymentOverride = PaymentModel(
       id: '901',
       bookingId: '301',
-      metode: 'QRIS',
+      metode: 'GOPAY',
       jumlah: 600000,
       status: 'BERHASIL',
       paidAt: DateTime(2026, 11, 17, 10),
@@ -1690,7 +1691,7 @@ void main() {
 
     expect(find.text('Pembayaran Berhasil'), findsOneWidget);
     expect(find.text('SPOTH-301'), findsOneWidget);
-    expect(find.text('QRIS'), findsOneWidget);
+    expect(find.text('GoPay'), findsOneWidget);
     expect(find.text('Bayar Sekarang'), findsNothing);
   });
 
@@ -1780,5 +1781,4 @@ void main() {
 
     expect(find.byIcon(Icons.history_rounded), findsOneWidget);
   });
-
 }

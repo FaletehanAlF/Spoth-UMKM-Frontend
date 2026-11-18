@@ -160,6 +160,10 @@ class _EPassSheetState extends ConsumerState<EPassSheet> {
                     _BarisInfo(
                       label: 'Metode',
                       nilai: switch (_hasil?.epass.metodePembayaran) {
+                        'DANA' => 'DANA',
+                        'OVO' => 'OVO',
+                        'GOPAY' => 'GoPay',
+                        'SHOPEEPAY' => 'ShopeePay',
                         'SIMULASI' => 'Simulasi',
                         'TRANSFER' => 'Transfer Bank',
                         'QRIS' => 'QRIS',

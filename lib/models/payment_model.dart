@@ -42,6 +42,10 @@ class PaymentModel {
   }
 
   String get metodeLabel => switch (metode) {
+    'DANA' => 'DANA',
+    'OVO' => 'OVO',
+    'GOPAY' => 'GoPay',
+    'SHOPEEPAY' => 'ShopeePay',
     'SIMULASI' => 'Simulasi',
     'TRANSFER' => 'Transfer Bank',
     'QRIS' => 'QRIS',
