@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../core/services/booking_service.dart';
 import '../../core/theme/app_colors.dart';
@@ -118,14 +119,66 @@ class _RiwayatScreenState extends ConsumerState<RiwayatScreen> {
           ? Center(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.all(20),
-                child: EmptyState(
-                  icon: Icons.history,
-                  title: isHost
-                      ? 'Belum ada tempat yang disewa'
-                      : 'Belum ada riwayat penyewaan',
-                  message: isHost
-                      ? 'Tempat Anda yang berhasil disewa akan tampil di sini.'
-                      : 'Penyewaan Anda yang sudah lunas akan tampil di sini.',
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    EmptyState(
+                      icon: Icons.history,
+                      title: isHost
+                          ? 'Belum ada tempat yang disewa'
+                          : 'Belum ada riwayat penyewaan',
+                      message: isHost
+                          ? 'Tempat Anda yang berhasil disewa (lunas) akan '
+                                'tampil di sini sebagai riwayat.'
+                          : 'Penyewaan Anda yang sudah lunas akan tampil di '
+                                'sini sebagai riwayat.',
+                      actionLabel: isHost
+                          ? 'Lihat Pesanan Masuk'
+                          : 'Cari Tempat',
+                      onAction: () {
+                        ref
+                            .read(mainNavIndexProvider.notifier)
+                            .setTab(isHost ? MainTab.booking : MainTab.tempat);
+                        context.go('/home');
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: AppColors.lightOrange,
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Icon(
+                            Icons.info_outline,
+                            size: 18,
+                            color: AppColors.primaryOrange,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              isHost
+                                  ? 'Riwayat hanya menampilkan penyewaan yang '
+                                        'sudah lunas (dibayar). Pesanan yang '
+                                        'masih menunggu bayar ada di menu Booking.'
+                                  : 'Riwayat hanya menampilkan penyewaan yang '
+                                        'sudah lunas. Pesanan yang masih '
+                                        'menunggu bayar ada di tab Booking.',
+                              style: const TextStyle(
+                                fontSize: 12,
+                                height: 1.4,
+                                color: AppColors.charcoal,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ),
             )
