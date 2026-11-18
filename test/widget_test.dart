@@ -570,6 +570,7 @@ Future<void> _pumpPaymentRouter(
   );
   await tester.pumpAndSettle();
 }
+
 Future<void> _pumpDetail(
   WidgetTester tester, {
   required _FakePlaceService fakePlace,
@@ -1465,10 +1466,10 @@ void main() {
     expect(find.text('Lapak Kuliner Baru'), findsOneWidget);
     expect(find.text('Ringkasan Pemesanan'), findsOneWidget);
     expect(find.text('Metode Pembayaran'), findsOneWidget);
-    expect(find.text('Simulasi'), findsOneWidget);
+    expect(find.text('Simulasi'), findsNothing);
     expect(find.text('Transfer Bank'), findsOneWidget);
     expect(find.text('QRIS'), findsOneWidget);
-    expect(find.text('Tunai'), findsOneWidget);
+    expect(find.text('Tunai'), findsNothing);
     expect(find.text('Bayar Sekarang'), findsOneWidget);
     expect(find.text('Rp 600.000'), findsNWidgets(2));
   });

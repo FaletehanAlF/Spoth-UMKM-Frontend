@@ -348,24 +348,12 @@ class _PilihanMetode {
 
 const _pilihanMetode = <_PilihanMetode>[
   _PilihanMetode(
-    'SIMULASI',
-    'Simulasi',
-    'Pembayaran uji coba tanpa uang asli',
-    Icons.bolt_outlined,
-  ),
-  _PilihanMetode(
     'TRANSFER',
     'Transfer Bank',
     'Simulasi transfer bank',
     Icons.account_balance_outlined,
   ),
   _PilihanMetode('QRIS', 'QRIS', 'Simulasi bayar dengan QR', Icons.qr_code_2),
-  _PilihanMetode(
-    'TUNAI',
-    'Tunai',
-    'Simulasi bayar langsung ke pemilik',
-    Icons.payments_outlined,
-  ),
 ];
 
 class _RingkasanCard extends StatelessWidget {
