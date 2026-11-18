@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/format.dart';
@@ -7,6 +8,7 @@ import '../../models/booking_model.dart';
 import '../../models/user_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/booking_provider.dart';
+import '../../widgets/app_button.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/notification_icon.dart';
 import '../../widgets/shimmer_loading.dart';
@@ -96,17 +98,18 @@ class BookingScreen extends ConsumerWidget {
   }
 }
 
-class _BookingCard extends StatelessWidget {
+class _BookingCard extends ConsumerWidget {
   const _BookingCard({required this.booking, required this.isHost});
 
   final BookingModel booking;
   final bool isHost;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final pihakLain = isHost
         ? (booking.namaTenant ?? 'Penyewa')
         : (booking.namaTempat ?? 'Tempat');
+    final bisaBayar = !isHost && booking.status == 'MENUNGGU_PEMBAYARAN';
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -182,6 +185,18 @@ class _BookingCard extends StatelessWidget {
               _StatusLabel(status: booking.status),
             ],
           ),
+          if (bisaBayar) ...[
+            const SizedBox(height: 12),
+            PrimaryButton(
+              label: 'Bayar Sekarang',
+              height: 44,
+              borderRadius: 12,
+              onPressed: () async {
+                await context.push('/payment?id=${booking.id}');
+                ref.read(bookingsProvider.notifier).refresh();
+              },
+            ),
+          ],
         ],
       ),
     );

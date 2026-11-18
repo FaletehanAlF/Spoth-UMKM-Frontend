@@ -86,4 +86,12 @@ class BookingService {
     final body = await _apiService.post('/bookings', payload, token: token);
     return _booking(body, 'pemesanan');
   }
+
+  Future<BookingModel> getBooking({
+    required String token,
+    required String id,
+  }) async {
+    final body = await _apiService.get('/bookings/$id', token: token);
+    return _booking(body, 'detail');
+  }
 }
