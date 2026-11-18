@@ -11,6 +11,7 @@ import '../../providers/booking_provider.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/notification_icon.dart';
+import '../../widgets/riwayat_icon_button.dart';
 import '../../widgets/shimmer_loading.dart';
 import '../../widgets/spoth_app_bar.dart';
 
@@ -27,7 +28,7 @@ class BookingScreen extends ConsumerWidget {
       backgroundColor: AppColors.white,
       appBar: SpothAppBar(
         title: Text(isHost ? 'Pesanan Masuk' : 'Penyewaan Saya'),
-        actions: const [NotificationIconButton()],
+        actions: const [RiwayatIconButton(), NotificationIconButton()],
       ),
       body: Align(
         alignment: Alignment.topCenter,

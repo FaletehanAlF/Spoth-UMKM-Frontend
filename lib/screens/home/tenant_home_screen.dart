@@ -10,6 +10,7 @@ import '../../providers/place_provider.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/notification_icon.dart';
 import '../../widgets/place_grid.dart';
+import '../../widgets/riwayat_icon_button.dart';
 import '../../widgets/spoth_app_bar.dart';
 
 class TenantHomeScreen extends ConsumerWidget {
@@ -33,7 +34,7 @@ class TenantHomeScreen extends ConsumerWidget {
             fontWeight: FontWeight.w700,
           ),
         ),
-        actions: const [NotificationIconButton()],
+        actions: const [RiwayatIconButton(), NotificationIconButton()],
       ),
       body: RefreshIndicator(
         color: AppColors.primaryOrange,
@@ -69,8 +70,9 @@ class TenantHomeScreen extends ConsumerWidget {
                   ),
                   const SizedBox(height: 20),
                   _SearchShortcut(
-                    onTap: () =>
-                        ref.read(mainNavIndexProvider.notifier).setTab(MainTab.tempat),
+                    onTap: () => ref
+                        .read(mainNavIndexProvider.notifier)
+                        .setTab(MainTab.tempat),
                   ),
                   const SizedBox(height: 16),
                   Row(
@@ -87,8 +89,9 @@ class TenantHomeScreen extends ConsumerWidget {
                       ),
                       _SectionLink(
                         label: 'Lihat Semua',
-                        onTap: () =>
-                            ref.read(mainNavIndexProvider.notifier).setTab(MainTab.tempat),
+                        onTap: () => ref
+                            .read(mainNavIndexProvider.notifier)
+                            .setTab(MainTab.tempat),
                       ),
                     ],
                   ),

@@ -6,6 +6,7 @@ import '../../core/theme/app_colors.dart';
 import '../../providers/place_provider.dart';
 import '../../widgets/notification_icon.dart';
 import '../../widgets/owner_place_list.dart';
+import '../../widgets/riwayat_icon_button.dart';
 import '../../widgets/spoth_app_bar.dart';
 
 class KelolaTempatScreen extends ConsumerWidget {
@@ -17,7 +18,7 @@ class KelolaTempatScreen extends ConsumerWidget {
       backgroundColor: AppColors.white,
       appBar: const SpothAppBar(
         title: Text('Kelola Tempat'),
-        actions: [NotificationIconButton()],
+        actions: [RiwayatIconButton(), NotificationIconButton()],
       ),
       floatingActionButton: FloatingActionButton.extended(
         backgroundColor: AppColors.primaryOrange,

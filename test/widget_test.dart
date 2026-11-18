@@ -18,6 +18,8 @@ import 'package:spoth_umkm/models/place_model.dart';
 import 'package:spoth_umkm/models/user_model.dart';
 import 'package:spoth_umkm/providers/auth_provider.dart';
 import 'package:spoth_umkm/providers/nav_provider.dart';
+import 'package:spoth_umkm/providers/riwayat_provider.dart';
+import 'package:spoth_umkm/screens/booking/riwayat_screen.dart';
 import 'package:spoth_umkm/screens/auth/forgot_password_screen.dart';
 import 'package:spoth_umkm/screens/auth/login_screen.dart';
 import 'package:spoth_umkm/screens/auth/register_screen.dart';
@@ -25,6 +27,7 @@ import 'package:spoth_umkm/screens/booking/booking_form_screen.dart';
 import 'package:spoth_umkm/screens/booking/booking_screen.dart';
 import 'package:spoth_umkm/screens/booking/payment_screen.dart';
 import 'package:spoth_umkm/screens/home/home_screen.dart';
+import 'package:spoth_umkm/screens/home/owner_home_screen.dart';
 import 'package:spoth_umkm/screens/main/main_shell.dart';
 import 'package:spoth_umkm/screens/notification/notification_screen.dart';
 import 'package:spoth_umkm/screens/onboarding/onboarding_screen.dart';
@@ -322,26 +325,29 @@ class _FakeBookingService extends BookingService {
   _FakeBookingService() : super(ApiService());
 
   BookingModel? detailOverride;
+  List<BookingModel>? listOverride;
 
   @override
   Future<List<BookingModel>> listBookings({
     required String token,
     String? status,
     int limit = 50,
-  }) async => [
-    _booking(
-      id: '301',
-      status: 'MENUNGGU_PEMBAYARAN',
-      namaTempat: 'Lapak Kuliner Baru',
-      namaTenant: 'Budi Santoso',
-    ),
-    _booking(
-      id: '302',
-      status: 'LUNAS',
-      namaTempat: 'Booth Bazar Sekolah',
-      namaTenant: 'Budi Santoso',
-    ),
-  ];
+  }) async =>
+      listOverride ??
+      [
+        _booking(
+          id: '301',
+          status: 'MENUNGGU_PEMBAYARAN',
+          namaTempat: 'Lapak Kuliner Baru',
+          namaTenant: 'Budi Santoso',
+        ),
+        _booking(
+          id: '302',
+          status: 'LUNAS',
+          namaTempat: 'Booth Bazar Sekolah',
+          namaTenant: 'Budi Santoso',
+        ),
+      ];
 
   @override
   Future<BookingModel> getBooking({
@@ -571,6 +577,52 @@ Future<void> _pumpPaymentRouter(
   await tester.pumpAndSettle();
 }
 
+Future<void> _pumpRiwayatRouter(
+  WidgetTester tester, {
+  Size size = const Size(412, 915),
+  _FakeBookingService? fakeBooking,
+  RiwayatSeenStore? seenStore,
+  _FakePaymentService? fakePayment,
+}) async {
+  tester.view
+    ..devicePixelRatio = 1.0
+    ..physicalSize = size;
+
+  final router = GoRouter(
+    initialLocation: '/riwayat',
+    routes: [
+      GoRoute(
+        path: '/riwayat',
+        builder: (_, _) => const RiwayatScreen(),
+      ),
+    ],
+  );
+
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: [
+        authNotifierProvider.overrideWith(() => _FakeAuthNotifier(_tenantUser())),
+        placeServiceProvider.overrideWithValue(_FakePlaceService()),
+        notificationServiceProvider.overrideWithValue(
+          _FakeNotificationService(),
+        ),
+        bookingServiceProvider.overrideWithValue(
+          fakeBooking ?? _FakeBookingService(),
+        ),
+        paymentServiceProvider.overrideWithValue(
+          fakePayment ?? _FakePaymentService(),
+        ),
+        riwayatSeenStoreProvider.overrideWithValue(
+          seenStore ?? MemoryRiwayatSeenStore(),
+        ),
+      ],
+      child: MaterialApp.router(routerConfig: router),
+    ),
+  );
+  await tester.pumpAndSettle();
+}
+
+
 Future<void> _pumpDetail(
   WidgetTester tester, {
   required _FakePlaceService fakePlace,
@@ -599,6 +651,7 @@ Future<void> _pumpDetail(
   );
   await tester.pumpAndSettle();
 }
+
 
 void main() {
   testWidgets('App renders splash screen', (WidgetTester tester) async {
@@ -1670,4 +1723,62 @@ void main() {
 
     expect(container.read(mainNavIndexProvider), MainTab.tempat);
   });
+
+  testWidgets('Halaman riwayat menampilkan sewa yang sudah lunas', (
+    WidgetTester tester,
+  ) async {
+    await _pumpRiwayatRouter(tester);
+
+    expect(find.text('Riwayat Saya'), findsOneWidget);
+    expect(find.text('Booth Bazar Sekolah'), findsOneWidget);
+    expect(find.text('Lunas'), findsOneWidget);
+    expect(find.text('E-Pass'), findsOneWidget);
+  });
+
+  testWidgets('Halaman riwayat tanpa overflow pada semua ukuran layar', (
+    WidgetTester tester,
+  ) async {
+    for (final size in _screenSizes) {
+      await _pumpRiwayatRouter(tester, size: size);
+
+      expect(
+        tester.takeException(),
+        isNull,
+        reason: 'Halaman riwayat overflow pada ${size.width}x${size.height}',
+      );
+
+      tester.view.reset();
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pumpAndSettle();
+    }
+  });
+
+  testWidgets('Tombol Lihat E-Pass di riwayat membuka sheet E-Pass', (
+    WidgetTester tester,
+  ) async {
+    await _pumpRiwayatRouter(tester);
+
+    await tester.tap(find.text('E-Pass'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('E-Pass Pemesanan'), findsOneWidget);
+    expect(find.textContaining('E-PASS SPOTH UMKM'), findsOneWidget);
+
+    await tester.ensureVisible(find.text('Tutup'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Tutup'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('E-Pass Pemesanan'), findsNothing);
+  });
+
+  testWidgets('Ikon Riwayat tampil di AppBar beranda pemilik', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(_hostApp(const OwnerHomeScreen()));
+    await tester.pumpAndSettle();
+
+    expect(find.byIcon(Icons.history_rounded), findsOneWidget);
+  });
+
 }

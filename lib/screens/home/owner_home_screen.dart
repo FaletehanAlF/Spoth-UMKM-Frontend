@@ -10,6 +10,7 @@ import '../../providers/place_provider.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/notification_icon.dart';
 import '../../widgets/place_grid.dart';
+import '../../widgets/riwayat_icon_button.dart';
 import '../../widgets/shimmer_loading.dart';
 import '../../widgets/spoth_app_bar.dart';
 
@@ -33,7 +34,7 @@ class OwnerHomeScreen extends ConsumerWidget {
             fontWeight: FontWeight.w700,
           ),
         ),
-        actions: const [NotificationIconButton()],
+        actions: const [RiwayatIconButton(), NotificationIconButton()],
       ),
       body: RefreshIndicator(
         color: AppColors.primaryOrange,

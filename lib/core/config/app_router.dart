@@ -10,6 +10,7 @@ import '../../screens/auth/login_screen.dart';
 import '../../screens/auth/register_screen.dart';
 import '../../screens/booking/booking_form_screen.dart';
 import '../../screens/booking/payment_screen.dart';
+import '../../screens/booking/riwayat_screen.dart';
 import '../../screens/main/main_shell.dart';
 import '../../screens/notification/notification_screen.dart';
 import '../../screens/onboarding/onboarding_screen.dart';
@@ -57,6 +58,10 @@ final appRouter = GoRouter(
       path: '/payment',
       builder: (context, state) =>
           PaymentScreen(bookingId: state.uri.queryParameters['id'] ?? ''),
+    ),
+    GoRoute(
+      path: '/riwayat',
+      builder: (context, state) => const RiwayatScreen(),
     ),
   ],
 );
