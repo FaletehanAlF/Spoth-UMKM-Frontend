@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 
 import '../core/services/payment_service.dart';
 import '../core/theme/app_colors.dart';
@@ -143,6 +144,40 @@ class _EPassSheetState extends ConsumerState<EPassSheet> {
                       ),
                     ),
                     const SizedBox(height: 14),
+                    Center(
+                      child: Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: AppColors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: AppColors.softBorder),
+                        ),
+                        child: QrImageView(
+                          data: _hasil?.epass.kodeBooking ?? '',
+                          version: QrVersions.auto,
+                          size: 150,
+                          backgroundColor: AppColors.white,
+                          eyeStyle: const QrEyeStyle(
+                            eyeShape: QrEyeShape.square,
+                            color: AppColors.charcoal,
+                          ),
+                          dataModuleStyle: const QrDataModuleStyle(
+                            dataModuleShape: QrDataModuleShape.square,
+                            color: AppColors.charcoal,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    const Center(
+                      child: Text(
+                        'Pindai untuk verifikasi E-Pass',
+                        style: TextStyle(
+                          fontSize: 11.5,
+                          color: AppColors.secondaryText,
+                        ),
+                      ),
+                    ),
                     _BarisInfo(
                       label: 'Penyewa',
                       nilai: _hasil?.epass.namaTenant ?? '-',
