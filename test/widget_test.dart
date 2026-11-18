@@ -7,11 +7,13 @@ import 'package:http/http.dart' as http;
 import 'package:spoth_umkm/core/services/api_service.dart';
 import 'package:spoth_umkm/core/services/booking_service.dart';
 import 'package:spoth_umkm/core/services/notification_service.dart';
+import 'package:spoth_umkm/core/services/payment_service.dart';
 import 'package:spoth_umkm/core/services/place_service.dart';
 import 'package:spoth_umkm/core/services/upload_service.dart';
 import 'package:spoth_umkm/main.dart';
 import 'package:spoth_umkm/models/booking_model.dart';
 import 'package:spoth_umkm/models/notification_model.dart';
+import 'package:spoth_umkm/models/payment_model.dart';
 import 'package:spoth_umkm/models/place_model.dart';
 import 'package:spoth_umkm/models/user_model.dart';
 import 'package:spoth_umkm/providers/auth_provider.dart';
@@ -20,6 +22,8 @@ import 'package:spoth_umkm/screens/auth/forgot_password_screen.dart';
 import 'package:spoth_umkm/screens/auth/login_screen.dart';
 import 'package:spoth_umkm/screens/auth/register_screen.dart';
 import 'package:spoth_umkm/screens/booking/booking_form_screen.dart';
+import 'package:spoth_umkm/screens/booking/booking_screen.dart';
+import 'package:spoth_umkm/screens/booking/payment_screen.dart';
 import 'package:spoth_umkm/screens/home/home_screen.dart';
 import 'package:spoth_umkm/screens/main/main_shell.dart';
 import 'package:spoth_umkm/screens/notification/notification_screen.dart';
@@ -154,9 +158,10 @@ BookingModel _booking({
   required String status,
   required String namaTempat,
   required String namaTenant,
+  String? kodeBooking,
 }) => BookingModel(
   id: id,
-  kodeBooking: 'SPT-$id',
+  kodeBooking: kodeBooking ?? 'SPT-$id',
   placeId: '101',
   tenantId: '10',
   jenisUsaha: 'Warung Makan',
@@ -316,6 +321,8 @@ class _FakeNotificationService extends NotificationService {
 class _FakeBookingService extends BookingService {
   _FakeBookingService() : super(ApiService());
 
+  BookingModel? detailOverride;
+
   @override
   Future<List<BookingModel>> listBookings({
     required String token,
@@ -335,6 +342,97 @@ class _FakeBookingService extends BookingService {
       namaTenant: 'Budi Santoso',
     ),
   ];
+
+  @override
+  Future<BookingModel> getBooking({
+    required String token,
+    required String id,
+  }) async =>
+      detailOverride ??
+      _booking(
+        id: id,
+        status: 'MENUNGGU_PEMBAYARAN',
+        namaTempat: 'Lapak Kuliner Baru',
+        namaTenant: 'Budi Santoso',
+      );
+}
+
+class _FakePaymentService extends PaymentService {
+  _FakePaymentService() : super(ApiService());
+
+  String? lastMetode;
+  bool gagalBayar = false;
+  PaymentModel? paymentOverride;
+
+  @override
+  Future<PaymentModel> payBooking({
+    required String token,
+    required String bookingId,
+    required String metode,
+  }) async {
+    lastMetode = metode;
+
+    if (gagalBayar) {
+      throw const ApiException(
+        statusCode: 400,
+        message: 'Pembayaran gagal disimulasikan',
+      );
+    }
+
+    return PaymentModel(
+      id: '901',
+      bookingId: bookingId,
+      metode: metode,
+      jumlah: 600000,
+      status: 'BERHASIL',
+      paidAt: DateTime(2026, 11, 17, 10),
+      kodeBooking: 'SPOTH-$bookingId',
+      totalHarga: 600000,
+      komisiPlatform: 60000,
+      pendapatanHost: 540000,
+      namaTempat: 'Lapak Kuliner Baru',
+    );
+  }
+
+  @override
+  Future<PaymentModel?> getPayment({
+    required String token,
+    required String bookingId,
+  }) async => paymentOverride;
+
+  @override
+  Future<EPassResult> getEPass({
+    required String token,
+    required String bookingId,
+  }) async => EPassResult(
+    epass: EPassModel(
+      kodeBooking: 'SPOTH-$bookingId',
+      namaTempat: 'Lapak Kuliner Baru',
+      alamat: 'Jl. Contoh No. 1',
+      kota: 'Bandung',
+      jenisUsaha: 'Warung Makan',
+      tanggalMulai: '2026-11-20',
+      tanggalSelesai: '2026-11-22',
+      jumlahDurasi: 3,
+      tipeDurasi: 'HARIAN',
+      totalHarga: 600000,
+      status: 'LUNAS',
+      namaTenant: 'Budi Santoso',
+      namaHost: 'Rina Pemilik',
+      metodePembayaran: 'QRIS',
+      tanggalPembayaran: DateTime(2026, 11, 17, 10),
+    ),
+    teksEpass:
+        'E-PASS SPOTH UMKM\n'
+        'Kode Booking : SPOTH-$bookingId\n'
+        'Tempat       : Lapak Kuliner Baru\n'
+        'Alamat       : Jl. Contoh No. 1, Bandung\n'
+        'Jenis Usaha  : Warung Makan\n'
+        'Periode      : 20 Nov 2026 s.d. 22 Nov 2026\n'
+        'Total Bayar  : Rp 600.000\n'
+        'Komisi       : Rp 60.000\n'
+        'Status       : LUNAS',
+  );
 }
 
 Widget _tenantApp(Widget home) => ProviderScope(
@@ -343,6 +441,7 @@ Widget _tenantApp(Widget home) => ProviderScope(
     placeServiceProvider.overrideWithValue(_FakePlaceService()),
     notificationServiceProvider.overrideWithValue(_FakeNotificationService()),
     bookingServiceProvider.overrideWithValue(_FakeBookingService()),
+    paymentServiceProvider.overrideWithValue(_FakePaymentService()),
   ],
   child: MaterialApp(home: home),
 );
@@ -353,6 +452,7 @@ Widget _hostApp(Widget home) => ProviderScope(
     placeServiceProvider.overrideWithValue(_FakePlaceService()),
     notificationServiceProvider.overrideWithValue(_FakeNotificationService()),
     bookingServiceProvider.overrideWithValue(_FakeBookingService()),
+    paymentServiceProvider.overrideWithValue(_FakePaymentService()),
   ],
   child: MaterialApp(home: home),
 );
@@ -413,6 +513,7 @@ Future<void> _pumpFormRouter(
           _FakeNotificationService(),
         ),
         bookingServiceProvider.overrideWithValue(_FakeBookingService()),
+        paymentServiceProvider.overrideWithValue(_FakePaymentService()),
         if (fakeUpload != null)
           uploadServiceProvider.overrideWithValue(fakeUpload),
       ],
@@ -422,6 +523,53 @@ Future<void> _pumpFormRouter(
   await tester.pumpAndSettle();
 }
 
+Future<void> _pumpPaymentRouter(
+  WidgetTester tester,
+  String initialLocation, {
+  Size size = const Size(412, 915),
+  bool daftarBooking = false,
+  _FakeBookingService? fakeBooking,
+  _FakePaymentService? fakePayment,
+}) async {
+  tester.view
+    ..devicePixelRatio = 1.0
+    ..physicalSize = size;
+
+  final router = GoRouter(
+    initialLocation: initialLocation,
+    routes: [
+      if (daftarBooking)
+        GoRoute(path: '/booking', builder: (_, _) => const BookingScreen()),
+      GoRoute(
+        path: '/payment',
+        builder: (_, state) =>
+            PaymentScreen(bookingId: state.uri.queryParameters['id'] ?? ''),
+      ),
+    ],
+  );
+
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: [
+        authNotifierProvider.overrideWith(
+          () => _FakeAuthNotifier(_tenantUser()),
+        ),
+        placeServiceProvider.overrideWithValue(_FakePlaceService()),
+        notificationServiceProvider.overrideWithValue(
+          _FakeNotificationService(),
+        ),
+        bookingServiceProvider.overrideWithValue(
+          fakeBooking ?? _FakeBookingService(),
+        ),
+        paymentServiceProvider.overrideWithValue(
+          fakePayment ?? _FakePaymentService(),
+        ),
+      ],
+      child: MaterialApp.router(routerConfig: router),
+    ),
+  );
+  await tester.pumpAndSettle();
+}
 Future<void> _pumpDetail(
   WidgetTester tester, {
   required _FakePlaceService fakePlace,
@@ -443,6 +591,7 @@ Future<void> _pumpDetail(
           _FakeNotificationService(),
         ),
         bookingServiceProvider.overrideWithValue(_FakeBookingService()),
+        paymentServiceProvider.overrideWithValue(_FakePaymentService()),
       ],
       child: const MaterialApp(home: PlaceDetailScreen(placeId: '101')),
     ),
@@ -1254,6 +1403,7 @@ void main() {
             _FakeNotificationService(),
           ),
           bookingServiceProvider.overrideWithValue(_FakeBookingService()),
+          paymentServiceProvider.overrideWithValue(_FakePaymentService()),
         ],
         child: const MaterialApp(home: KelolaTempatScreen()),
       ),
@@ -1305,6 +1455,189 @@ void main() {
       await tester.pumpWidget(const SizedBox.shrink());
       await tester.pumpAndSettle();
     }
+  });
+
+  testWidgets('Halaman pembayaran menampilkan ringkasan dan pilihan metode', (
+    WidgetTester tester,
+  ) async {
+    await _pumpPaymentRouter(tester, '/payment?id=301');
+
+    expect(find.text('Lapak Kuliner Baru'), findsOneWidget);
+    expect(find.text('Ringkasan Pemesanan'), findsOneWidget);
+    expect(find.text('Metode Pembayaran'), findsOneWidget);
+    expect(find.text('Simulasi'), findsOneWidget);
+    expect(find.text('Transfer Bank'), findsOneWidget);
+    expect(find.text('QRIS'), findsOneWidget);
+    expect(find.text('Tunai'), findsOneWidget);
+    expect(find.text('Bayar Sekarang'), findsOneWidget);
+    expect(find.text('Rp 600.000'), findsNWidgets(2));
+  });
+
+  testWidgets('Halaman pembayaran tanpa overflow pada semua ukuran layar', (
+    WidgetTester tester,
+  ) async {
+    for (final size in _screenSizes) {
+      await _pumpPaymentRouter(tester, '/payment?id=301', size: size);
+
+      expect(
+        tester.takeException(),
+        isNull,
+        reason: 'Halaman pembayaran overflow pada ${size.width}x${size.height}',
+      );
+
+      tester.view.reset();
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pumpAndSettle();
+    }
+  });
+
+  testWidgets('Pembayaran memilih metode lalu menampilkan kode booking', (
+    WidgetTester tester,
+  ) async {
+    final fake = _FakePaymentService();
+
+    await _pumpPaymentRouter(tester, '/payment?id=301', fakePayment: fake);
+
+    await tester.tap(find.text('QRIS'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Bayar Sekarang'));
+    await tester.pumpAndSettle();
+
+    expect(fake.lastMetode, 'QRIS');
+    expect(find.text('Pembayaran Berhasil'), findsOneWidget);
+    expect(find.text('SPOTH-301'), findsOneWidget);
+    expect(find.text('Selesai'), findsOneWidget);
+    expect(find.text('Bayar Sekarang'), findsNothing);
+  });
+
+  testWidgets('Pembayaran gagal menampilkan pesan dari server', (
+    WidgetTester tester,
+  ) async {
+    final fake = _FakePaymentService();
+    fake.gagalBayar = true;
+
+    await _pumpPaymentRouter(tester, '/payment?id=301', fakePayment: fake);
+
+    await tester.tap(find.text('Bayar Sekarang'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Pembayaran gagal disimulasikan'), findsOneWidget);
+    expect(find.text('Pembayaran Berhasil'), findsNothing);
+    expect(find.text('Bayar Sekarang'), findsOneWidget);
+  });
+
+  testWidgets('Tombol Lihat E-Pass membuka sheet E-Pass', (
+    WidgetTester tester,
+  ) async {
+    await _pumpPaymentRouter(tester, '/payment?id=301');
+
+    await tester.tap(find.text('Bayar Sekarang'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Lihat E-Pass'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('E-Pass Pemesanan'), findsOneWidget);
+    expect(find.textContaining('E-PASS SPOTH UMKM'), findsOneWidget);
+    expect(find.textContaining('Kode Booking : SPOTH-301'), findsOneWidget);
+    expect(find.text('Budi Santoso'), findsOneWidget);
+    expect(find.text('LUNAS'), findsOneWidget);
+
+    await tester.ensureVisible(find.text('Tutup'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Tutup'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('E-Pass Pemesanan'), findsNothing);
+    expect(find.text('Pembayaran Berhasil'), findsOneWidget);
+  });
+
+  testWidgets('Sheet E-Pass tanpa overflow pada semua ukuran layar', (
+    WidgetTester tester,
+  ) async {
+    for (final size in _screenSizes) {
+      await _pumpPaymentRouter(tester, '/payment?id=301', size: size);
+
+      await tester.tap(find.text('Bayar Sekarang'));
+      await tester.pumpAndSettle();
+
+      await tester.ensureVisible(find.text('Lihat E-Pass'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Lihat E-Pass'));
+      await tester.pumpAndSettle();
+
+      expect(
+        tester.takeException(),
+        isNull,
+        reason: 'Sheet E-Pass overflow pada ${size.width}x${size.height}',
+      );
+
+      await tester.ensureVisible(find.text('Tutup'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Tutup'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('E-Pass Pemesanan'), findsNothing);
+
+      tester.view.reset();
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pumpAndSettle();
+    }
+  });
+
+  testWidgets('Kartu Menunggu Bayar penyewa membuka halaman pembayaran', (
+    WidgetTester tester,
+  ) async {
+    await _pumpPaymentRouter(tester, '/booking', daftarBooking: true);
+
+    expect(find.text('Penyewaan Saya'), findsOneWidget);
+    expect(find.text('Lapak Kuliner Baru'), findsOneWidget);
+    expect(find.text('Menunggu Bayar'), findsOneWidget);
+    expect(find.text('Bayar Sekarang'), findsOneWidget);
+
+    await tester.tap(find.text('Bayar Sekarang'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Metode Pembayaran'), findsOneWidget);
+    expect(find.text('Ringkasan Pemesanan'), findsOneWidget);
+  });
+
+  testWidgets('Halaman pembayaran booking lunas menampilkan kode booking', (
+    WidgetTester tester,
+  ) async {
+    final fakeBooking = _FakeBookingService();
+    fakeBooking.detailOverride = _booking(
+      id: '301',
+      status: 'LUNAS',
+      namaTempat: 'Lapak Kuliner Baru',
+      namaTenant: 'Budi Santoso',
+      kodeBooking: 'SPOTH-301',
+    );
+
+    final fakePayment = _FakePaymentService();
+    fakePayment.paymentOverride = PaymentModel(
+      id: '901',
+      bookingId: '301',
+      metode: 'QRIS',
+      jumlah: 600000,
+      status: 'BERHASIL',
+      paidAt: DateTime(2026, 11, 17, 10),
+      kodeBooking: 'SPOTH-301',
+      totalHarga: 600000,
+    );
+
+    await _pumpPaymentRouter(
+      tester,
+      '/payment?id=301',
+      fakeBooking: fakeBooking,
+      fakePayment: fakePayment,
+    );
+
+    expect(find.text('Pembayaran Berhasil'), findsOneWidget);
+    expect(find.text('SPOTH-301'), findsOneWidget);
+    expect(find.text('QRIS'), findsOneWidget);
+    expect(find.text('Bayar Sekarang'), findsNothing);
   });
 
   testWidgets('Home penyewa menampilkan sapaan dan shortcut pencarian', (

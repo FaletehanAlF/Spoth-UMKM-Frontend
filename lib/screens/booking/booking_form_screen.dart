@@ -224,7 +224,7 @@ class _BookingFormScreenState extends ConsumerState<BookingFormScreen> {
       final token = ref.read(authNotifierProvider.select((s) => s.token));
       if (token == null) return;
 
-      await ref
+      final booking = await ref
           .read(bookingServiceProvider)
           .createBooking(
             token: token,
@@ -239,12 +239,14 @@ class _BookingFormScreenState extends ConsumerState<BookingFormScreen> {
       await ref.read(bookingsProvider.notifier).refresh();
 
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Pemesanan berhasil dibuat. Lihat di menu Booking.'),
-        ),
-      );
 
+      await context.push('/payment?id=${booking.id}');
+
+      if (!mounted) return;
+
+      await ref.read(bookingsProvider.notifier).refresh();
+
+      if (!mounted) return;
       ref.read(mainNavIndexProvider.notifier).setTab(MainTab.booking);
       context.go('/home');
     } on ApiException catch (error) {
