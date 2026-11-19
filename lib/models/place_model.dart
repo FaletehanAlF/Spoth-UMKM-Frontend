@@ -16,6 +16,8 @@ class PlaceModel {
     required this.status,
     this.createdAt,
     this.updatedAt,
+    this.tanggalMulaiTersedia,
+    this.tanggalSelesaiTersedia,
     this.foto = const [],
     this.namaHost,
     this.jumlahFoto = 0,
@@ -58,6 +60,8 @@ class PlaceModel {
   final String status;
   final DateTime? createdAt;
   final DateTime? updatedAt;
+  final DateTime? tanggalMulaiTersedia;
+  final DateTime? tanggalSelesaiTersedia;
   final List<String> foto;
   final String? namaHost;
   final int jumlahFoto;
@@ -67,6 +71,8 @@ class PlaceModel {
   String get durasiLabel => durasiLabels[tipeDurasi] ?? tipeDurasi;
   bool get isAktif => status == 'AKTIF';
   bool get hasPromo => hargaPromo != null && hargaPromo! < hargaNormal;
+  bool get hasPeriodeKetersediaan =>
+      tanggalMulaiTersedia != null && tanggalSelesaiTersedia != null;
 
   List<String> get fasilitasList => (fasilitas ?? '')
       .split(',')
@@ -92,6 +98,8 @@ class PlaceModel {
       status: json['status'] as String? ?? 'AKTIF',
       createdAt: DateTime.tryParse(json['created_at'] as String? ?? ''),
       updatedAt: DateTime.tryParse(json['updated_at'] as String? ?? ''),
+      tanggalMulaiTersedia: _toDate(json['tanggal_mulai_tersedia']),
+      tanggalSelesaiTersedia: _toDate(json['tanggal_selesai_tersedia']),
       foto:
           (json['foto'] as List<dynamic>?)
               ?.map((item) => item.toString())
@@ -104,6 +112,13 @@ class PlaceModel {
           .map(BookedRange.fromJson)
           .toList(),
     );
+  }
+
+  static DateTime? _toDate(dynamic value) {
+    if (value is! String || value.isEmpty) {
+      return null;
+    }
+    return DateTime.tryParse(value);
   }
 
   static double _toDouble(dynamic value) {

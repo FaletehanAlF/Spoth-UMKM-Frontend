@@ -15,12 +15,13 @@ class TempatScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(authNotifierProvider).user;
-    final roleDikenal = user != null &&
+    final roleDikenal =
+        user != null &&
         (user.role == UserModel.roleHost || user.role == UserModel.roleTenant);
 
     if (!roleDikenal) {
       return Scaffold(
-        backgroundColor: AppColors.white,
+        backgroundColor: AppColors.canvas,
         appBar: const SpothAppBar(
           title: Text('Tempat'),
           actions: [NotificationIconButton()],
@@ -31,8 +32,7 @@ class TempatScreen extends ConsumerWidget {
             child: EmptyState(
               icon: Icons.lock_outline,
               title: 'Role akun tidak dikenali',
-              message:
-                  'Tolong keluar dan login kembali, atau hubungi administrator.',
+              message: 'Tolong keluar dan login kembali, atau hubungi administrator.',
             ),
           ),
         ),
@@ -49,7 +49,7 @@ class _TempatKatalogPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.white,
+      backgroundColor: AppColors.canvas,
       appBar: const SpothAppBar(
         title: Text('Tempat'),
         actions: [NotificationIconButton()],

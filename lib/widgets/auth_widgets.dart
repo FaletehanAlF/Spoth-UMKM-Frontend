@@ -2,6 +2,269 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../core/theme/app_colors.dart';
+import '../core/theme/app_fonts.dart';
+import '../core/theme/app_layout.dart';
+
+/// Bingkai halaman autentikasi.
+///
+/// Di layar lebar, formulir ditemani panel brand di sisi kiri supaya halaman
+/// tidak terasa seperti kolom sempit yang mengambang di ruang kosong.
+class AuthScaffold extends StatelessWidget {
+  const AuthScaffold({super.key, required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.canvas,
+      body: SafeArea(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final lebar = constraints.maxWidth >= 980;
+
+            if (!lebar) {
+              return SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(24, 32, 24, 36),
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: AppWidth.auth),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        const Center(child: AuthBrand()),
+                        const SizedBox(height: 30),
+                        child,
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            }
+
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(
+                  flex: 11,
+                  child: _AuthBrandPanel(
+                    availableHeight: constraints.maxHeight,
+                  ),
+                ),
+                Expanded(
+                  flex: 10,
+                  child: Container(
+                    color: AppColors.white,
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 56,
+                        vertical: 48,
+                      ),
+                      child: Center(
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(
+                            maxWidth: AppWidth.auth,
+                          ),
+                          child: child,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+class _AuthBrandPanel extends StatelessWidget {
+  const _AuthBrandPanel({required this.availableHeight});
+
+  final double availableHeight;
+
+  @override
+  Widget build(BuildContext context) {
+    final tampilkanKartu = availableHeight >= 660;
+
+    return Container(
+      decoration: const BoxDecoration(color: AppColors.canvasDeep),
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(56, 44, 48, 36),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const AuthBrand(logoSize: 38),
+            const SizedBox(height: 56),
+            Text(
+              'Ruang kecil,\nusaha besar.',
+              style: AppFonts.heading(
+                fontSize: 46,
+                weight: 700,
+                height: 1.04,
+                letterSpacing: -1.6,
+                color: AppColors.charcoal,
+              ),
+            ),
+            const SizedBox(height: 18),
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 420),
+              child: const Text(
+                'SPOTH UMKM mempertemukan pemilik lapak, teras, dan booth '
+                'dengan orang-orang yang siap memulai usahanya.',
+                style: TextStyle(
+                  fontSize: 15,
+                  height: 1.6,
+                  color: AppColors.secondaryText,
+                ),
+              ),
+            ),
+            const SizedBox(height: 26),
+            const Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                _BrandTag(
+                  icon: Icons.storefront_outlined,
+                  label: 'Lapak usaha',
+                ),
+                _BrandTag(icon: Icons.deck_outlined, label: 'Teras komersial'),
+                _BrandTag(
+                  icon: Icons.confirmation_number_outlined,
+                  label: 'Booth event',
+                ),
+              ],
+            ),
+            if (tampilkanKartu) ...[
+              const SizedBox(height: 36),
+              const _AuthPlacePreview(),
+            ],
+            const SizedBox(height: 36),
+            Text(
+              '“Tumbuh bersama UMKM Indonesia”',
+              style: TextStyle(
+                fontSize: 12,
+                fontStyle: FontStyle.italic,
+                fontWeight: FontWeight.w600,
+                color: AppColors.secondaryText,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _BrandTag extends StatelessWidget {
+  const _BrandTag({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+      decoration: BoxDecoration(
+        color: AppColors.white.withValues(alpha: 0.7),
+        borderRadius: BorderRadius.circular(AppRadius.pill),
+        border: Border.all(color: AppColors.softBorder),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 15, color: AppColors.primaryDeep),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: AppColors.charcoal,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AuthPlacePreview extends StatelessWidget {
+  const _AuthPlacePreview();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 330,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+        border: Border.all(color: AppColors.softBorder),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.charcoal.withValues(alpha: 0.05),
+            blurRadius: 24,
+            offset: const Offset(0, 12),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 64,
+            height: 64,
+            decoration: BoxDecoration(
+              color: AppColors.lightOrange,
+              borderRadius: BorderRadius.circular(AppRadius.md),
+            ),
+            child: const Icon(
+              Icons.storefront,
+              color: AppColors.primaryDeep,
+              size: 28,
+            ),
+          ),
+          const SizedBox(width: 12),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Lapak Kuliner',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.charcoal,
+                  ),
+                ),
+                SizedBox(height: 3),
+                Text(
+                  'Bandung · 2 menit dari pasar',
+                  style: TextStyle(
+                    fontSize: 11.5,
+                    color: AppColors.secondaryText,
+                  ),
+                ),
+                SizedBox(height: 8),
+                Text(
+                  'Rp200.000 / hari',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.primaryInk,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
 
 class AuthBrand extends StatelessWidget {
   const AuthBrand({super.key, this.logoSize = 42});
@@ -22,7 +285,7 @@ class AuthBrand extends StatelessWidget {
             errorBuilder: (context, error, stackTrace) => Icon(
               Icons.storefront,
               size: logoSize,
-              color: AppColors.primaryOrange,
+              color: AppColors.primaryDeep,
             ),
           ),
         ),
@@ -30,9 +293,9 @@ class AuthBrand extends StatelessWidget {
         const Text(
           'SPOTH UMKM',
           style: TextStyle(
-            fontSize: 16,
+            fontSize: 15,
             fontWeight: FontWeight.w800,
-            letterSpacing: 0.6,
+            letterSpacing: 0.2,
             color: AppColors.charcoal,
           ),
         ),
@@ -42,32 +305,44 @@ class AuthBrand extends StatelessWidget {
 }
 
 class AuthHeader extends StatelessWidget {
-  const AuthHeader({super.key, required this.title, required this.description});
+  const AuthHeader({
+    super.key,
+    required this.title,
+    required this.description,
+    this.textAlign = TextAlign.start,
+  });
 
   final String title;
   final String description;
+  final TextAlign textAlign;
 
   @override
   Widget build(BuildContext context) {
+    final centered = textAlign == TextAlign.center;
+
     return Column(
+      crossAxisAlignment: centered
+          ? CrossAxisAlignment.center
+          : CrossAxisAlignment.start,
       children: [
         Text(
           title,
-          textAlign: TextAlign.center,
-          style: const TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.w700,
-            height: 1.3,
-            color: AppColors.darkText,
+          textAlign: textAlign,
+          style: AppFonts.heading(
+            fontSize: 27,
+            weight: 700,
+            height: 1.18,
+            letterSpacing: -0.7,
+            color: AppColors.charcoal,
           ),
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: 8),
         Text(
           description,
-          textAlign: TextAlign.center,
+          textAlign: textAlign,
           style: const TextStyle(
             fontSize: 14,
-            height: 1.5,
+            height: 1.55,
             color: AppColors.secondaryText,
           ),
         ),
@@ -116,12 +391,12 @@ class AuthField extends StatelessWidget {
         Text(
           label,
           style: const TextStyle(
-            fontSize: 13,
+            fontSize: 12.5,
             fontWeight: FontWeight.w600,
-            color: AppColors.darkText,
+            color: AppColors.charcoal,
           ),
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: 7),
         TextFormField(
           controller: controller,
           keyboardType: keyboardType,
@@ -136,12 +411,12 @@ class AuthField extends StatelessWidget {
           decoration: InputDecoration(
             hintText: hintText,
             hintStyle: const TextStyle(
-              fontSize: 15,
+              fontSize: 14.5,
               color: AppColors.secondaryText,
             ),
             suffixIcon: suffixIcon,
             filled: true,
-            fillColor: AppColors.white,
+            fillColor: AppColors.surfaceMuted,
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 16,
               vertical: 15,
@@ -151,11 +426,11 @@ class AuthField extends StatelessWidget {
               const BorderSide(color: AppColors.neutralBorder),
             ),
             focusedBorder: _border(
-              const BorderSide(color: AppColors.primaryOrange, width: 1.4),
+              const BorderSide(color: AppColors.primaryDeep, width: 1.6),
             ),
             errorBorder: _border(BorderSide(color: errorColor)),
             focusedErrorBorder: _border(
-              BorderSide(color: errorColor, width: 1.4),
+              BorderSide(color: errorColor, width: 1.6),
             ),
           ),
         ),
@@ -165,7 +440,7 @@ class AuthField extends StatelessWidget {
 
   OutlineInputBorder _border(BorderSide side) {
     return OutlineInputBorder(
-      borderRadius: BorderRadius.circular(14),
+      borderRadius: BorderRadius.circular(AppRadius.md),
       borderSide: side,
     );
   }
@@ -194,15 +469,13 @@ class AuthRoleOption extends StatelessWidget {
         onTap: onTap,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 150),
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
           decoration: BoxDecoration(
             color: selected ? AppColors.lightOrange : AppColors.white,
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(AppRadius.md),
             border: Border.all(
-              color: selected
-                  ? AppColors.primaryOrange
-                  : AppColors.neutralBorder,
-              width: selected ? 1.3 : 1,
+              color: selected ? AppColors.primaryDeep : AppColors.neutralBorder,
+              width: selected ? 1.4 : 1,
             ),
           ),
           child: Row(
@@ -213,7 +486,7 @@ class AuthRoleOption extends StatelessWidget {
                     : Icons.radio_button_unchecked,
                 size: 20,
                 color: selected
-                    ? AppColors.primaryOrange
+                    ? AppColors.primaryDeep
                     : AppColors.secondaryText,
               ),
               const SizedBox(width: 12),
@@ -227,8 +500,8 @@ class AuthRoleOption extends StatelessWidget {
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
                         color: selected
-                            ? AppColors.primaryOrange
-                            : AppColors.darkText,
+                            ? AppColors.primaryInk
+                            : AppColors.charcoal,
                       ),
                     ),
                     const SizedBox(height: 2),
@@ -236,7 +509,7 @@ class AuthRoleOption extends StatelessWidget {
                       description,
                       style: const TextStyle(
                         fontSize: 12.5,
-                        height: 1.35,
+                        height: 1.4,
                         color: AppColors.secondaryText,
                       ),
                     ),
@@ -306,9 +579,7 @@ class AuthTextLink extends StatelessWidget {
             style: TextStyle(
               fontSize: fontSize,
               fontWeight: FontWeight.w700,
-              color: enabled
-                  ? AppColors.primaryOrange
-                  : AppColors.secondaryText,
+              color: enabled ? AppColors.primaryInk : AppColors.secondaryText,
             ),
           ),
         ),
@@ -369,18 +640,14 @@ class AuthBackLink extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(
-              Icons.arrow_back,
-              size: 18,
-              color: AppColors.primaryOrange,
-            ),
+            const Icon(Icons.arrow_back, size: 18, color: AppColors.primaryInk),
             const SizedBox(width: 6),
             Text(
               label,
               style: const TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
-                color: AppColors.primaryOrange,
+                color: AppColors.primaryInk,
               ),
             ),
           ],
@@ -397,23 +664,26 @@ class AuthMessage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final errorColor = Theme.of(context).colorScheme.error;
-
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(13),
       decoration: BoxDecoration(
-        color: errorColor.withValues(alpha: 0.06),
-        borderRadius: BorderRadius.circular(12),
+        color: AppColors.danger.withValues(alpha: 0.07),
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        border: Border.all(color: AppColors.danger.withValues(alpha: 0.18)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.error_outline, size: 18, color: errorColor),
+          const Icon(Icons.error_outline, size: 18, color: AppColors.danger),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
               text,
-              style: TextStyle(color: errorColor, fontSize: 13, height: 1.4),
+              style: const TextStyle(
+                color: AppColors.danger,
+                fontSize: 12.5,
+                height: 1.45,
+              ),
             ),
           ),
         ],

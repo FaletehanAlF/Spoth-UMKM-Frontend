@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -7,6 +9,7 @@ import '../../core/services/booking_service.dart';
 import '../../core/services/place_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/format.dart';
+import '../../models/availability_model.dart';
 import '../../models/booking_model.dart';
 import '../../models/place_model.dart';
 import '../../models/user_model.dart';
@@ -36,8 +39,16 @@ class _BookingFormScreenState extends ConsumerState<BookingFormScreen> {
 
   DateTime? _tanggalMulai;
   PricePreviewModel? _preview;
+  String? _previewKey;
+  PlaceAvailabilityModel? _availability;
+  String? _availabilityKey;
+  String? _availabilityError;
+  Timer? _availabilityDebounce;
+  int _availabilityRequest = 0;
+  int _previewRequest = 0;
   bool _loadingPlace = true;
   bool _checkingPreview = false;
+  bool _checkingAvailability = false;
   bool _submitting = false;
   String? _loadError;
   PlaceModel? _place;
@@ -50,6 +61,7 @@ class _BookingFormScreenState extends ConsumerState<BookingFormScreen> {
 
   @override
   void dispose() {
+    _availabilityDebounce?.cancel();
     _tanggalController.dispose();
     _durasiController.dispose();
     _jenisUsahaController.dispose();
@@ -99,8 +111,12 @@ class _BookingFormScreenState extends ConsumerState<BookingFormScreen> {
       setState(() {
         _tanggalMulai = dipilih;
         _tanggalController.text = formatDateString(_tanggalText(dipilih));
-        _preview = null;
+        _batalkanPratinjau();
+        _availability = null;
+        _availabilityKey = null;
+        _availabilityError = null;
       });
+      _jadwalkanCekKetersediaan();
     }
   }
 
@@ -167,13 +183,135 @@ class _BookingFormScreenState extends ConsumerState<BookingFormScreen> {
       selection: TextSelection.collapsed(offset: teks.length),
     );
 
-    setState(() => _preview = null);
+    setState(() {
+      _batalkanPratinjau();
+      _availability = null;
+      _availabilityKey = null;
+      _availabilityError = null;
+    });
+    _jadwalkanCekKetersediaan();
   }
 
   bool get _formLengkap =>
       _tanggalMulai != null &&
       _jumlahDurasi > 0 &&
       _jenisUsahaController.text.trim().isNotEmpty;
+
+  String? get _availabilitySelectionKey {
+    final mulai = _tanggalMulai;
+
+    if (mulai == null || _jumlahDurasi < 1 || _jumlahDurasi > 365) {
+      return null;
+    }
+
+    return '${_tanggalText(mulai)}|$_jumlahDurasi';
+  }
+
+  PlaceAvailabilityModel? get _availabilitySaatIni =>
+      _availabilityKey == _availabilitySelectionKey ? _availability : null;
+
+  PricePreviewModel? get _previewSaatIni =>
+      _previewKey == _availabilitySelectionKey ? _preview : null;
+
+  void _batalkanPratinjau() {
+    _preview = null;
+    _previewKey = null;
+    _previewRequest += 1;
+    _checkingPreview = false;
+  }
+
+  bool get _tidakTersedia =>
+      _availabilitySaatIni != null && !_availabilitySaatIni!.tersedia;
+
+  void _jadwalkanCekKetersediaan() {
+    _availabilityDebounce?.cancel();
+    _availabilityRequest += 1;
+
+    if (_availabilitySelectionKey == null) {
+      if (_availability != null ||
+          _availabilityError != null ||
+          _checkingAvailability) {
+        setState(() {
+          _availability = null;
+          _availabilityKey = null;
+          _availabilityError = null;
+          _checkingAvailability = false;
+        });
+      }
+      return;
+    }
+
+    _availabilityDebounce = Timer(
+      const Duration(milliseconds: 400),
+      _cekKetersediaan,
+    );
+  }
+
+  Future<PlaceAvailabilityModel?> _cekKetersediaan() async {
+    final key = _availabilitySelectionKey;
+    final mulai = _tanggalMulai;
+    final jumlahDurasi = _jumlahDurasi;
+
+    if (key == null || mulai == null) {
+      return null;
+    }
+
+    _availabilityDebounce?.cancel();
+    final permintaan = ++_availabilityRequest;
+    setState(() {
+      _checkingAvailability = true;
+      _availabilityError = null;
+    });
+
+    try {
+      final token = ref.read(authNotifierProvider.select((s) => s.token));
+      final hasil = await ref
+          .read(placeServiceProvider)
+          .checkAvailability(
+            placeId: widget.placeId,
+            tanggalMulai: _tanggalText(mulai),
+            jumlahDurasi: jumlahDurasi,
+            token: token,
+          );
+
+      if (!mounted ||
+          permintaan != _availabilityRequest ||
+          key != _availabilitySelectionKey) {
+        return null;
+      }
+
+      setState(() {
+        _availability = hasil;
+        _availabilityKey = key;
+        _checkingAvailability = false;
+      });
+      return hasil;
+    } on ApiException catch (error) {
+      if (!mounted || permintaan != _availabilityRequest) {
+        return null;
+      }
+
+      setState(() {
+        _availability = null;
+        _availabilityKey = null;
+        _availabilityError = error.message;
+        _checkingAvailability = false;
+      });
+      return null;
+    } catch (_) {
+      if (!mounted || permintaan != _availabilityRequest) {
+        return null;
+      }
+
+      setState(() {
+        _availability = null;
+        _availabilityKey = null;
+        _availabilityError = 'Gagal memeriksa ketersediaan jadwal.';
+        _checkingAvailability = false;
+      });
+      return null;
+    }
+  }
 
   void _showSnack(String message) {
     if (!mounted) return;
@@ -188,6 +326,16 @@ class _BookingFormScreenState extends ConsumerState<BookingFormScreen> {
     final valid = _formKey.currentState?.validate() ?? false;
     if (!valid || !_formLengkap) return;
 
+    final key = _availabilitySelectionKey;
+    final mulai = _tanggalMulai;
+
+    if (key == null || mulai == null) {
+      return;
+    }
+
+    final jumlahDurasi = _jumlahDurasi;
+    final permintaan = ++_previewRequest;
+
     setState(() => _checkingPreview = true);
     try {
       final token = ref.read(authNotifierProvider.select((s) => s.token));
@@ -198,18 +346,34 @@ class _BookingFormScreenState extends ConsumerState<BookingFormScreen> {
           .previewPrice(
             token: token,
             placeId: widget.placeId,
-            tanggalMulai: _tanggalText(_tanggalMulai!),
-            jumlahDurasi: _jumlahDurasi,
+            tanggalMulai: _tanggalText(mulai),
+            jumlahDurasi: jumlahDurasi,
           );
 
-      if (!mounted) return;
-      setState(() => _preview = preview);
+      if (!mounted ||
+          permintaan != _previewRequest ||
+          key != _availabilitySelectionKey) {
+        return;
+      }
+
+      setState(() {
+        _preview = preview;
+        _previewKey = key;
+      });
     } on ApiException catch (error) {
+      if (!mounted || permintaan != _previewRequest) {
+        return;
+      }
       _showSnack(error.message);
     } catch (_) {
+      if (!mounted || permintaan != _previewRequest) {
+        return;
+      }
       _showSnack('Gagal menghitung pratinjau biaya.');
     } finally {
-      if (mounted) setState(() => _checkingPreview = false);
+      if (mounted && permintaan == _previewRequest) {
+        setState(() => _checkingPreview = false);
+      }
     }
   }
 
@@ -219,8 +383,45 @@ class _BookingFormScreenState extends ConsumerState<BookingFormScreen> {
     final valid = _formKey.currentState?.validate() ?? false;
     if (!valid || !_formLengkap) return;
 
+    final key = _availabilitySelectionKey;
+    final mulai = _tanggalMulai;
+
+    if (key == null || mulai == null) {
+      return;
+    }
+
+    final jumlahDurasi = _jumlahDurasi;
+
     setState(() => _submitting = true);
     try {
+      final ketersediaan = await _cekKetersediaan();
+
+      if (!mounted) return;
+
+      if (key != _availabilitySelectionKey) {
+        _showSnack(
+          'Pilihan tanggal atau lama sewa berubah. Periksa ketersediaan lagi '
+          'sebelum memesan.',
+        );
+        return;
+      }
+
+      if (ketersediaan == null) {
+        _showSnack(
+          _availabilityError ??
+              'Gagal memeriksa ketersediaan jadwal. Coba lagi.',
+        );
+        return;
+      }
+
+      if (!ketersediaan.tersedia) {
+        _showSnack(
+          'Tanggal yang dipilih tidak tersedia. Pilih tanggal atau lama sewa '
+          'lain.',
+        );
+        return;
+      }
+
       final token = ref.read(authNotifierProvider.select((s) => s.token));
       if (token == null) return;
 
@@ -230,8 +431,8 @@ class _BookingFormScreenState extends ConsumerState<BookingFormScreen> {
             token: token,
             payload: {
               'place_id': widget.placeId,
-              'tanggal_mulai': _tanggalText(_tanggalMulai!),
-              'jumlah_durasi': _jumlahDurasi,
+              'tanggal_mulai': _tanggalText(mulai),
+              'jumlah_durasi': jumlahDurasi,
               'jenis_usaha': _jenisUsahaController.text.trim(),
             },
           );
@@ -320,7 +521,15 @@ class _BookingFormScreenState extends ConsumerState<BookingFormScreen> {
                   'Lama Sewa',
                   'Contoh: 3',
                 ).copyWith(suffixText: _satuanDurasi),
-                onChanged: (_) => setState(() => _preview = null),
+                onChanged: (_) {
+                  setState(() {
+                    _batalkanPratinjau();
+                    _availability = null;
+                    _availabilityKey = null;
+                    _availabilityError = null;
+                  });
+                  _jadwalkanCekKetersediaan();
+                },
                 validator: (value) {
                   final jumlah = int.tryParse(value?.trim() ?? '') ?? 0;
                   if (jumlah < 1) {
@@ -360,6 +569,15 @@ class _BookingFormScreenState extends ConsumerState<BookingFormScreen> {
                 helperMaxLines: 2,
               ),
         ),
+        if (_availabilitySelectionKey != null) ...[
+          const SizedBox(height: 12),
+          _AvailabilityInfo(
+            loading: _checkingAvailability,
+            error: _availabilityError,
+            availability: _availabilitySaatIni,
+            onRetry: _cekKetersediaan,
+          ),
+        ],
         const SizedBox(height: 24),
         const _SectionHeader(
           icon: Icons.storefront_outlined,
@@ -394,11 +612,11 @@ class _BookingFormScreenState extends ConsumerState<BookingFormScreen> {
         ),
         const SizedBox(height: 16),
         PrimaryButton(
-          label: 'Buat Pemesanan',
+          label: _tidakTersedia ? 'Tanggal Tidak Tersedia' : 'Buat Pemesanan',
           isLoading: _submitting,
           height: 52,
           borderRadius: 14,
-          onPressed: _submit,
+          onPressed: _tidakTersedia ? null : _submit,
         ),
         const SizedBox(height: 8),
         Text(
@@ -418,9 +636,10 @@ class _BookingFormScreenState extends ConsumerState<BookingFormScreen> {
   Widget build(BuildContext context) {
     final user = ref.watch(authNotifierProvider).user;
     final bolehMemesan = user?.role == UserModel.roleTenant;
+    final preview = _previewSaatIni;
 
     final page = Scaffold(
-      backgroundColor: AppColors.white,
+      backgroundColor: AppColors.canvas,
       appBar: const SpothAppBar(title: Text('Form Penyewaan')),
       body: !bolehMemesan
           ? const Center(
@@ -468,9 +687,9 @@ class _BookingFormScreenState extends ConsumerState<BookingFormScreen> {
                             _TempatCard(place: _place!),
                             const SizedBox(height: 20),
                             Form(key: _formKey, child: _buildFields()),
-                            if (_preview != null) ...[
+                            if (preview != null) ...[
                               const SizedBox(height: 20),
-                              _PreviewCard(preview: _preview!),
+                              _PreviewCard(preview: preview),
                             ],
                           ],
                         );
@@ -490,9 +709,9 @@ class _BookingFormScreenState extends ConsumerState<BookingFormScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 _TempatCard(place: _place!),
-                                if (_preview != null) ...[
+                                if (preview != null) ...[
                                   const SizedBox(height: 16),
-                                  _PreviewCard(preview: _preview!),
+                                  _PreviewCard(preview: preview),
                                 ],
                               ],
                             ),
@@ -507,6 +726,199 @@ class _BookingFormScreenState extends ConsumerState<BookingFormScreen> {
     );
 
     return SpothSidebarScaffold(activeTab: MainTab.tempat, child: page);
+  }
+}
+
+class _AvailabilityInfo extends StatelessWidget {
+  const _AvailabilityInfo({
+    required this.loading,
+    required this.error,
+    required this.availability,
+    required this.onRetry,
+  });
+
+  final bool loading;
+  final String? error;
+  final PlaceAvailabilityModel? availability;
+  final VoidCallback onRetry;
+
+  String _alasanKonflik(BookedRange konflik) {
+    switch (konflik.status) {
+      case 'ATURAN_KETERSEDIAAN':
+        return 'Diblokir aturan ketersediaan tempat';
+      case 'PERIODE_TIDAK_TERSEDIA':
+        return 'Di luar periode ketersediaan tempat';
+      case 'STATUS_TIDAK_AKTIF':
+        return 'Tempat sedang tidak aktif';
+      case 'MENUNGGU_PEMBAYARAN':
+        return 'Sudah dipesan dan menunggu pembayaran';
+      case 'LUNAS':
+        return 'Sudah dipesan dan lunas';
+      default:
+        return 'Jadwal sudah dipesan';
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final errorColor = Theme.of(context).colorScheme.error;
+
+    if (loading || (availability == null && error == null)) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+        decoration: BoxDecoration(
+          color: AppColors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.softBorder),
+        ),
+        child: const Row(
+          children: [
+            SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+            SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                'Memeriksa ketersediaan tanggal...',
+                style: TextStyle(
+                  fontSize: 12.5,
+                  color: AppColors.secondaryText,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (error != null) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.fromLTRB(12, 10, 8, 10),
+        decoration: BoxDecoration(
+          color: AppColors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.softBorder),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(Icons.wifi_off, size: 17, color: errorColor),
+            const SizedBox(width: 9),
+            Expanded(
+              child: Text(
+                error!,
+                style: const TextStyle(
+                  fontSize: 12,
+                  height: 1.4,
+                  color: AppColors.secondaryText,
+                ),
+              ),
+            ),
+            TextButton(onPressed: onRetry, child: const Text('Coba Lagi')),
+          ],
+        ),
+      );
+    }
+
+    final hasil = availability!;
+    final tersedia = hasil.tersedia;
+    final alasan = <String>{
+      for (final konflik in hasil.konflik) _alasanKonflik(konflik),
+    }.toList();
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: tersedia
+            ? AppColors.lightOrange
+            : errorColor.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: tersedia
+              ? AppColors.softBorder
+              : errorColor.withValues(alpha: 0.25),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                tersedia ? Icons.check_circle_outline : Icons.event_busy,
+                size: 18,
+                color: tersedia ? AppColors.primaryOrange : errorColor,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  tersedia ? 'Tanggal tersedia' : 'Tanggal tidak tersedia',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: tersedia ? AppColors.charcoal : errorColor,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 5),
+          Text(
+            '${formatDateString(hasil.tanggalMulai)} - '
+            '${formatDateString(hasil.tanggalSelesai)}',
+            style: const TextStyle(
+              fontSize: 12,
+              height: 1.4,
+              color: AppColors.secondaryText,
+            ),
+          ),
+          if (!tersedia) ...[
+            const SizedBox(height: 7),
+            for (final item in alasan)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 3),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      '- ',
+                      style: TextStyle(
+                        fontSize: 12,
+                        height: 1.4,
+                        color: AppColors.secondaryText,
+                      ),
+                    ),
+                    Expanded(
+                      child: Text(
+                        item,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          height: 1.4,
+                          color: AppColors.secondaryText,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            const SizedBox(height: 3),
+            const Text(
+              'Pilih tanggal atau lama sewa lain untuk melanjutkan.',
+              style: TextStyle(
+                fontSize: 11.5,
+                height: 1.4,
+                color: AppColors.secondaryText,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
   }
 }
 
@@ -838,9 +1250,11 @@ class _PreviewCard extends StatelessWidget {
             const SizedBox(height: 10),
             Text(
               preview.jumlahKonflik > 0
-                  ? 'Terdapat ${preview.jumlahKonflik} jadwal yang sudah '
-                        'dipesan pada rentang ini.'
-                  : 'Jadwal tidak tersedia.',
+                  ? 'Ada ${preview.jumlahKonflik} konflik jadwal pada rentang '
+                        'ini. Periksa periode, aturan ketersediaan, atau '
+                        'jadwal yang sudah dipesan.'
+                  : 'Jadwal pada rentang ini tidak tersedia. Periksa periode '
+                        'atau aturan ketersediaan tempat.',
               style: const TextStyle(
                 fontSize: 12,
                 color: AppColors.secondaryText,

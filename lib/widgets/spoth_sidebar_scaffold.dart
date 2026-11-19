@@ -40,7 +40,7 @@ class SpothSidebarScaffold extends ConsumerWidget {
         SpothSidebar(
           index: index,
           items: [for (final tab in tabs) kNavItems[tab]!],
-          expanded: width >= 1100,
+          expanded: width >= 1400,
           onChanged: (i) {
             ref.read(mainNavIndexProvider.notifier).setTab(tabs[i]);
             if (Navigator.of(context).canPop()) {
@@ -49,11 +49,14 @@ class SpothSidebarScaffold extends ConsumerWidget {
           },
         ),
         Expanded(
-          child: Align(
-            alignment: Alignment.topCenter,
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 1160),
-              child: child,
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Align(
+              alignment: Alignment.topCenter,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 1120),
+                child: child,
+              ),
             ),
           ),
         ),

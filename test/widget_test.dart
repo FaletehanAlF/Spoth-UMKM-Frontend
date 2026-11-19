@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -11,6 +13,7 @@ import 'package:spoth_umkm/core/services/payment_service.dart';
 import 'package:spoth_umkm/core/services/place_service.dart';
 import 'package:spoth_umkm/core/services/upload_service.dart';
 import 'package:spoth_umkm/main.dart';
+import 'package:spoth_umkm/models/availability_model.dart';
 import 'package:spoth_umkm/models/booking_model.dart';
 import 'package:spoth_umkm/models/notification_model.dart';
 import 'package:spoth_umkm/models/payment_model.dart';
@@ -42,7 +45,10 @@ const List<Size> _screenSizes = [
   Size(412, 915),
   Size(800, 1280),
   Size(800, 360),
+  Size(1024, 768),
   Size(1280, 800),
+  Size(1440, 900),
+  Size(1920, 1080),
 ];
 
 UserModel _tenantUser() => UserModel(
@@ -116,6 +122,8 @@ PlaceModel _tempatDetail() => PlaceModel(
   hargaEfektif: 200000,
   tipeDurasi: 'HARIAN',
   status: 'AKTIF',
+  tanggalMulaiTersedia: DateTime(2026, 11, 1),
+  tanggalSelesaiTersedia: DateTime(2026, 12, 31),
   namaHost: 'Sari Dewi',
   foto: const [
     'https://cdn.example.test/a.jpg',
@@ -156,6 +164,32 @@ const PlaceModel _tempatMilikOrangLain = PlaceModel(
   status: 'AKTIF',
 );
 
+AvailabilityRuleModel _aturanSenin({bool tersedia = false}) =>
+    AvailabilityRuleModel(
+      id: '1',
+      placeId: '101',
+      tipeAturan: 'HARI',
+      tanggalMulai: '2026-11-01',
+      tanggalSelesai: '2026-12-31',
+      hari: 1,
+      tersedia: tersedia,
+    );
+
+AvailabilityRuleModel _ruleFromPayload(
+  String placeId,
+  Map<String, dynamic> payload, {
+  required String id,
+}) => AvailabilityRuleModel(
+  id: id,
+  placeId: placeId,
+  tipeAturan: payload['tipe_aturan'] as String,
+  tanggalMulai: payload['tanggal_mulai'] as String,
+  tanggalSelesai: payload['tanggal_selesai'] as String,
+  hari: payload['hari'] as int?,
+  bulan: payload['bulan'] as int?,
+  tersedia: payload['tersedia'] as bool? ?? true,
+);
+
 BookingModel _booking({
   required String id,
   required String status,
@@ -178,6 +212,45 @@ BookingModel _booking({
   namaTenant: namaTenant,
   kota: 'Bandung',
 );
+
+PricePreviewModel _preview({
+  String tanggalMulai = '2026-11-19',
+  int jumlahDurasi = 1,
+  double hargaSatuan = 200000,
+}) => PricePreviewModel(
+  namaTempat: 'Lapak Kuliner Baru',
+  tanggalMulai: tanggalMulai,
+  tanggalSelesai: tanggalMulai,
+  tipeDurasi: 'HARIAN',
+  jumlahDurasi: jumlahDurasi,
+  hargaSatuan: hargaSatuan,
+  hargaNormal: hargaSatuan,
+  hargaPromo: null,
+  totalHarga: hargaSatuan * jumlahDurasi,
+  komisiPlatform: 0,
+  pendapatanHost: hargaSatuan * jumlahDurasi,
+  tersedia: true,
+  jumlahKonflik: 0,
+);
+
+Iterable<DateTime> _hariDalamRentang(DateTime mulai, DateTime selesai) sync* {
+  for (
+    var tanggal = DateTime(mulai.year, mulai.month, mulai.day);
+    !tanggal.isAfter(selesai);
+    tanggal = DateTime(tanggal.year, tanggal.month, tanggal.day + 1)
+  ) {
+    yield tanggal;
+  }
+}
+
+bool _rentangMengandungHari(DateTime mulai, DateTime selesai, int hari) =>
+    _hariDalamRentang(
+      mulai,
+      selesai,
+    ).any((tanggal) => tanggal.weekday % 7 == hari);
+
+bool _rentangMengandungBulan(DateTime mulai, DateTime selesai, int bulan) =>
+    _hariDalamRentang(mulai, selesai).any((tanggal) => tanggal.month == bulan);
 
 NotificationModel _notifikasi({
   required String judul,
@@ -213,9 +286,20 @@ class _FakePlaceService extends PlaceService {
   _FakePlaceService() : super(ApiService());
 
   PlaceModel? placeOverride;
+  List<AvailabilityRuleModel> rulesOverride = const [];
+  PlaceAvailabilityModel? availabilityOverride;
 
   Map<String, dynamic>? lastCreatePayload;
   Map<String, dynamic>? lastUpdatePayload;
+  Map<String, dynamic>? lastRulePayload;
+  String? lastDeletedRuleId;
+  int availabilityCalls = 0;
+  Object? availabilityError;
+  Future<PlaceAvailabilityModel> Function(
+    String tanggalMulai,
+    int jumlahDurasi,
+  )?
+  availabilityHandler;
 
   @override
   Future<List<PlaceModel>> searchPlaces({
@@ -231,6 +315,77 @@ class _FakePlaceService extends PlaceService {
     required String id,
     String? token,
   }) async => placeOverride ?? _tempatDetail();
+
+  @override
+  Future<List<AvailabilityRuleModel>> getAvailabilityRules({
+    required String placeId,
+    String? token,
+  }) async => rulesOverride;
+
+  @override
+  Future<AvailabilityRuleModel> createAvailabilityRule({
+    required String token,
+    required String placeId,
+    required Map<String, dynamic> payload,
+  }) async {
+    lastRulePayload = payload;
+    final rule = _ruleFromPayload(placeId, payload, id: '1');
+    rulesOverride = [...rulesOverride, rule];
+    return rule;
+  }
+
+  @override
+  Future<AvailabilityRuleModel> updateAvailabilityRule({
+    required String token,
+    required String placeId,
+    required String ruleId,
+    required Map<String, dynamic> payload,
+  }) async {
+    lastRulePayload = payload;
+    final rule = _ruleFromPayload(placeId, payload, id: ruleId);
+    rulesOverride = [
+      for (final item in rulesOverride) item.id == ruleId ? rule : item,
+    ];
+    return rule;
+  }
+
+  @override
+  Future<void> deleteAvailabilityRule({
+    required String token,
+    required String placeId,
+    required String ruleId,
+  }) async {
+    lastDeletedRuleId = ruleId;
+    rulesOverride = rulesOverride.where((item) => item.id != ruleId).toList();
+  }
+
+  @override
+  Future<PlaceAvailabilityModel> checkAvailability({
+    required String placeId,
+    required String tanggalMulai,
+    required int jumlahDurasi,
+    String? token,
+  }) async {
+    availabilityCalls += 1;
+
+    final error = availabilityError;
+    if (error != null) {
+      throw error;
+    }
+
+    final handler = availabilityHandler;
+    if (handler != null) {
+      return handler(tanggalMulai, jumlahDurasi);
+    }
+
+    return availabilityOverride ??
+        PlaceAvailabilityModel(
+          tersedia: true,
+          tanggalMulai: tanggalMulai,
+          tanggalSelesai: tanggalMulai,
+          jumlahDurasi: jumlahDurasi,
+        );
+  }
 
   @override
   Future<List<PlaceModel>> getMyPlaces({
@@ -326,6 +481,11 @@ class _FakeBookingService extends BookingService {
 
   BookingModel? detailOverride;
   List<BookingModel>? listOverride;
+  int previewCalls = 0;
+  int createCalls = 0;
+  Map<String, dynamic>? lastCreatePayload;
+  Future<PricePreviewModel> Function(String tanggalMulai, int jumlahDurasi)?
+  previewHandler;
 
   @override
   Future<List<BookingModel>> listBookings({
@@ -348,6 +508,41 @@ class _FakeBookingService extends BookingService {
           namaTenant: 'Budi Santoso',
         ),
       ];
+
+  @override
+  Future<PricePreviewModel> previewPrice({
+    required String token,
+    required String placeId,
+    required String tanggalMulai,
+    required int jumlahDurasi,
+  }) {
+    previewCalls += 1;
+
+    final handler = previewHandler;
+    if (handler != null) {
+      return handler(tanggalMulai, jumlahDurasi);
+    }
+
+    return Future.value(
+      _preview(tanggalMulai: tanggalMulai, jumlahDurasi: jumlahDurasi),
+    );
+  }
+
+  @override
+  Future<BookingModel> createBooking({
+    required String token,
+    required Map<String, dynamic> payload,
+  }) async {
+    createCalls += 1;
+    lastCreatePayload = payload;
+
+    return _booking(
+      id: '999',
+      status: 'MENUNGGU_PEMBAYARAN',
+      namaTempat: 'Lapak Kuliner Baru',
+      namaTenant: 'Budi Santoso',
+    );
+  }
 
   @override
   Future<BookingModel> getBooking({
@@ -650,6 +845,69 @@ Future<void> _pumpDetail(
   await tester.pumpAndSettle();
 }
 
+Future<void> _pumpBookingForm(
+  WidgetTester tester, {
+  required _FakePlaceService fakePlace,
+  _FakeBookingService? fakeBooking,
+  Size size = const Size(412, 915),
+}) async {
+  tester.view
+    ..devicePixelRatio = 1.0
+    ..physicalSize = size;
+
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: [
+        authNotifierProvider.overrideWith(
+          () => _FakeAuthNotifier(_tenantUser()),
+        ),
+        placeServiceProvider.overrideWithValue(fakePlace),
+        bookingServiceProvider.overrideWithValue(
+          fakeBooking ?? _FakeBookingService(),
+        ),
+      ],
+      child: const MaterialApp(home: BookingFormScreen(placeId: '101')),
+    ),
+  );
+  await tester.pumpAndSettle();
+}
+
+Future<void> _pilihTanggalMulai(
+  WidgetTester tester, {
+  DateTime? tanggal,
+  bool tungguSelesai = true,
+}) async {
+  final field = find.widgetWithText(TextFormField, 'Tanggal Mulai');
+  await tester.ensureVisible(field);
+  await tester.tap(field);
+  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 300));
+
+  final hariIni = DateTime.now();
+  final target = tanggal ?? hariIni;
+  final bedaBulan =
+      target.year != hariIni.year || target.month != hariIni.month;
+
+  if (bedaBulan) {
+    await tester.tap(find.byTooltip('Next month'));
+    await tester.pump(const Duration(milliseconds: 300));
+  }
+
+  if (bedaBulan || target.day != hariIni.day) {
+    await tester.tap(find.text('${target.day}').last);
+    await tester.pump();
+  }
+
+  await tester.tap(find.text('OK'));
+
+  if (tungguSelesai) {
+    await tester.pumpAndSettle();
+  } else {
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+  }
+}
+
 void main() {
   testWidgets('App renders splash screen', (WidgetTester tester) async {
     await tester.pumpWidget(const ProviderScope(child: SpothApp()));
@@ -749,43 +1007,6 @@ void main() {
     expect(find.text('Lupa Password'), findsOneWidget);
   });
 
-  testWidgets('Register: konfirmasi password harus sama', (
-    WidgetTester tester,
-  ) async {
-    await tester.pumpWidget(
-      const ProviderScope(child: MaterialApp(home: RegisterScreen())),
-    );
-    await tester.pumpAndSettle();
-
-    await tester.enterText(find.byType(TextFormField).at(3), 'rahasia123');
-    await tester.enterText(find.byType(TextFormField).at(4), 'rahasia456');
-
-    final button = find.widgetWithText(ElevatedButton, 'Daftar');
-    await tester.ensureVisible(button);
-    await tester.tap(button);
-    await tester.pumpAndSettle();
-
-    expect(find.text('Konfirmasi password tidak sama'), findsOneWidget);
-  });
-
-  testWidgets('Register: nomor telepon harus format Indonesia', (
-    WidgetTester tester,
-  ) async {
-    await tester.pumpWidget(
-      const ProviderScope(child: MaterialApp(home: RegisterScreen())),
-    );
-    await tester.pumpAndSettle();
-
-    await tester.enterText(find.byType(TextFormField).at(2), '12345');
-
-    final button = find.widgetWithText(ElevatedButton, 'Daftar');
-    await tester.ensureVisible(button);
-    await tester.tap(button);
-    await tester.pumpAndSettle();
-
-    expect(find.text('Gunakan format 08xxxxxxxxxx'), findsOneWidget);
-  });
-
   testWidgets('Register: peran wajib dipilih sebelum daftar', (
     WidgetTester tester,
   ) async {
@@ -799,9 +1020,7 @@ void main() {
       find.byType(TextFormField).at(1),
       'budi@contoh.test',
     );
-    await tester.enterText(find.byType(TextFormField).at(2), '081234567890');
-    await tester.enterText(find.byType(TextFormField).at(3), 'rahasia123');
-    await tester.enterText(find.byType(TextFormField).at(4), 'rahasia123');
+    await tester.enterText(find.byType(TextFormField).at(2), 'rahasia123');
 
     final button = find.widgetWithText(ElevatedButton, 'Daftar');
     await tester.ensureVisible(button);
@@ -879,7 +1098,7 @@ void main() {
 
       await tester.tap(find.byTooltip('Profil'));
       await tester.pumpAndSettle();
-      expect(find.text('budi@contoh.test'), findsNWidgets(2));
+      expect(find.text('budi@contoh.test'), findsOneWidget);
       expect(find.text('Keluar'), findsOneWidget);
 
       await tester.tap(find.byTooltip('Beranda'));
@@ -1106,7 +1325,12 @@ void main() {
         ],
       );
 
-      await _pumpFormRouter(tester, router: router, fakePlace: fakePlace);
+      await _pumpFormRouter(
+        tester,
+        router: router,
+        fakePlace: fakePlace,
+        size: const Size(800, 3000),
+      );
       router.push('/place-form');
       await tester.pumpAndSettle();
 
@@ -1126,6 +1350,44 @@ void main() {
         '250000',
       );
 
+      final tanggalMulai = find.widgetWithText(
+        TextField,
+        'Tanggal Mulai Tersedia',
+      );
+      await tester.scrollUntilVisible(
+        tanggalMulai,
+        300,
+        scrollable: find
+            .descendant(
+              of: find.byType(ListView),
+              matching: find.byType(Scrollable),
+            )
+            .first,
+      );
+      await tester.tap(tanggalMulai);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('OK'));
+      await tester.pumpAndSettle();
+
+      final tanggalSelesai = find.widgetWithText(
+        TextField,
+        'Tanggal Selesai Tersedia',
+      );
+      await tester.scrollUntilVisible(
+        tanggalSelesai,
+        200,
+        scrollable: find
+            .descendant(
+              of: find.byType(ListView),
+              matching: find.byType(Scrollable),
+            )
+            .first,
+      );
+      await tester.tap(tanggalSelesai);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('OK'));
+      await tester.pumpAndSettle();
+
       await tester.tap(find.text('Simpan Tempat'));
       await tester.pumpAndSettle();
 
@@ -1133,6 +1395,9 @@ void main() {
       expect(payload, isNotNull);
       expect(payload!.containsKey('harga_promo'), isFalse);
       expect(payload['fasilitas'], '');
+      expect(payload['tanggal_mulai_tersedia'], isA<String>());
+      expect(payload['tanggal_selesai_tersedia'], isA<String>());
+      expect(find.text('Tambah Aturan'), findsOneWidget);
     },
   );
 
@@ -1219,6 +1484,167 @@ void main() {
     final payload = fakePlace.lastUpdatePayload;
     expect(payload, isNotNull);
     expect(payload!['foto'], isEmpty);
+  });
+
+  testWidgets('Form ubah: aturan ketersediaan bisa ditambah, diubah, dihapus', (
+    WidgetTester tester,
+  ) async {
+    final fakePlace = _FakePlaceService();
+
+    tester.view
+      ..devicePixelRatio = 1.0
+      ..physicalSize = const Size(800, 3000);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          authNotifierProvider.overrideWith(
+            () => _FakeAuthNotifier(_hostUser()),
+          ),
+          placeServiceProvider.overrideWithValue(fakePlace),
+        ],
+        child: const MaterialApp(home: PlaceFormScreen(placeId: '201')),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final tambahAturan = find.text('Tambah Aturan');
+    await tester.ensureVisible(tambahAturan);
+    await tester.tap(tambahAturan);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Tambah Aturan Ketersediaan'), findsOneWidget);
+    await tester.tap(find.text('Simpan Aturan'));
+    await tester.pumpAndSettle();
+
+    final payload = fakePlace.lastRulePayload;
+    expect(payload, isNotNull);
+    expect(payload!['tipe_aturan'], 'TANGGAL');
+    expect(payload['hari'], isNull);
+    expect(payload['bulan'], isNull);
+    expect(payload['tersedia'], isFalse);
+    expect(find.text('1 aturan'), findsOneWidget);
+    expect(find.text('Aturan Tanggal'), findsOneWidget);
+
+    await tester.ensureVisible(find.byIcon(Icons.edit_outlined));
+    await tester.tap(find.byIcon(Icons.edit_outlined));
+    await tester.pumpAndSettle();
+    expect(find.text('Ubah Aturan Ketersediaan'), findsOneWidget);
+
+    await tester.tap(find.text('Tersedia untuk dipesan'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Simpan Aturan'));
+    await tester.pumpAndSettle();
+
+    expect(fakePlace.lastRulePayload!['tersedia'], isTrue);
+
+    await tester.ensureVisible(find.byIcon(Icons.delete_outline));
+    await tester.tap(find.byIcon(Icons.delete_outline));
+    await tester.pumpAndSettle();
+    expect(find.text('Hapus aturan?'), findsOneWidget);
+
+    await tester.tap(find.text('Hapus'));
+    await tester.pumpAndSettle();
+
+    expect(fakePlace.lastDeletedRuleId, '1');
+    expect(find.textContaining('Belum ada aturan khusus'), findsOneWidget);
+  });
+
+  testWidgets(
+    'Form tempat dengan periode & aturan tanpa overflow di ponsel dan web',
+    (WidgetTester tester) async {
+      final fakePlace = _FakePlaceService()..rulesOverride = [_aturanSenin()];
+      const ukuran = [
+        Size(320, 480),
+        Size(412, 915),
+        Size(800, 1280),
+        Size(1280, 800),
+        Size(1920, 1080),
+      ];
+
+      for (final size in ukuran) {
+        tester.view
+          ..devicePixelRatio = 1.0
+          ..physicalSize = size;
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              authNotifierProvider.overrideWith(
+                () => _FakeAuthNotifier(_hostUser()),
+              ),
+              placeServiceProvider.overrideWithValue(fakePlace),
+            ],
+            child: const MaterialApp(home: PlaceFormScreen(placeId: '201')),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(
+          tester.takeException(),
+          isNull,
+          reason: 'Layout error pada ukuran ${size.width}x${size.height}',
+        );
+      }
+
+      tester.view.reset();
+    },
+  );
+
+  testWidgets(
+    'Detail tempat penyewa menampilkan periode tanpa aturan ketersediaan host',
+    (WidgetTester tester) async {
+      final fakePlace = _FakePlaceService()..rulesOverride = [_aturanSenin()];
+
+      tester.view
+        ..devicePixelRatio = 1.0
+        ..physicalSize = const Size(412, 915);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            authNotifierProvider.overrideWith(
+              () => _FakeAuthNotifier(_tenantUser()),
+            ),
+            placeServiceProvider.overrideWithValue(fakePlace),
+          ],
+          child: const MaterialApp(home: PlaceDetailScreen(placeId: '101')),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Periode Ketersediaan'), findsOneWidget);
+      expect(find.text('Aturan Ketersediaan'), findsNothing);
+      expect(find.text('Aturan Hari'), findsNothing);
+      expect(find.text('Setiap hari Senin'), findsNothing);
+      expect(find.text('Kelola Aturan Ketersediaan'), findsNothing);
+    },
+  );
+
+  testWidgets('Detail tempat pemilik dapat membuka kelola aturan', (
+    WidgetTester tester,
+  ) async {
+    final fakePlace = _FakePlaceService()..rulesOverride = [_aturanSenin()];
+
+    tester.view
+      ..devicePixelRatio = 1.0
+      ..physicalSize = const Size(412, 915);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          authNotifierProvider.overrideWith(
+            () => _FakeAuthNotifier(_hostUser()),
+          ),
+          placeServiceProvider.overrideWithValue(fakePlace),
+        ],
+        child: const MaterialApp(home: PlaceDetailScreen(placeId: '101')),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Aturan Hari'), findsOneWidget);
+    expect(find.text('Kelola Aturan Ketersediaan'), findsOneWidget);
   });
 
   testWidgets('Detail tempat tanpa overflow pada semua ukuran layar', (
@@ -1375,6 +1801,93 @@ void main() {
     expect(find.text('Lama Sewa'), findsOneWidget);
     expect(find.text('Jenis Usaha'), findsOneWidget);
   });
+
+  testWidgets('Form penyewaan memblokir submit saat tanggal tidak tersedia', (
+    WidgetTester tester,
+  ) async {
+    final fakePlace = _FakePlaceService()
+      ..availabilityOverride = const PlaceAvailabilityModel(
+        tersedia: false,
+        tanggalMulai: '2026-11-18',
+        tanggalSelesai: '2026-11-18',
+        jumlahDurasi: 1,
+        konflik: [
+          BookedRange(
+            tanggalMulai: '2026-11-18',
+            tanggalSelesai: '2026-11-18',
+            status: 'PERIODE_TIDAK_TERSEDIA',
+          ),
+        ],
+      );
+
+    tester.view
+      ..devicePixelRatio = 1.0
+      ..physicalSize = const Size(412, 915);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          authNotifierProvider.overrideWith(
+            () => _FakeAuthNotifier(_tenantUser()),
+          ),
+          placeServiceProvider.overrideWithValue(fakePlace),
+          bookingServiceProvider.overrideWithValue(_FakeBookingService()),
+        ],
+        child: const MaterialApp(home: BookingFormScreen(placeId: '101')),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Lama Sewa'),
+      '1',
+    );
+
+    final tanggalField = find.widgetWithText(TextFormField, 'Tanggal Mulai');
+    await tester.ensureVisible(tanggalField);
+    await tester.tap(tanggalField);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('OK'));
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pumpAndSettle();
+
+    expect(fakePlace.availabilityCalls, 1);
+    expect(find.text('Tanggal tidak tersedia'), findsOneWidget);
+    expect(find.text('Di luar periode ketersediaan tempat'), findsOneWidget);
+    expect(find.text('Tanggal Tidak Tersedia'), findsOneWidget);
+  });
+
+  testWidgets(
+    'Form penyewaan: status tempat tidak aktif punya alasan sendiri',
+    (WidgetTester tester) async {
+      final fakePlace = _FakePlaceService()
+        ..availabilityOverride = const PlaceAvailabilityModel(
+          tersedia: false,
+          tanggalMulai: '2026-11-18',
+          tanggalSelesai: '2026-11-18',
+          jumlahDurasi: 1,
+          konflik: [
+            BookedRange(
+              tanggalMulai: '2026-11-18',
+              tanggalSelesai: '2026-11-18',
+              status: 'STATUS_TIDAK_AKTIF',
+            ),
+          ],
+        );
+
+      await _pumpBookingForm(tester, fakePlace: fakePlace);
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Lama Sewa'),
+        '1',
+      );
+      await _pilihTanggalMulai(tester);
+
+      expect(fakePlace.availabilityCalls, 1);
+      expect(find.text('Tanggal tidak tersedia'), findsOneWidget);
+      expect(find.text('Tempat sedang tidak aktif'), findsOneWidget);
+      expect(find.text('Jadwal sudah dipesan'), findsNothing);
+    },
+  );
 
   testWidgets('Detail tempat: thumbnail galeri memilih foto lain', (
     WidgetTester tester,
@@ -1780,5 +2293,562 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byIcon(Icons.history_rounded), findsOneWidget);
+  });
+
+  test('Aturan ketersediaan menolak nilai tersedia yang hilang atau null', () {
+    final dasar = <String, dynamic>{
+      'id': '1',
+      'place_id': '101',
+      'tipe_aturan': 'HARI',
+      'tanggal_mulai': '2026-11-01',
+      'tanggal_selesai': '2026-12-31',
+      'hari': 1,
+      'bulan': null,
+    };
+
+    expect(
+      () => AvailabilityRuleModel.fromJson({...dasar}),
+      throwsFormatException,
+    );
+    expect(
+      () => AvailabilityRuleModel.fromJson({...dasar, 'tersedia': null}),
+      throwsFormatException,
+    );
+    expect(
+      AvailabilityRuleModel.fromJson({...dasar, 'tersedia': false}).tersedia,
+      isFalse,
+    );
+    expect(
+      AvailabilityRuleModel.fromJson({...dasar, 'tersedia': true}).tersedia,
+      isTrue,
+    );
+
+    final ketersediaan = <String, dynamic>{
+      'tanggal_mulai': '2026-11-01',
+      'tanggal_selesai': '2026-11-01',
+      'jumlah_durasi': 1,
+    };
+
+    expect(
+      () => PlaceAvailabilityModel.fromJson({...ketersediaan}),
+      throwsFormatException,
+    );
+    expect(
+      () =>
+          PlaceAvailabilityModel.fromJson({...ketersediaan, 'tersedia': null}),
+      throwsFormatException,
+    );
+    expect(
+      PlaceAvailabilityModel.fromJson({...ketersediaan, 'tersedia': false})
+          .tersedia,
+      isFalse,
+    );
+  });
+
+  test('Label sasaran aturan HARI menampilkan nama hari sebenarnya', () {
+    AvailabilityRuleModel aturan(int hari) => AvailabilityRuleModel(
+      id: '1',
+      placeId: '101',
+      tipeAturan: 'HARI',
+      tanggalMulai: '2026-11-01',
+      tanggalSelesai: '2026-12-31',
+      hari: hari,
+      tersedia: false,
+    );
+
+    expect(aturan(1).sasaranLabel, 'Setiap hari Senin');
+    expect(aturan(6).sasaranLabel, 'Setiap hari Sabtu');
+    expect(aturan(0).sasaranLabel, 'Setiap hari Minggu');
+
+    final bulanan = AvailabilityRuleModel(
+      id: '2',
+      placeId: '101',
+      tipeAturan: 'BULAN',
+      tanggalMulai: '2026-11-01',
+      tanggalSelesai: '2026-12-31',
+      bulan: 12,
+      tersedia: true,
+    );
+
+    expect(bulanan.sasaranLabel, 'Setiap bulan Desember');
+  });
+
+  testWidgets(
+    'Form penyewaan: hasil ketersediaan tanggal lama tidak menimpa tanggal baru',
+    (WidgetTester tester) async {
+      final fakePlace = _FakePlaceService();
+      final permintaan = <Completer<PlaceAvailabilityModel>>[];
+      fakePlace.availabilityHandler = (tanggalMulai, jumlahDurasi) {
+        final completer = Completer<PlaceAvailabilityModel>();
+        permintaan.add(completer);
+        return completer.future;
+      };
+
+      await _pumpBookingForm(tester, fakePlace: fakePlace);
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Lama Sewa'),
+        '1',
+      );
+
+      await _pilihTanggalMulai(tester, tungguSelesai: false);
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(permintaan, hasLength(1));
+
+      final besok = DateTime.now().add(const Duration(days: 1));
+      await _pilihTanggalMulai(tester, tanggal: besok, tungguSelesai: false);
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(permintaan, hasLength(2));
+
+      permintaan[1].complete(
+        const PlaceAvailabilityModel(
+          tersedia: true,
+          tanggalMulai: '2026-11-20',
+          tanggalSelesai: '2026-11-20',
+          jumlahDurasi: 1,
+        ),
+      );
+      await tester.pump();
+      await tester.pumpAndSettle();
+
+      expect(find.text('Tanggal tersedia'), findsOneWidget);
+
+      permintaan[0].complete(
+        const PlaceAvailabilityModel(
+          tersedia: false,
+          tanggalMulai: '2026-11-19',
+          tanggalSelesai: '2026-11-19',
+          jumlahDurasi: 1,
+          konflik: [
+            BookedRange(
+              tanggalMulai: '2026-11-19',
+              tanggalSelesai: '2026-11-19',
+              status: 'ATURAN_KETERSEDIAAN',
+            ),
+          ],
+        ),
+      );
+      await tester.pump();
+      await tester.pumpAndSettle();
+
+      expect(find.text('Tanggal tersedia'), findsOneWidget);
+      expect(find.text('Tanggal tidak tersedia'), findsNothing);
+      expect(find.text('Tanggal Tidak Tersedia'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'Form penyewaan: submit dibatalkan bila pilihan berubah saat cek',
+    (WidgetTester tester) async {
+      final fakePlace = _FakePlaceService();
+      final permintaan = <Completer<PlaceAvailabilityModel>>[];
+      fakePlace.availabilityHandler = (tanggalMulai, jumlahDurasi) {
+        final completer = Completer<PlaceAvailabilityModel>();
+        permintaan.add(completer);
+        return completer.future;
+      };
+      final fakeBooking = _FakeBookingService();
+
+      await _pumpBookingForm(
+        tester,
+        fakePlace: fakePlace,
+        fakeBooking: fakeBooking,
+      );
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Lama Sewa'),
+        '1',
+      );
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Jenis Usaha'),
+        'Warung Makan',
+      );
+
+      await _pilihTanggalMulai(tester, tungguSelesai: false);
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(permintaan, hasLength(1));
+
+      permintaan[0].complete(
+        const PlaceAvailabilityModel(
+          tersedia: true,
+          tanggalMulai: '2026-11-19',
+          tanggalSelesai: '2026-11-19',
+          jumlahDurasi: 1,
+        ),
+      );
+      await tester.pump();
+      await tester.pumpAndSettle();
+
+      await tester.ensureVisible(find.text('Buat Pemesanan'));
+      await tester.tap(find.text('Buat Pemesanan'));
+      await tester.pump();
+      expect(permintaan, hasLength(2));
+
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Lama Sewa'),
+        '2',
+      );
+      await tester.pump();
+
+      permintaan[1].complete(
+        const PlaceAvailabilityModel(
+          tersedia: true,
+          tanggalMulai: '2026-11-19',
+          tanggalSelesai: '2026-11-19',
+          jumlahDurasi: 1,
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(fakeBooking.createCalls, 0);
+      expect(fakeBooking.lastCreatePayload, isNull);
+      expect(
+        find.textContaining('Pilihan tanggal atau lama sewa berubah'),
+        findsOneWidget,
+      );
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pumpAndSettle();
+    },
+  );
+
+  testWidgets('Form penyewaan: pratinjau lama tidak menimpa pilihan terbaru', (
+    WidgetTester tester,
+  ) async {
+    final fakePlace = _FakePlaceService();
+    final fakeBooking = _FakeBookingService();
+    final permintaan = <Completer<PricePreviewModel>>[];
+    fakeBooking.previewHandler = (tanggalMulai, jumlahDurasi) {
+      final completer = Completer<PricePreviewModel>();
+      permintaan.add(completer);
+      return completer.future;
+    };
+
+    await _pumpBookingForm(
+      tester,
+      fakePlace: fakePlace,
+      fakeBooking: fakeBooking,
+    );
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Lama Sewa'),
+      '1',
+    );
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Jenis Usaha'),
+      'Warung Makan',
+    );
+    await _pilihTanggalMulai(tester);
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pumpAndSettle();
+
+    final tombolPreview = find.text('Cek Pratinjau Biaya');
+    await tester.ensureVisible(tombolPreview);
+    await tester.tap(tombolPreview);
+    await tester.pump();
+    expect(fakeBooking.previewCalls, 1);
+
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Lama Sewa'),
+      '2',
+    );
+    await tester.pump();
+
+    await tester.tap(find.text('Cek Pratinjau Biaya'));
+    await tester.pump();
+    expect(fakeBooking.previewCalls, 2);
+    expect(permintaan, hasLength(2));
+
+    permintaan[1].complete(_preview(jumlahDurasi: 2));
+    await tester.pump();
+    await tester.pumpAndSettle();
+
+    expect(find.text('2 × harian'), findsOneWidget);
+    expect(find.text('Rp 400.000'), findsOneWidget);
+
+    permintaan[0].complete(_preview(jumlahDurasi: 1, hargaSatuan: 100000));
+    await tester.pump();
+    await tester.pumpAndSettle();
+
+    expect(find.text('2 × harian'), findsOneWidget);
+    expect(find.text('1 × harian'), findsNothing);
+    expect(find.text('Rp 400.000'), findsOneWidget);
+    expect(find.text('Rp 100.000'), findsNothing);
+    expect(find.text('Menghitung...'), findsNothing);
+  });
+
+  testWidgets('Form ubah: tempat lama tanpa periode mengirim null eksplisit', (
+    WidgetTester tester,
+  ) async {
+    final fakePlace = _FakePlaceService()..placeOverride = _tempatMilikHost;
+    final router = GoRouter(
+      initialLocation: '/',
+      routes: [
+        GoRoute(
+          path: '/',
+          builder: (_, _) => const Scaffold(body: Text('Awal Dummy')),
+        ),
+        GoRoute(
+          path: '/place-form',
+          builder: (_, _) => const PlaceFormScreen(placeId: '201'),
+        ),
+      ],
+    );
+
+    await _pumpFormRouter(
+      tester,
+      router: router,
+      fakePlace: fakePlace,
+      size: const Size(800, 3000),
+    );
+    router.push('/place-form');
+    await tester.pumpAndSettle();
+
+    final mulai = find.widgetWithText(TextField, 'Tanggal Mulai Tersedia');
+    final selesai = find.widgetWithText(TextField, 'Tanggal Selesai Tersedia');
+    expect(tester.widget<TextField>(mulai).controller?.text, isEmpty);
+    expect(tester.widget<TextField>(selesai).controller?.text, isEmpty);
+
+    await tester.tap(find.text('Simpan Tempat'));
+    await tester.pumpAndSettle();
+
+    final payload = fakePlace.lastUpdatePayload;
+    expect(payload, isNotNull);
+    expect(payload!.containsKey('tanggal_mulai_tersedia'), isTrue);
+    expect(payload['tanggal_mulai_tersedia'], isNull);
+    expect(payload.containsKey('tanggal_selesai_tersedia'), isTrue);
+    expect(payload['tanggal_selesai_tersedia'], isNull);
+  });
+
+  testWidgets('Form ubah: periode hanya satu tanggal ditolak', (
+    WidgetTester tester,
+  ) async {
+    final fakePlace = _FakePlaceService()..placeOverride = _tempatMilikHost;
+    final router = GoRouter(
+      initialLocation: '/',
+      routes: [
+        GoRoute(
+          path: '/',
+          builder: (_, _) => const Scaffold(body: Text('Awal Dummy')),
+        ),
+        GoRoute(
+          path: '/place-form',
+          builder: (_, _) => const PlaceFormScreen(placeId: '201'),
+        ),
+      ],
+    );
+
+    await _pumpFormRouter(
+      tester,
+      router: router,
+      fakePlace: fakePlace,
+      size: const Size(800, 3000),
+    );
+    router.push('/place-form');
+    await tester.pumpAndSettle();
+
+    final selesai = find.widgetWithText(TextField, 'Tanggal Selesai Tersedia');
+    await tester.tap(selesai);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('OK'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Simpan Tempat'));
+    await tester.pumpAndSettle();
+
+    expect(fakePlace.lastUpdatePayload, isNull);
+    expect(find.textContaining('Lengkapi kedua tanggal'), findsOneWidget);
+  });
+
+  testWidgets('Aturan HARI dan BULAN memakai rentang tanggal yang masuk akal', (
+    WidgetTester tester,
+  ) async {
+    final fakePlace = _FakePlaceService()..placeOverride = _tempatDetail();
+
+    tester.view
+      ..devicePixelRatio = 1.0
+      ..physicalSize = const Size(800, 3000);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          authNotifierProvider.overrideWith(
+            () => _FakeAuthNotifier(_hostUser()),
+          ),
+          placeServiceProvider.overrideWithValue(fakePlace),
+        ],
+        child: const MaterialApp(home: PlaceFormScreen(placeId: '201')),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.ensureVisible(find.text('Tambah Aturan'));
+    await tester.tap(find.text('Tambah Aturan'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.widgetWithText(ChoiceChip, 'Hari'));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('tanggal cocok'), findsOneWidget);
+
+    await tester.tap(find.text('Simpan Aturan'));
+    await tester.pumpAndSettle();
+
+    final hariPayload = fakePlace.lastRulePayload!;
+    expect(hariPayload['tipe_aturan'], 'HARI');
+    final hariMulai = DateTime.parse(hariPayload['tanggal_mulai'] as String);
+    final hariSelesai = DateTime.parse(
+      hariPayload['tanggal_selesai'] as String,
+    );
+    expect(hariSelesai.difference(hariMulai).inDays, greaterThanOrEqualTo(6));
+    expect(
+      _rentangMengandungHari(
+        hariMulai,
+        hariSelesai,
+        hariPayload['hari'] as int,
+      ),
+      isTrue,
+    );
+
+    await tester.ensureVisible(find.text('Tambah Aturan'));
+    await tester.tap(find.text('Tambah Aturan'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.widgetWithText(ChoiceChip, 'Bulan'));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('tanggal cocok'), findsOneWidget);
+
+    await tester.tap(find.text('Simpan Aturan'));
+    await tester.pumpAndSettle();
+
+    final bulanPayload = fakePlace.lastRulePayload!;
+    expect(bulanPayload['tipe_aturan'], 'BULAN');
+    final bulanMulai = DateTime.parse(bulanPayload['tanggal_mulai'] as String);
+    final bulanSelesai = DateTime.parse(
+      bulanPayload['tanggal_selesai'] as String,
+    );
+    expect(
+      bulanSelesai.difference(bulanMulai).inDays,
+      greaterThanOrEqualTo(365),
+    );
+    expect(
+      _rentangMengandungBulan(
+        bulanMulai,
+        bulanSelesai,
+        bulanPayload['bulan'] as int,
+      ),
+      isTrue,
+    );
+  });
+
+  testWidgets(
+    'Form ubah: deskripsi dan aturan kosong dikirim untuk menghapus',
+    (WidgetTester tester) async {
+      final fakePlace = _FakePlaceService();
+      final router = GoRouter(
+        initialLocation: '/',
+        routes: [
+          GoRoute(
+            path: '/',
+            builder: (_, _) => const Scaffold(body: Text('Awal Dummy')),
+          ),
+          GoRoute(
+            path: '/place-form',
+            builder: (_, _) => const PlaceFormScreen(placeId: '201'),
+          ),
+        ],
+      );
+
+      await _pumpFormRouter(
+        tester,
+        router: router,
+        fakePlace: fakePlace,
+        size: const Size(800, 3000),
+      );
+      router.push('/place-form');
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+        find.widgetWithText(TextField, 'Deskripsi (opsional)'),
+        '',
+      );
+      await tester.enterText(
+        find.widgetWithText(TextField, 'Aturan (opsional)'),
+        '',
+      );
+
+      await tester.tap(find.text('Simpan Tempat'));
+      await tester.pumpAndSettle();
+
+      final payload = fakePlace.lastUpdatePayload!;
+      expect(payload['deskripsi'], '');
+      expect(payload['aturan'], '');
+    },
+  );
+
+  testWidgets(
+    'Form penyewaan: error jaringan tidak dianggap sebagai tersedia',
+    (WidgetTester tester) async {
+      final fakePlace = _FakePlaceService()
+        ..availabilityError = const ApiException(
+          statusCode: 503,
+          message: 'Jaringan sedang bermasalah',
+        );
+      final fakeBooking = _FakeBookingService();
+
+      await _pumpBookingForm(
+        tester,
+        fakePlace: fakePlace,
+        fakeBooking: fakeBooking,
+      );
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Lama Sewa'),
+        '1',
+      );
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Jenis Usaha'),
+        'Warung Makan',
+      );
+      await _pilihTanggalMulai(tester);
+      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Jaringan sedang bermasalah'), findsOneWidget);
+
+      await tester.ensureVisible(find.text('Buat Pemesanan'));
+      await tester.tap(find.text('Buat Pemesanan'));
+      await tester.pumpAndSettle();
+
+      expect(fakeBooking.createCalls, 0);
+      expect(fakeBooking.lastCreatePayload, isNull);
+      expect(find.text('Jaringan sedang bermasalah'), findsWidgets);
+    },
+  );
+
+  testWidgets('Aturan tersedia=true tidak menutupi aturan tersedia=false', (
+    WidgetTester tester,
+  ) async {
+    final fakePlace = _FakePlaceService()
+      ..rulesOverride = [
+        _aturanSenin(tersedia: true),
+        const AvailabilityRuleModel(
+          id: '2',
+          placeId: '101',
+          tipeAturan: 'HARI',
+          tanggalMulai: '2026-11-01',
+          tanggalSelesai: '2026-12-31',
+          hari: 1,
+          tersedia: false,
+        ),
+      ];
+
+    await _pumpDetail(tester, fakePlace: fakePlace, host: true);
+
+    expect(
+      find.text('1 aturan membatasi tanggal yang dapat dipesan.'),
+      findsOneWidget,
+    );
+    expect(find.text('Tersedia'), findsOneWidget);
+    expect(find.text('Tidak tersedia'), findsOneWidget);
+    expect(find.text('Jadwal yang cocok tidak dapat dipesan.'), findsOneWidget);
   });
 }

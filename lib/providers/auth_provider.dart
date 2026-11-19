@@ -125,6 +125,38 @@ class AuthNotifier extends Notifier<AuthState> {
     state = const AuthState(status: AuthStatus.unauthenticated);
   }
 
+  Future<bool> updateProfile({
+    String? nama,
+    String? noHp,
+    String? foto,
+  }) async {
+    final token = state.token;
+    if (token == null) return false;
+
+    try {
+      final user = await _authService.updateProfile(
+        nama: nama,
+        noHp: noHp,
+        foto: foto,
+        token: token,
+      );
+      state = AuthState(
+        status: AuthStatus.authenticated,
+        user: user,
+        token: token,
+      );
+      return true;
+    } catch (error) {
+      state = AuthState(
+        status: AuthStatus.authenticated,
+        user: state.user,
+        token: token,
+        errorMessage: _errorMessage(error),
+      );
+      return false;
+    }
+  }
+
   String _errorMessage(Object error) {
     if (error is ApiException) {
       if (error.statusCode == 400 &&

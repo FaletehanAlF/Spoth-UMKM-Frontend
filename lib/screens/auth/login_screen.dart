@@ -107,148 +107,131 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final isLoading = authState.isLoading;
     final errorMessage = authState.errorMessage;
 
-    return Scaffold(
-      backgroundColor: AppColors.white,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(24, 48, 24, 32),
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 400),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const Center(child: AuthBrand()),
-                  const SizedBox(height: 28),
-                  const AuthHeader(
-                    title: 'Selamat Datang Kembali',
-                    description:
-                        'Masuk untuk melanjutkan ke akun SPOTH UMKM Anda.',
+    return AuthScaffold(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const AuthHeader(
+            title: 'Selamat Datang Kembali',
+            description: 'Masuk untuk melanjutkan ke akun SPOTH UMKM Anda.',
+          ),
+          const SizedBox(height: 28),
+          Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                AuthField(
+                  label: 'Email',
+                  controller: _emailController,
+                  hintText: 'nama@email.com',
+                  keyboardType: TextInputType.emailAddress,
+                  autocorrect: false,
+                  textInputAction: TextInputAction.next,
+                  validator: _validateEmail,
+                  enabled: !isLoading,
+                ),
+                const SizedBox(height: 16),
+                AuthField(
+                  label: 'Password',
+                  controller: _passwordController,
+                  hintText: 'Masukkan password',
+                  obscureText: _obscurePassword,
+                  textInputAction: TextInputAction.done,
+                  onFieldSubmitted: (_) => _submit(),
+                  validator: _validatePassword,
+                  enabled: !isLoading,
+                  suffixIcon: AuthPasswordToggle(
+                    hidden: _obscurePassword,
+                    onPressed: () =>
+                        setState(() => _obscurePassword = !_obscurePassword),
                   ),
-                  const SizedBox(height: 28),
-                  Form(
-                    key: _formKey,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        AuthField(
-                          label: 'Email',
-                          controller: _emailController,
-                          hintText: 'nama@email.com',
-                          keyboardType: TextInputType.emailAddress,
-                          autocorrect: false,
-                          textInputAction: TextInputAction.next,
-                          validator: _validateEmail,
-                          enabled: !isLoading,
-                        ),
-                        const SizedBox(height: 16),
-                        AuthField(
-                          label: 'Password',
-                          controller: _passwordController,
-                          hintText: 'Masukkan password',
-                          obscureText: _obscurePassword,
-                          textInputAction: TextInputAction.done,
-                          onFieldSubmitted: (_) => _submit(),
-                          validator: _validatePassword,
-                          enabled: !isLoading,
-                          suffixIcon: AuthPasswordToggle(
-                            hidden: _obscurePassword,
-                            onPressed: () => setState(
-                              () => _obscurePassword = !_obscurePassword,
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Row(
+                        children: [
+                          Checkbox(
+                            value: _rememberMe,
+                            onChanged: isLoading
+                                ? null
+                                : (value) => setState(
+                                    () => _rememberMe = value ?? true,
+                                  ),
+                            activeColor: AppColors.primaryOrange,
+                            visualDensity: VisualDensity.compact,
+                            materialTapTargetSize:
+                                MaterialTapTargetSize.shrinkWrap,
+                            overlayColor: const WidgetStatePropertyAll<Color?>(
+                              Colors.transparent,
+                            ),
+                            side: const BorderSide(
+                              color: AppColors.neutralBorder,
+                              width: 1.4,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(4),
                             ),
                           ),
-                        ),
-                        const SizedBox(height: 4),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Row(
-                                children: [
-                                  Checkbox(
-                                    value: _rememberMe,
-                                    onChanged: isLoading
-                                        ? null
-                                        : (value) => setState(
-                                            () => _rememberMe = value ?? true,
-                                          ),
-                                    activeColor: AppColors.primaryOrange,
-                                    visualDensity: VisualDensity.compact,
-                                    materialTapTargetSize:
-                                        MaterialTapTargetSize.shrinkWrap,
-                                    overlayColor:
-                                        const WidgetStatePropertyAll<Color?>(
-                                          Colors.transparent,
-                                        ),
-                                    side: const BorderSide(
-                                      color: AppColors.neutralBorder,
-                                      width: 1.4,
-                                    ),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(4),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Flexible(
-                                    child: MouseRegion(
-                                      cursor: isLoading
-                                          ? SystemMouseCursors.basic
-                                          : SystemMouseCursors.click,
-                                      child: GestureDetector(
-                                        behavior: HitTestBehavior.opaque,
-                                        onTap: isLoading
-                                            ? null
-                                            : () => setState(
-                                                () =>
-                                                    _rememberMe = !_rememberMe,
-                                              ),
-                                        child: const Text(
-                                          'Ingat saya',
-                                          style: TextStyle(
-                                            fontSize: 13,
-                                            fontWeight: FontWeight.w600,
-                                            color: AppColors.darkText,
-                                          ),
-                                        ),
+                          const SizedBox(width: 8),
+                          Flexible(
+                            child: MouseRegion(
+                              cursor: isLoading
+                                  ? SystemMouseCursors.basic
+                                  : SystemMouseCursors.click,
+                              child: GestureDetector(
+                                behavior: HitTestBehavior.opaque,
+                                onTap: isLoading
+                                    ? null
+                                    : () => setState(
+                                        () => _rememberMe = !_rememberMe,
                                       ),
-                                    ),
+                                child: const Text(
+                                  'Ingat saya',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.darkText,
                                   ),
-                                ],
+                                ),
                               ),
                             ),
-                            AuthTextLink(
-                              label: 'Lupa password?',
-                              enabled: !isLoading,
-                              onTap: () => context.push('/forgot-password'),
-                            ),
-                          ],
-                        ),
-                        if (errorMessage != null) ...[
-                          const SizedBox(height: 12),
-                          AuthMessage(text: errorMessage),
+                          ),
                         ],
-                        const SizedBox(height: 20),
-                        PrimaryButton(
-                          label: 'Masuk',
-                          isLoading: isLoading,
-                          height: 52,
-                          borderRadius: 14,
-                          onPressed: _submit,
-                        ),
-                        const SizedBox(height: 20),
-                        AuthFooterLink(
-                          label: 'Belum punya akun?',
-                          actionLabel: 'Daftar',
-                          enabled: !isLoading,
-                          onTap: () => context.go('/register'),
-                        ),
-                      ],
+                      ),
                     ),
-                  ),
+                    AuthTextLink(
+                      label: 'Lupa password?',
+                      enabled: !isLoading,
+                      onTap: () => context.push('/forgot-password'),
+                    ),
+                  ],
+                ),
+                if (errorMessage != null) ...[
+                  const SizedBox(height: 12),
+                  AuthMessage(text: errorMessage),
                 ],
-              ),
+                const SizedBox(height: 20),
+                PrimaryButton(
+                  label: 'Masuk',
+                  isLoading: isLoading,
+                  height: 52,
+                  borderRadius: 14,
+                  onPressed: _submit,
+                ),
+                const SizedBox(height: 20),
+                AuthFooterLink(
+                  label: 'Belum punya akun?',
+                  actionLabel: 'Daftar',
+                  enabled: !isLoading,
+                  onTap: () => context.go('/register'),
+                ),
+              ],
             ),
           ),
-        ),
+        ],
       ),
     );
   }

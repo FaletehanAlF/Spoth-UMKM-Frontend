@@ -25,7 +25,7 @@ class HomeScreen extends ConsumerWidget {
     }
 
     return Scaffold(
-      backgroundColor: AppColors.white,
+      backgroundColor: AppColors.canvas,
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(24),
@@ -35,7 +35,7 @@ class HomeScreen extends ConsumerWidget {
               const Icon(
                 Icons.error_outline,
                 size: 56,
-                color: AppColors.primaryOrange,
+                color: AppColors.primaryDeep,
               ),
               const SizedBox(height: 16),
               const Text(

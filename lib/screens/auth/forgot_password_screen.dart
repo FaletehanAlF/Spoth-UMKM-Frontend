@@ -41,68 +41,49 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.white,
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 420),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  AuthBackLink(
-                    label: 'Kembali ke Login',
-                    onTap: () => context.pop(),
-                  ),
-                  const SizedBox(height: 28),
-                  const Center(child: AuthBrand()),
-                  const SizedBox(height: 32),
-                  const AuthHeader(
-                    title: 'Lupa Password',
-                    description:
-                        'Masukkan email yang Anda gunakan. Kami akan mengirim '
-                        'tautan untuk membuat password baru.',
-                  ),
-                  const SizedBox(height: 28),
-                  Form(
-                    key: _formKey,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        AuthField(
-                          label: 'Email',
-                          controller: _emailController,
-                          hintText: 'nama@email.com',
-                          keyboardType: TextInputType.emailAddress,
-                          autocorrect: false,
-                          textInputAction: TextInputAction.done,
-                          onFieldSubmitted: (_) => _submit(),
-                          validator: _validateEmail,
-                        ),
-                        if (_submitted) ...[
-                          const SizedBox(height: 16),
-                          const _InfoBox(
-                            text:
-                                'Permintaan reset password untuk email ini '
-                                'sedang diproses. Jika email terdaftar, '
-                                'tautan reset akan segera dikirim.',
-                          ),
-                        ],
-                        const SizedBox(height: 20),
-                        PrimaryButton(
-                          label: 'Kirim Tautan Reset',
-                          onPressed: _submit,
-                        ),
-                      ],
-                    ),
+    return AuthScaffold(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          AuthBackLink(label: 'Kembali ke Login', onTap: () => context.pop()),
+          const SizedBox(height: 28),
+          const AuthHeader(
+            title: 'Lupa Password',
+            description:
+                'Masukkan email yang Anda gunakan. Kami akan mengirim '
+                'tautan untuk membuat password baru.',
+          ),
+          const SizedBox(height: 28),
+          Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                AuthField(
+                  label: 'Email',
+                  controller: _emailController,
+                  hintText: 'nama@email.com',
+                  keyboardType: TextInputType.emailAddress,
+                  autocorrect: false,
+                  textInputAction: TextInputAction.done,
+                  onFieldSubmitted: (_) => _submit(),
+                  validator: _validateEmail,
+                ),
+                if (_submitted) ...[
+                  const SizedBox(height: 16),
+                  const _InfoBox(
+                    text:
+                        'Permintaan reset password untuk email ini '
+                        'sedang diproses. Jika email terdaftar, '
+                        'tautan reset akan segera dikirim.',
                   ),
                 ],
-              ),
+                const SizedBox(height: 20),
+                PrimaryButton(label: 'Kirim Tautan Reset', onPressed: _submit),
+              ],
             ),
           ),
-        ),
+        ],
       ),
     );
   }

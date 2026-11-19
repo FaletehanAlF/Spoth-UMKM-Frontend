@@ -59,6 +59,22 @@ class AuthService {
     return UserModel.fromJson(_userJson(body));
   }
 
+  Future<UserModel> updateProfile({
+    String? nama,
+    String? noHp,
+    String? foto,
+    required String token,
+  }) async {
+    final body = <String, dynamic>{};
+    if (nama != null) body['nama'] = nama;
+    if (noHp != null) body['no_hp'] = noHp;
+    if (foto != null) body['foto'] = foto;
+
+    final response = await _apiService.patch('/users/me', body, token: token);
+
+    return UserModel.fromJson(_userJson(response));
+  }
+
   Map<String, dynamic> _userJson(Map<String, dynamic> body) {
     final data = body['data'] as Map<String, dynamic>?;
     final user = data?['user'] as Map<String, dynamic>?;

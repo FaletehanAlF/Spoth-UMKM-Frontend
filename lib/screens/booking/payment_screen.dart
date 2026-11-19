@@ -6,6 +6,7 @@ import '../../core/services/api_service.dart';
 import '../../core/services/booking_service.dart';
 import '../../core/services/payment_service.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_layout.dart';
 import '../../core/utils/format.dart';
 import '../../models/booking_model.dart';
 import '../../models/payment_model.dart';
@@ -163,23 +164,35 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
   @override
   Widget build(BuildContext context) {
     final page = Scaffold(
-      backgroundColor: AppColors.white,
+      backgroundColor: AppColors.canvas,
       appBar: const SpothAppBar(title: Text('Pembayaran')),
       body: _loading
-          ? const SingleChildScrollView(
-              padding: EdgeInsets.all(20),
-              child: BookingListSkeleton(count: 3),
+          ? Align(
+              alignment: Alignment.topCenter,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: AppWidth.list),
+                child: const SingleChildScrollView(
+                  padding: EdgeInsets.all(20),
+                  child: BookingListSkeleton(count: 3),
+                ),
+              ),
             )
           : _error != null
-          ? Center(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(20),
-                child: EmptyState(
-                  icon: Icons.wifi_off,
-                  title: _error!,
-                  message: 'Periksa koneksi internet Anda lalu coba lagi.',
-                  actionLabel: 'Coba Lagi',
-                  onAction: _load,
+          ? Align(
+              alignment: Alignment.topCenter,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: AppWidth.list),
+                child: Center(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(20),
+                    child: EmptyState(
+                      icon: Icons.wifi_off,
+                      title: _error!,
+                      message: 'Periksa koneksi internet Anda lalu coba lagi.',
+                      actionLabel: 'Coba Lagi',
+                      onAction: _load,
+                    ),
+                  ),
                 ),
               ),
             )

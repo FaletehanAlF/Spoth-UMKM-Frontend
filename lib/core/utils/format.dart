@@ -37,6 +37,12 @@ String formatDateString(String? tanggal) {
   return nilai == null ? '-' : DateFormat('dd MMM yyyy').format(nilai);
 }
 
+String formatTanggalApi(DateTime tanggal) {
+  final bulan = tanggal.month.toString().padLeft(2, '0');
+  final hari = tanggal.day.toString().padLeft(2, '0');
+  return '${tanggal.year}-$bulan-$hari';
+}
+
 DateTime tanggalSelesaiSewa(
   DateTime tanggalMulai,
   String tipeDurasi,

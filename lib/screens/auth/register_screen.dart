@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -20,12 +19,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
   final _namaController = TextEditingController();
   final _emailController = TextEditingController();
-  final _noHpController = TextEditingController();
   final _passwordController = TextEditingController();
-  final _confirmController = TextEditingController();
 
   bool _obscurePassword = true;
-  bool _obscureConfirm = true;
   String? _role;
   String? _roleError;
 
@@ -33,9 +29,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   void dispose() {
     _namaController.dispose();
     _emailController.dispose();
-    _noHpController.dispose();
     _passwordController.dispose();
-    _confirmController.dispose();
     super.dispose();
   }
 
@@ -55,30 +49,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     return null;
   }
 
-  String? _validateNoHp(String? value) {
-    final text = value?.trim() ?? '';
-    if (text.isEmpty) return 'Nomor telepon wajib diisi';
-    final regex = RegExp(r'^(?:\+62|62|0)8[1-9][0-9]{6,11}$');
-    if (!regex.hasMatch(text)) {
-      return 'Gunakan format 08xxxxxxxxxx';
-    }
-    return null;
-  }
-
   String? _validatePassword(String? value) {
     if (value == null || value.isEmpty) return 'Password wajib diisi';
     if (value.length < 8) return 'Password minimal 8 karakter';
     if (value.length > 72) return 'Password maksimal 72 karakter';
-    return null;
-  }
-
-  String? _validateConfirm(String? value) {
-    if (value == null || value.isEmpty) {
-      return 'Konfirmasi password wajib diisi';
-    }
-    if (value != _passwordController.text) {
-      return 'Konfirmasi password tidak sama';
-    }
     return null;
   }
 
@@ -106,7 +80,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           nama: _namaController.text.trim(),
           email: _emailController.text.trim(),
           password: _passwordController.text,
-          noHp: _noHpController.text.trim(),
           role: _role!,
         );
 
@@ -129,154 +102,109 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     final isLoading = authState.isLoading;
     final errorMessage = authState.errorMessage;
 
-    return Scaffold(
-      backgroundColor: AppColors.white,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(24, 40, 24, 32),
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 400),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const Center(child: AuthBrand()),
-                  const SizedBox(height: 28),
-                  const AuthHeader(
-                    title: 'Buat Akun Baru',
-                    description: 'Lengkapi data di bawah untuk mulai menggunakan SPOTH UMKM.',
+    return AuthScaffold(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const AuthHeader(
+            title: 'Buat Akun Baru',
+            description:
+                'Lengkapi data di bawah untuk mulai menggunakan SPOTH UMKM.',
+          ),
+          const SizedBox(height: 28),
+          Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                AuthField(
+                  label: 'Nama Lengkap',
+                  controller: _namaController,
+                  hintText: 'Nama sesuai identitas',
+                  textInputAction: TextInputAction.next,
+                  validator: _validateNama,
+                  enabled: !isLoading,
+                ),
+                const SizedBox(height: 16),
+                AuthField(
+                  label: 'Email',
+                  controller: _emailController,
+                  hintText: 'nama@email.com',
+                  keyboardType: TextInputType.emailAddress,
+                  autocorrect: false,
+                  textInputAction: TextInputAction.next,
+                  validator: _validateEmail,
+                  enabled: !isLoading,
+                ),
+                const SizedBox(height: 16),
+                AuthField(
+                  label: 'Password',
+                  controller: _passwordController,
+                  hintText: 'Minimal 8 karakter',
+                  obscureText: _obscurePassword,
+                  textInputAction: TextInputAction.done,
+                  onFieldSubmitted: (_) => _submit(),
+                  validator: _validatePassword,
+                  enabled: !isLoading,
+                  suffixIcon: AuthPasswordToggle(
+                    hidden: _obscurePassword,
+                    onPressed: () =>
+                        setState(() => _obscurePassword = !_obscurePassword),
                   ),
-                  const SizedBox(height: 28),
-                  Form(
-                    key: _formKey,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        AuthField(
-                          label: 'Nama Lengkap',
-                          controller: _namaController,
-                          hintText: 'Nama sesuai identitas',
-                          textInputAction: TextInputAction.next,
-                          validator: _validateNama,
-                          enabled: !isLoading,
-                        ),
-                        const SizedBox(height: 16),
-                        AuthField(
-                          label: 'Email',
-                          controller: _emailController,
-                          hintText: 'nama@email.com',
-                          keyboardType: TextInputType.emailAddress,
-                          autocorrect: false,
-                          textInputAction: TextInputAction.next,
-                          validator: _validateEmail,
-                          enabled: !isLoading,
-                        ),
-                        const SizedBox(height: 16),
-                        AuthField(
-                          label: 'Nomor Telepon',
-                          controller: _noHpController,
-                          hintText: '081234567890',
-                          keyboardType: TextInputType.phone,
-                          textInputAction: TextInputAction.next,
-                          inputFormatters: [
-                            FilteringTextInputFormatter.allow(
-                              RegExp(r'[0-9+]'),
-                            ),
-                          ],
-                          validator: _validateNoHp,
-                          enabled: !isLoading,
-                        ),
-                        const SizedBox(height: 16),
-                        AuthField(
-                          label: 'Password',
-                          controller: _passwordController,
-                          hintText: 'Minimal 8 karakter',
-                          obscureText: _obscurePassword,
-                          textInputAction: TextInputAction.next,
-                          validator: _validatePassword,
-                          enabled: !isLoading,
-                          suffixIcon: AuthPasswordToggle(
-                            hidden: _obscurePassword,
-                            onPressed: () => setState(
-                              () => _obscurePassword = !_obscurePassword,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        AuthField(
-                          label: 'Konfirmasi Password',
-                          controller: _confirmController,
-                          hintText: 'Ulangi password',
-                          obscureText: _obscureConfirm,
-                          textInputAction: TextInputAction.done,
-                          onFieldSubmitted: (_) => _submit(),
-                          validator: _validateConfirm,
-                          enabled: !isLoading,
-                          suffixIcon: AuthPasswordToggle(
-                            hidden: _obscureConfirm,
-                            onPressed: () => setState(
-                              () => _obscureConfirm = !_obscureConfirm,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                        const Align(
-                          alignment: Alignment.centerLeft,
-                          child: Text(
-                            'Pilih Peran',
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.darkText,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        AuthRoleOption(
-                          title: 'Pemilik',
-                          description:
-                              'Untuk kamu yang ingin menyewakan tempat usaha.',
-                          selected: _role == UserModel.roleHost,
-                          onTap: () => _selectRole(UserModel.roleHost),
-                        ),
-                        const SizedBox(height: 10),
-                        AuthRoleOption(
-                          title: 'Penyewa',
-                          description: 'Untuk kamu yang mencari tempat usaha.',
-                          selected: _role == UserModel.roleTenant,
-                          onTap: () => _selectRole(UserModel.roleTenant),
-                        ),
-                        if (_roleError != null) ...[
-                          const SizedBox(height: 8),
-                          AuthMessage(text: _roleError!),
-                        ],
-                        if (errorMessage != null) ...[
-                          const SizedBox(height: 12),
-                          AuthMessage(text: errorMessage),
-                        ],
-                        const SizedBox(height: 20),
-                        PrimaryButton(
-                          label: 'Daftar',
-                          isLoading: isLoading,
-                          height: 52,
-                          borderRadius: 14,
-                          onPressed: _submit,
-                        ),
-                        const SizedBox(height: 20),
-                        AuthFooterLink(
-                          label: 'Sudah punya akun?',
-                          actionLabel: 'Masuk',
-                          enabled: !isLoading,
-                          onTap: () => context.go('/login'),
-                        ),
-                      ],
+                ),
+                const SizedBox(height: 20),
+                const Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'Pilih Peran',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.darkText,
                     ),
                   ),
+                ),
+                const SizedBox(height: 10),
+                AuthRoleOption(
+                  title: 'Pemilik',
+                  description: 'Untuk kamu yang ingin menyewakan tempat usaha.',
+                  selected: _role == UserModel.roleHost,
+                  onTap: () => _selectRole(UserModel.roleHost),
+                ),
+                const SizedBox(height: 10),
+                AuthRoleOption(
+                  title: 'Penyewa',
+                  description: 'Untuk kamu yang mencari tempat usaha.',
+                  selected: _role == UserModel.roleTenant,
+                  onTap: () => _selectRole(UserModel.roleTenant),
+                ),
+                if (_roleError != null) ...[
+                  const SizedBox(height: 8),
+                  AuthMessage(text: _roleError!),
                 ],
-              ),
+                if (errorMessage != null) ...[
+                  const SizedBox(height: 12),
+                  AuthMessage(text: errorMessage),
+                ],
+                const SizedBox(height: 20),
+                PrimaryButton(
+                  label: 'Daftar',
+                  isLoading: isLoading,
+                  height: 52,
+                  borderRadius: 14,
+                  onPressed: _submit,
+                ),
+                const SizedBox(height: 20),
+                AuthFooterLink(
+                  label: 'Sudah punya akun?',
+                  actionLabel: 'Masuk',
+                  enabled: !isLoading,
+                  onTap: () => context.go('/login'),
+                ),
+              ],
             ),
           ),
-        ),
+        ],
       ),
     );
   }

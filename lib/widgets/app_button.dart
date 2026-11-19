@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../core/theme/app_colors.dart';
+import '../core/theme/app_layout.dart';
 
 class PrimaryButton extends StatefulWidget {
   const PrimaryButton({
@@ -10,7 +11,7 @@ class PrimaryButton extends StatefulWidget {
     this.isLoading = false,
     this.enabled = true,
     this.height = 48,
-    this.borderRadius = 12,
+    this.borderRadius = AppRadius.md,
   });
 
   final String label;

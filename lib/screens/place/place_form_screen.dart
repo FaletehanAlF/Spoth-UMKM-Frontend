@@ -5,14 +5,18 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../core/services/api_service.dart';
 import '../../core/services/place_service.dart';
 import '../../core/services/upload_service.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/utils/format.dart';
+import '../../models/category_model.dart';
 import '../../models/place_model.dart';
 import '../../models/user_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/nav_provider.dart';
 import '../../providers/place_provider.dart';
+import '../../widgets/availability_rule_section.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/shimmer_loading.dart';
 import '../../widgets/spoth_app_bar.dart';
@@ -50,13 +54,27 @@ class _PlaceFormScreenState extends ConsumerState<PlaceFormScreen> {
   final _aturanController = TextEditingController();
   final _hargaNormalController = TextEditingController();
   final _hargaPromoController = TextEditingController();
+  final _tanggalMulaiController = TextEditingController();
+  final _tanggalSelesaiController = TextEditingController();
 
   static const int _maxPhotos = 6;
   static const int _maxPhotoBytes = 5 * 1024 * 1024;
   static const List<String> _allowedExtensions = ['jpg', 'jpeg', 'png', 'webp'];
 
   String _kategori = PlaceModel.kategoriValues.first;
+  final _kategoriLainController = TextEditingController();
+  static const String _kategoriLain = 'Lainnya';
+  bool get _isKategoriCustom => _kategori == _kategoriLain;
+  List<CategoryModel> _categories = const [];
+  bool _categoriesLoading = false;
+  String? _categoriesError;
+
+  /// Kategorienya dikirim ke backend; kalau mode lainya maka dari teks.
+  String get _kategoriValue => _isKategoriCustom ? _kategoriLainController.text.trim() : _kategori;
   String _tipeDurasi = PlaceModel.durasiValues.first;
+  String? _placeId;
+  DateTime? _tanggalMulaiTersedia;
+  DateTime? _tanggalSelesaiTersedia;
   bool _statusAktif = true;
   bool _loading = false;
   bool _submitting = false;
@@ -65,14 +83,46 @@ class _PlaceFormScreenState extends ConsumerState<PlaceFormScreen> {
   final List<_PhotoItem> _photos = [];
   final ImagePicker _picker = ImagePicker();
 
-  bool get _isEditing => (widget.placeId ?? '').isNotEmpty;
+  bool get _isEditing => (_placeId ?? '').isNotEmpty;
 
   @override
   void initState() {
     super.initState();
+    _placeId = widget.placeId;
+    _loadCategories();
     if (_isEditing) {
       _loadExisting();
     }
+  }
+
+  Future<void> _loadCategories() async {
+    setState(() {
+      _categoriesLoading = true;
+      _categoriesError = null;
+    });
+
+    try {
+      final categories = await ref
+          .read(placeServiceProvider)
+          .listCategories();
+      if (!mounted) return;
+      setState(() => _categories = categories);
+    } on Exception catch (error) {
+      if (!mounted) return;
+      setState(() => _categoriesError = _errorMessage(error));
+    } finally {
+      if (mounted) setState(() => _categoriesLoading = false);
+    }
+  }
+
+  String _errorMessage(Exception error) {
+    if (error is ApiException) {
+      return error.message;
+    }
+    if (error is FormatException) {
+      return 'Respons daftar kategori tidak valid';
+    }
+    return 'Gagal memuat kategori';
   }
 
   @override
@@ -86,6 +136,9 @@ class _PlaceFormScreenState extends ConsumerState<PlaceFormScreen> {
       _aturanController,
       _hargaNormalController,
       _hargaPromoController,
+      _tanggalMulaiController,
+      _tanggalSelesaiController,
+      _kategoriLainController,
     ]) {
       controller.dispose();
     }
@@ -102,7 +155,7 @@ class _PlaceFormScreenState extends ConsumerState<PlaceFormScreen> {
       final token = ref.read(authNotifierProvider.select((s) => s.token));
       final place = await ref
           .read(placeServiceProvider)
-          .getPlaceDetail(id: widget.placeId!, token: token);
+          .getPlaceDetail(id: _placeId!, token: token);
 
       if (!mounted) return;
       _namaController.text = place.namaTempat;
@@ -116,8 +169,22 @@ class _PlaceFormScreenState extends ConsumerState<PlaceFormScreen> {
           ? ''
           : _trimNumber(place.hargaPromo!);
       _kategori = place.kategori;
+      if (!_categories.any((item) => item.nama == place.kategori)) {
+        setState(() {
+          _kategori = CategoryModel.useLainya;
+          _kategoriLainController.text = place.kategori;
+        });
+      }
       _tipeDurasi = place.tipeDurasi;
       _statusAktif = place.isAktif;
+      _tanggalMulaiTersedia = place.tanggalMulaiTersedia;
+      _tanggalSelesaiTersedia = place.tanggalSelesaiTersedia;
+      _tanggalMulaiController.text = place.tanggalMulaiTersedia == null
+          ? ''
+          : formatTanggal(place.tanggalMulaiTersedia);
+      _tanggalSelesaiController.text = place.tanggalSelesaiTersedia == null
+          ? ''
+          : formatTanggal(place.tanggalSelesaiTersedia);
       _photos
         ..clear()
         ..addAll(place.foto.map((url) => _PhotoItem.existing(url: url)));
@@ -139,6 +206,56 @@ class _PlaceFormScreenState extends ConsumerState<PlaceFormScreen> {
   double? _parseHarga(String text) {
     final bersih = text.trim().replaceAll('.', '').replaceAll(',', '.');
     return bersih.isEmpty ? null : double.tryParse(bersih);
+  }
+
+  Future<void> _pilihTanggalKetersediaan({required bool mulai}) async {
+    final hariIni = DateTime.now();
+    final awal = mulai
+        ? _tanggalMulaiTersedia
+        : _tanggalSelesaiTersedia ?? _tanggalMulaiTersedia;
+    final pertama = mulai
+        ? DateTime(2000)
+        : _tanggalMulaiTersedia ?? DateTime(2000);
+    final terakhir = DateTime(hariIni.year + 10, 12, 31);
+    final dasar = awal ?? hariIni;
+    final initial = dasar.isBefore(pertama)
+        ? pertama
+        : dasar.isAfter(terakhir)
+        ? terakhir
+        : dasar;
+
+    final dipilih = await showDatePicker(
+      context: context,
+      initialDate: initial,
+      firstDate: pertama,
+      lastDate: terakhir,
+      builder: (context, child) => Theme(
+        data: Theme.of(context).copyWith(
+          colorScheme: Theme.of(context).colorScheme
+              .copyWith(primary: AppColors.primaryOrange),
+        ),
+        child: child!,
+      ),
+    );
+
+    if (dipilih == null || !mounted) {
+      return;
+    }
+
+    setState(() {
+      if (mulai) {
+        _tanggalMulaiTersedia = dipilih;
+        _tanggalMulaiController.text = formatTanggal(dipilih);
+        if (_tanggalSelesaiTersedia != null &&
+            _tanggalSelesaiTersedia!.isBefore(dipilih)) {
+          _tanggalSelesaiTersedia = dipilih;
+          _tanggalSelesaiController.text = formatTanggal(dipilih);
+        }
+      } else {
+        _tanggalSelesaiTersedia = dipilih;
+        _tanggalSelesaiController.text = formatTanggal(dipilih);
+      }
+    });
   }
 
   void _showSnack(String pesan) {
@@ -259,6 +376,8 @@ class _PlaceFormScreenState extends ConsumerState<PlaceFormScreen> {
     final valid = _formKey.currentState?.validate() ?? false;
     if (!valid) return;
 
+    final sedangMembuat = !_isEditing;
+
     final hargaNormal = _parseHarga(_hargaNormalController.text);
     if (hargaNormal == null || hargaNormal <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -275,6 +394,39 @@ class _PlaceFormScreenState extends ConsumerState<PlaceFormScreen> {
             'Harga promo tidak boleh lebih besar dari harga normal.',
           ),
         ),
+      );
+      return;
+    }
+
+    final tanggalMulai = _tanggalMulaiTersedia;
+    final tanggalSelesai = _tanggalSelesaiTersedia;
+    final periodeKosong = tanggalMulai == null && tanggalSelesai == null;
+
+    if (!_isEditing && periodeKosong) {
+      _showSnack('Tanggal mulai dan selesai ketersediaan wajib diisi.');
+      return;
+    }
+
+    if (!periodeKosong && (tanggalMulai == null || tanggalSelesai == null)) {
+      _showSnack('Lengkapi kedua tanggal periode atau kosongkan keduanya.');
+      return;
+    }
+
+    if (_kategoriValue.trim().isEmpty) {
+      _showSnack('Kategori tempat wajib diisi');
+      return;
+    }
+
+    if (_kategoriValue.trim().length > 50) {
+      _showSnack('Kategori maksimal 50 karakter');
+      return;
+    }
+
+    if (tanggalMulai != null &&
+        tanggalSelesai != null &&
+        tanggalSelesai.isBefore(tanggalMulai)) {
+      _showSnack(
+        'Tanggal selesai ketersediaan tidak boleh sebelum tanggal mulai.',
       );
       return;
     }
@@ -308,51 +460,85 @@ class _PlaceFormScreenState extends ConsumerState<PlaceFormScreen> {
         }
       }
 
+      final kategoriForSubmit = _kategoriValue;
+
       final payload = <String, dynamic>{
         'nama_tempat': _namaController.text.trim(),
-        'kategori': _kategori,
+        'kategori': kategoriForSubmit,
         'alamat': _alamatController.text.trim(),
         'kota': _kotaController.text.trim(),
         'harga_normal': hargaNormal,
         'tipe_durasi': _tipeDurasi,
-        if (_deskripsiController.text.trim().isNotEmpty)
-          'deskripsi': _deskripsiController.text.trim(),
+        'deskripsi': _deskripsiController.text.trim(),
         'fasilitas': _fasilitasController.text.trim(),
-        if (_aturanController.text.trim().isNotEmpty)
-          'aturan': _aturanController.text.trim(),
+        'aturan': _aturanController.text.trim(),
         'foto': fotoUrls,
-        if (_isEditing)
-          'harga_promo': hargaPromo
+        'tanggal_mulai_tersedia': tanggalMulai == null
+            ? null
+            : formatTanggalApi(tanggalMulai),
+        'tanggal_selesai_tersedia': tanggalSelesai == null
+            ? null
+            : formatTanggalApi(tanggalSelesai),
+        if (sedangMembuat)
+          'harga_promo': ?hargaPromo
         else
-          'harga_promo': ?hargaPromo,
-        if (_isEditing) 'status': _statusAktif ? 'AKTIF' : 'NONAKTIF',
+          'harga_promo': hargaPromo,
+        if (!sedangMembuat) 'status': _statusAktif ? 'AKTIF' : 'NONAKTIF',
       };
 
       final service = ref.read(placeServiceProvider);
-      if (_isEditing) {
+      if (!sedangMembuat) {
         await service.updatePlace(
           token: token,
-          id: widget.placeId!,
+          id: _placeId!,
           payload: payload,
         );
       } else {
-        await service.createPlace(token: token, payload: payload);
+        final created = await service.createPlace(
+          token: token,
+          payload: payload,
+        );
+
+        if (!mounted) return;
+
+        if (created.id.isNotEmpty) {
+          setState(() {
+            _placeId = created.id;
+            _statusAktif = created.isAktif;
+            _tanggalMulaiTersedia =
+                created.tanggalMulaiTersedia ?? tanggalMulai;
+            _tanggalSelesaiTersedia =
+                created.tanggalSelesaiTersedia ?? tanggalSelesai;
+            _photos
+              ..clear()
+              ..addAll(
+                created.foto.map((url) => _PhotoItem.existing(url: url)),
+              );
+          });
+        }
       }
 
       await ref.read(myPlacesProvider.notifier).refresh();
       await ref.read(hostSummaryProvider.notifier).refresh();
 
       if (!mounted) return;
+
+      if (!sedangMembuat) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Tempat berhasil diperbarui')),
+        );
+        context.pop(true);
+        return;
+      }
+
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
+        const SnackBar(
           content: Text(
-            _isEditing
-                ? 'Tempat berhasil diperbarui'
-                : 'Tempat berhasil ditambahkan',
+            'Tempat berhasil ditambahkan. Aturan ketersediaan sudah dapat '
+            'diatur.',
           ),
         ),
       );
-      context.pop(true);
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -370,7 +556,7 @@ class _PlaceFormScreenState extends ConsumerState<PlaceFormScreen> {
         ref.watch(authNotifierProvider).user?.role == UserModel.roleHost;
     if (!bolehMengelola) {
       final page = Scaffold(
-        backgroundColor: AppColors.white,
+        backgroundColor: AppColors.canvas,
         appBar: const SpothAppBar(title: Text('Kelola Tempat')),
         body: const Center(
           child: SingleChildScrollView(
@@ -390,7 +576,7 @@ class _PlaceFormScreenState extends ConsumerState<PlaceFormScreen> {
     }
 
     final page = Scaffold(
-      backgroundColor: AppColors.white,
+      backgroundColor: AppColors.canvas,
       appBar: SpothAppBar(
         title: Text(_isEditing ? 'Ubah Tempat' : 'Tambah Tempat'),
       ),
@@ -439,29 +625,57 @@ class _PlaceFormScreenState extends ConsumerState<PlaceFormScreen> {
                         ),
                       ),
                       const SizedBox(height: 8),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: [
-                          for (final kategori in PlaceModel.kategoriValues)
-                            ChoiceChip(
-                              label: Text(
-                                PlaceModel.kategoriLabels[kategori] ?? kategori,
+                      if (_categoriesLoading)
+                        const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 14),
+                          child: Center(child: Text('Memuat kategori...')),
+                        )
+                      else if (_categoriesError != null) ...[
+                        Center(
+                          child: EmptyState(
+                            icon: Icons.wifi_off,
+                            title: 'Gagal memuat kategori',
+                            message: 'Periksa koneksi internet Anda lalu coba lagi.',
+                            actionLabel: 'Coba Lagi',
+                            onAction: _loadCategories,
+                          ),
+                        ),
+                      ]
+                      else
+                        DropdownButtonFormField<String>(
+                          initialValue: _kategori,
+                          isExpanded: true,
+                          onChanged: (value) {
+                            if (value == null) return;
+                            setState(() => _kategori = value);
+                          },
+                          items: [
+                            for (final item in _categories)
+                              DropdownMenuItem(
+                                value: item.nama,
+                                child: Text(item.nama),
                               ),
-                              selected: _kategori == kategori,
-                              selectedColor: AppColors.primaryOrange,
-                              labelStyle: TextStyle(
-                                color: _kategori == kategori
-                                    ? AppColors.white
-                                    : AppColors.secondaryText,
-                                fontWeight: FontWeight.w600,
-                              ),
-                              showCheckmark: false,
-                              onSelected: (_) =>
-                                  setState(() => _kategori = kategori),
+                            DropdownMenuItem(
+                              value: _kategoriLain,
+                              child: const Text('Lainnya (ketik kategori sendiri)'),
                             ),
-                        ],
-                      ),
+                          ],
+                        ),
+                      if (_isKategoriCustom) ...[
+                        const SizedBox(height: 10),
+                        TextFormField(
+                          controller: _kategoriLainController,
+                          textCapitalization: TextCapitalization.words,
+                          decoration: const InputDecoration(
+                            labelText: 'Nama Kategori Lain',
+                            hintText: 'Contoh: Warung Minuman',
+                          ),
+                          enabled: !_submitting,
+                          validator: (value) => value == null || value.trim().isEmpty
+                              ? 'Nama kategori lain wajib diisi'
+                              : null,
+                        ),
+                      ],
                       const SizedBox(height: 16),
                       TextFormField(
                         controller: _alamatController,
@@ -606,6 +820,91 @@ class _PlaceFormScreenState extends ConsumerState<PlaceFormScreen> {
                             ),
                         ],
                       ),
+                      const SizedBox(height: 20),
+                      const Text(
+                        'Periode Ketersediaan',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.darkText,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        _isEditing
+                            ? 'Tempat hanya dapat disewa dalam rentang tanggal '
+                                  'ini. Kosongkan kedua tanggal bila periode '
+                                  'tidak dibatasi.'
+                            : 'Tempat hanya dapat disewa dalam rentang tanggal '
+                                  'ini. Kedua tanggal wajib diisi.',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          height: 1.45,
+                          color: AppColors.secondaryText,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      TextFormField(
+                        controller: _tanggalMulaiController,
+                        readOnly: true,
+                        decoration: const InputDecoration(
+                          labelText: 'Tanggal Mulai Tersedia',
+                          hintText: 'Pilih tanggal mulai',
+                          prefixIcon: Icon(Icons.calendar_today_outlined),
+                        ),
+                        onTap: () => _pilihTanggalKetersediaan(mulai: true),
+                        validator: (_) {
+                          final mulaiKosong = _tanggalMulaiTersedia == null;
+                          final selesaiTerisi = _tanggalSelesaiTersedia != null;
+
+                          if (!_isEditing && mulaiKosong) {
+                            return 'Tanggal mulai tersedia wajib diisi';
+                          }
+                          if (mulaiKosong && selesaiTerisi) {
+                            return 'Lengkapi kedua tanggal atau kosongkan '
+                                'keduanya';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: _tanggalSelesaiController,
+                        readOnly: true,
+                        decoration: const InputDecoration(
+                          labelText: 'Tanggal Selesai Tersedia',
+                          hintText: 'Pilih tanggal selesai',
+                          prefixIcon: Icon(Icons.event_available_outlined),
+                          helperText:
+                              'Tidak boleh lebih awal dari tanggal mulai.',
+                        ),
+                        onTap: () => _pilihTanggalKetersediaan(mulai: false),
+                        validator: (_) {
+                          final selesaiKosong = _tanggalSelesaiTersedia == null;
+                          final mulaiTerisi = _tanggalMulaiTersedia != null;
+
+                          if (!_isEditing && selesaiKosong) {
+                            return 'Tanggal selesai tersedia wajib diisi';
+                          }
+                          if (selesaiKosong && mulaiTerisi) {
+                            return 'Lengkapi kedua tanggal atau kosongkan '
+                                'keduanya';
+                          }
+                          if (mulaiTerisi &&
+                              !selesaiKosong &&
+                              _tanggalSelesaiTersedia!.isBefore(
+                                _tanggalMulaiTersedia!,
+                              )) {
+                            return 'Tidak boleh sebelum tanggal mulai';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 20),
+                      AvailabilityRuleSection(
+                        placeId: _placeId,
+                        periodeSelesai: _tanggalSelesaiTersedia,
+                      ),
                       if (_isEditing) ...[
                         const SizedBox(height: 16),
                         SwitchListTile(
@@ -632,7 +931,29 @@ class _PlaceFormScreenState extends ConsumerState<PlaceFormScreen> {
                         ),
                       ],
                       const SizedBox(height: 24),
-                      ElevatedButton(
+                    ],
+                  ),
+                ),
+              ),
+            ),
+      bottomNavigationBar: _loading || _loadError != null
+          ? null
+          : Container(
+              decoration: const BoxDecoration(
+                color: AppColors.white,
+                border: Border(top: BorderSide(color: AppColors.softBorder)),
+              ),
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
+              child: SafeArea(
+                top: false,
+                child: Center(
+                  heightFactor: 1,
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 640),
+                    child: SizedBox(
+                      width: double.infinity,
+                      height: 48,
+                      child: ElevatedButton(
                         onPressed: _submitting ? null : _submit,
                         child: Text(
                           _submitting
@@ -642,8 +963,7 @@ class _PlaceFormScreenState extends ConsumerState<PlaceFormScreen> {
                               : 'Simpan Tempat',
                         ),
                       ),
-                      const SizedBox(height: 24),
-                    ],
+                    ),
                   ),
                 ),
               ),

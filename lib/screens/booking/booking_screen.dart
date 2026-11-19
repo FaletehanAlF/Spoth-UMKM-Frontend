@@ -25,7 +25,7 @@ class BookingScreen extends ConsumerWidget {
     final bookings = ref.watch(bookingsProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.white,
+      backgroundColor: AppColors.canvas,
       appBar: SpothAppBar(
         title: Text(isHost ? 'Pesanan Masuk' : 'Penyewaan Saya'),
         actions: const [RiwayatIconButton(), NotificationIconButton()],
@@ -33,7 +33,7 @@ class BookingScreen extends ConsumerWidget {
       body: Align(
         alignment: Alignment.topCenter,
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 720),
+          constraints: const BoxConstraints(maxWidth: 760),
           child: bookings.when(
             loading: () => const Padding(
               padding: EdgeInsets.all(20),
@@ -78,10 +78,10 @@ class BookingScreen extends ConsumerWidget {
               }
 
               return RefreshIndicator(
-                color: AppColors.primaryOrange,
+                color: AppColors.primaryDeep,
                 onRefresh: () => ref.read(bookingsProvider.notifier).refresh(),
                 child: ListView.separated(
-                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
                   itemCount: items.length,
                   separatorBuilder: (_, _) => const SizedBox(height: 12),
                   itemBuilder: (context, index) {
@@ -116,7 +116,7 @@ class _BookingCard extends ConsumerWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppColors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(color: AppColors.softBorder),
       ),
       child: Column(
@@ -132,7 +132,8 @@ class _BookingCard extends ConsumerWidget {
                   style: const TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
-                    color: AppColors.darkText,
+                    letterSpacing: -0.15,
+                    color: AppColors.charcoal,
                   ),
                 ),
               ),
@@ -144,16 +145,16 @@ class _BookingCard extends ConsumerWidget {
           Text(
             'Kode: ${booking.kodeBooking ?? '-'} • ${booking.jenisUsaha}',
             style: const TextStyle(
-              fontSize: 12,
+              fontSize: 11.5,
               color: AppColors.secondaryText,
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 5),
           Row(
             children: [
               const Icon(
                 Icons.calendar_month,
-                size: 16,
+                size: 15,
                 color: AppColors.secondaryText,
               ),
               const SizedBox(width: 6),
@@ -164,22 +165,24 @@ class _BookingCard extends ConsumerWidget {
                   '(${booking.jumlahDurasi} satuan durasi)',
                   style: const TextStyle(
                     fontSize: 12,
+                    height: 1.4,
                     color: AppColors.secondaryText,
                   ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 12),
           Row(
             children: [
               Expanded(
                 child: Text(
                   formatRupiah(booking.totalHarga),
                   style: const TextStyle(
-                    fontSize: 15,
+                    fontSize: 16,
                     fontWeight: FontWeight.w700,
-                    color: AppColors.primaryOrange,
+                    letterSpacing: -0.2,
+                    color: AppColors.charcoal,
                   ),
                 ),
               ),
@@ -190,7 +193,7 @@ class _BookingCard extends ConsumerWidget {
             const SizedBox(height: 12),
             PrimaryButton(
               label: 'Bayar Sekarang',
-              height: 44,
+              height: 46,
               borderRadius: 12,
               onPressed: () async {
                 await context.push('/payment?id=${booking.id}');
