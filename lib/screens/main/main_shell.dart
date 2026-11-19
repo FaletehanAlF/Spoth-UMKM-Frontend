@@ -48,13 +48,13 @@ class MainShell extends ConsumerWidget {
 
     if (showSidebar) {
       return Scaffold(
-        backgroundColor: AppColors.white,
+        backgroundColor: AppColors.canvas,
         body: Row(
           children: [
             SpothSidebar(
               index: index,
               items: items,
-              expanded: width >= 1100,
+              expanded: width >= 1400,
               onChanged: (value) =>
                   ref.read(mainNavIndexProvider.notifier).setTab(tabs[value]),
             ),
@@ -64,7 +64,7 @@ class MainShell extends ConsumerWidget {
                 child: Align(
                   alignment: Alignment.topCenter,
                   child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 1160),
+                    constraints: const BoxConstraints(maxWidth: 1120),
                     child: content,
                   ),
                 ),
@@ -76,13 +76,13 @@ class MainShell extends ConsumerWidget {
     }
 
     return Scaffold(
-      backgroundColor: AppColors.white,
+      backgroundColor: AppColors.canvas,
       body: SafeArea(
         top: false,
         child: Align(
           alignment: Alignment.topCenter,
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 1160),
+            constraints: const BoxConstraints(maxWidth: 1120),
             child: content,
           ),
         ),

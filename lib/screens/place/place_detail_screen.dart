@@ -6,10 +6,12 @@ import '../../core/services/place_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_fonts.dart';
 import '../../core/utils/format.dart';
+import '../../models/availability_model.dart';
 import '../../models/place_model.dart';
 import '../../models/user_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/nav_provider.dart';
+import '../../widgets/availability_rule_card.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/shimmer_loading.dart';
 import '../../widgets/spoth_app_bar.dart';
@@ -26,8 +28,11 @@ class PlaceDetailScreen extends ConsumerStatefulWidget {
 
 class _PlaceDetailScreenState extends ConsumerState<PlaceDetailScreen> {
   PlaceModel? _place;
+  List<AvailabilityRuleModel> _rules = const [];
   bool _loading = true;
+  bool _loadingRules = false;
   String? _error;
+  String? _rulesError;
   int _fotoIndex = 0;
 
   @override
@@ -40,6 +45,7 @@ class _PlaceDetailScreenState extends ConsumerState<PlaceDetailScreen> {
     setState(() {
       _loading = true;
       _error = null;
+      _rulesError = null;
     });
 
     try {
@@ -53,11 +59,53 @@ class _PlaceDetailScreenState extends ConsumerState<PlaceDetailScreen> {
         _place = place;
         _fotoIndex = 0;
       });
+      await _loadRules();
     } catch (_) {
       if (!mounted) return;
       setState(() => _error = 'Gagal memuat detail tempat');
     } finally {
       if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _loadRules() async {
+    final user = ref.read(authNotifierProvider.select((s) => s.user));
+    final place = _place;
+    final isOwner =
+        user?.role == UserModel.roleHost &&
+        place != null &&
+        user!.id == place.hostId;
+
+    // Aturan ketersediaan hanya boleh dibaca oleh pemilik tempat. Hindari
+    // panggilan yang pasti ditolak (403) untuk penyewa/tamu.
+    if (!isOwner) {
+      if (!mounted) return;
+      setState(() {
+        _rules = const [];
+        _loadingRules = false;
+        _rulesError = null;
+      });
+      return;
+    }
+
+    setState(() {
+      _loadingRules = true;
+      _rulesError = null;
+    });
+
+    try {
+      final token = ref.read(authNotifierProvider.select((s) => s.token));
+      final rules = await ref
+          .read(placeServiceProvider)
+          .getAvailabilityRules(placeId: widget.placeId, token: token);
+
+      if (!mounted) return;
+      setState(() => _rules = rules);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _rulesError = 'Gagal memuat aturan ketersediaan tempat.');
+    } finally {
+      if (mounted) setState(() => _loadingRules = false);
     }
   }
 
@@ -73,12 +121,19 @@ class _PlaceDetailScreenState extends ConsumerState<PlaceDetailScreen> {
         _place = place;
         _fotoIndex = 0;
       });
+      await _loadRules();
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Gagal memperbarui detail tempat.')),
       );
     }
+  }
+
+  Future<void> _openKelolaAturan() async {
+    await context.push('/place-form?id=${widget.placeId}');
+    if (!mounted) return;
+    await _refresh();
   }
 
   @override
@@ -92,7 +147,7 @@ class _PlaceDetailScreenState extends ConsumerState<PlaceDetailScreen> {
     final isTenant = user?.role == UserModel.roleTenant;
 
     final page = Scaffold(
-      backgroundColor: AppColors.white,
+      backgroundColor: AppColors.canvas,
       appBar: const SpothAppBar(title: Text('Detail Tempat')),
       body: _loading
           ? const SingleChildScrollView(child: DetailSkeleton())
@@ -129,6 +184,11 @@ class _PlaceDetailScreenState extends ConsumerState<PlaceDetailScreen> {
                     onFotoChanged: (index) =>
                         setState(() => _fotoIndex = index),
                     onRefresh: _refresh,
+                    rules: _rules,
+                    loadingRules: _loadingRules,
+                    rulesError: _rulesError,
+                    onRetryRules: _loadRules,
+                    onKelolaAturan: isOwner ? _openKelolaAturan : null,
                   ),
                 ),
                 _ActionBar(place: place, isOwner: isOwner, isTenant: isTenant),
@@ -146,12 +206,22 @@ class _DetailScrollView extends StatelessWidget {
     required this.fotoIndex,
     required this.onFotoChanged,
     required this.onRefresh,
+    required this.rules,
+    required this.loadingRules,
+    required this.rulesError,
+    required this.onRetryRules,
+    required this.onKelolaAturan,
   });
 
   final PlaceModel place;
   final int fotoIndex;
   final ValueChanged<int> onFotoChanged;
   final Future<void> Function() onRefresh;
+  final List<AvailabilityRuleModel> rules;
+  final bool loadingRules;
+  final String? rulesError;
+  final VoidCallback onRetryRules;
+  final VoidCallback? onKelolaAturan;
 
   @override
   Widget build(BuildContext context) {
@@ -183,7 +253,14 @@ class _DetailScrollView extends StatelessWidget {
             onFotoChanged: onFotoChanged,
           );
 
-          final seksi = _seksiRincian(place);
+          final seksi = _seksiRincian(
+            place: place,
+            rules: rules,
+            loadingRules: loadingRules,
+            rulesError: rulesError,
+            onRetryRules: onRetryRules,
+            onKelolaAturan: onKelolaAturan,
+          );
           final daftarSeksi = [
             for (var i = 0; i < seksi.length; i++) ...[
               if (i > 0) const SizedBox(height: 14),
@@ -628,7 +705,14 @@ class _HeroPlaceholder extends StatelessWidget {
   }
 }
 
-List<Widget> _seksiRincian(PlaceModel place) {
+List<Widget> _seksiRincian({
+  required PlaceModel place,
+  required List<AvailabilityRuleModel> rules,
+  required bool loadingRules,
+  required String? rulesError,
+  required VoidCallback onRetryRules,
+  required VoidCallback? onKelolaAturan,
+}) {
   final seksi = <Widget>[];
   final deskripsi = place.deskripsi?.trim() ?? '';
   final aturan = place.aturan?.trim() ?? '';
@@ -686,6 +770,32 @@ List<Widget> _seksiRincian(PlaceModel place) {
 
   seksi.add(
     _DetailSectionCard(
+      icon: Icons.date_range_outlined,
+      title: 'Periode Ketersediaan',
+      child: _PeriodeKetersediaan(place: place),
+    ),
+  );
+
+  // Aturan ketersediaan adalah data internal pemilik tempat. Backend
+  // membatasi endpoint ini ke HOST pemilik, jadi hanya tampil untuk pemilik.
+  if (onKelolaAturan != null) {
+    seksi.add(
+      _DetailSectionCard(
+        icon: Icons.event_available_outlined,
+        title: 'Aturan Ketersediaan',
+        child: _AturanKetersediaan(
+          rules: rules,
+          loading: loadingRules,
+          error: rulesError,
+          onRetry: onRetryRules,
+          onKelola: onKelolaAturan,
+        ),
+      ),
+    );
+  }
+
+  seksi.add(
+    _DetailSectionCard(
       icon: Icons.event_busy_outlined,
       title: 'Jadwal Sudah Dipesan',
       child: _JadwalDipesan(place: place),
@@ -693,6 +803,182 @@ List<Widget> _seksiRincian(PlaceModel place) {
   );
 
   return seksi;
+}
+
+class _PeriodeKetersediaan extends StatelessWidget {
+  const _PeriodeKetersediaan({required this.place});
+
+  final PlaceModel place;
+
+  @override
+  Widget build(BuildContext context) {
+    final mulai = place.tanggalMulaiTersedia;
+    final selesai = place.tanggalSelesaiTersedia;
+
+    if (mulai == null || selesai == null) {
+      return const Text(
+        'Pemilik belum menetapkan periode khusus. Ketersediaan mengikuti '
+        'jadwal yang sudah dipesan.',
+        style: TextStyle(
+          fontSize: 13,
+          height: 1.5,
+          color: AppColors.secondaryText,
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          decoration: BoxDecoration(
+            color: AppColors.lightOrange,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            children: [
+              const Icon(
+                Icons.calendar_month_outlined,
+                size: 18,
+                color: AppColors.primaryOrange,
+              ),
+              const SizedBox(width: 9),
+              Expanded(
+                child: Text(
+                  '${formatTanggal(mulai)} - ${formatTanggal(selesai)}',
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.charcoal,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
+        const Text(
+          'Penyewaan hanya dapat dilakukan di dalam periode ini.',
+          style: TextStyle(
+            fontSize: 12,
+            height: 1.45,
+            color: AppColors.secondaryText,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _AturanKetersediaan extends StatelessWidget {
+  const _AturanKetersediaan({
+    required this.rules,
+    required this.loading,
+    required this.error,
+    required this.onRetry,
+    required this.onKelola,
+  });
+
+  final List<AvailabilityRuleModel> rules;
+  final bool loading;
+  final String? error;
+  final VoidCallback onRetry;
+  final VoidCallback? onKelola;
+
+  @override
+  Widget build(BuildContext context) {
+    final jumlahMemblokir = rules.where((rule) => rule.memblokir).length;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (loading)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 8),
+            child: Row(
+              children: [
+                SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+                SizedBox(width: 10),
+                Text(
+                  'Memuat aturan ketersediaan...',
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    color: AppColors.secondaryText,
+                  ),
+                ),
+              ],
+            ),
+          )
+        else if (error != null)
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Icon(
+                Icons.wifi_off,
+                size: 18,
+                color: AppColors.secondaryText,
+              ),
+              const SizedBox(width: 9),
+              Expanded(
+                child: Text(
+                  error!,
+                  style: const TextStyle(
+                    fontSize: 12.5,
+                    height: 1.45,
+                    color: AppColors.secondaryText,
+                  ),
+                ),
+              ),
+              TextButton(onPressed: onRetry, child: const Text('Coba Lagi')),
+            ],
+          )
+        else if (rules.isEmpty)
+          const Text(
+            'Belum ada aturan khusus. Ketersediaan mengikuti periode di atas '
+            'dan jadwal yang sudah dipesan.',
+            style: TextStyle(
+              fontSize: 13,
+              height: 1.5,
+              color: AppColors.secondaryText,
+            ),
+          )
+        else ...[
+          if (jumlahMemblokir > 0) ...[
+            Text(
+              '$jumlahMemblokir aturan membatasi tanggal yang dapat dipesan.',
+              style: const TextStyle(
+                fontSize: 12,
+                height: 1.45,
+                color: AppColors.secondaryText,
+              ),
+            ),
+            const SizedBox(height: 9),
+          ],
+          for (var i = 0; i < rules.length; i++) ...[
+            if (i > 0) const SizedBox(height: 8),
+            AvailabilityRuleCard(rule: rules[i]),
+          ],
+        ],
+        if (onKelola != null) ...[
+          const SizedBox(height: 8),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton.icon(
+              onPressed: onKelola,
+              icon: const Icon(Icons.tune, size: 17),
+              label: const Text('Kelola Aturan Ketersediaan'),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
 }
 
 class _DetailSectionCard extends StatelessWidget {

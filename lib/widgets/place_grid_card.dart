@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../core/theme/app_colors.dart';
+import '../core/theme/app_layout.dart';
 import '../core/utils/format.dart';
 import '../models/place_model.dart';
 
@@ -17,15 +18,15 @@ class PlaceGridCard extends StatelessWidget {
 
     return Material(
       color: AppColors.white,
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(AppRadius.lg),
       child: InkWell(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
         onTap: () => context.push('/place-detail?id=${place.id}'),
         child: Container(
           clipBehavior: Clip.antiAlias,
           decoration: BoxDecoration(
             color: AppColors.white,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(AppRadius.lg),
             border: Border.all(color: AppColors.softBorder),
           ),
           child: Column(
@@ -33,9 +34,9 @@ class PlaceGridCard extends StatelessWidget {
             children: [
               LayoutBuilder(
                 builder: (context, constraints) {
-                  final tinggiFoto = (constraints.maxWidth * 0.62).clamp(
-                    96.0,
-                    150.0,
+                  final tinggiFoto = (constraints.maxWidth * 0.66).clamp(
+                    100.0,
+                    180.0,
                   );
 
                   return SizedBox(
@@ -49,9 +50,9 @@ class PlaceGridCard extends StatelessWidget {
                                 foto,
                                 fit: BoxFit.cover,
                                 errorBuilder: (_, _, _) =>
-                                    const _PhotoPlaceholder(),
+                                    const PlacePhotoPlaceholder(),
                               )
-                            : const _PhotoPlaceholder(),
+                            : const PlacePhotoPlaceholder(),
                         Positioned(
                           top: 8,
                           left: 8,
@@ -73,7 +74,7 @@ class PlaceGridCard extends StatelessWidget {
               ),
               Expanded(
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(11, 9, 11, 11),
+                  padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -82,9 +83,10 @@ class PlaceGridCard extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          height: 1.2,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          height: 1.25,
+                          letterSpacing: -0.15,
                           color: AppColors.charcoal,
                         ),
                       ),
@@ -111,16 +113,31 @@ class PlaceGridCard extends StatelessWidget {
                         ],
                       ),
                       const Spacer(),
-                      Text(
-                        formatRupiah(place.hargaEfektif),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 14.5,
-                          fontWeight: FontWeight.w700,
-                          height: 1.15,
-                          color: AppColors.charcoal,
-                        ),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              formatRupiah(place.hargaEfektif),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w700,
+                                height: 1.15,
+                                letterSpacing: -0.2,
+                                color: AppColors.charcoal,
+                              ),
+                            ),
+                          ),
+                          Text(
+                            '/${place.durasiLabel.toLowerCase()}',
+                            style: const TextStyle(
+                              fontSize: 10.5,
+                              color: AppColors.secondaryText,
+                            ),
+                          ),
+                        ],
                       ),
                       if (diskon != null)
                         Text(
@@ -133,16 +150,6 @@ class PlaceGridCard extends StatelessWidget {
                             color: AppColors.secondaryText,
                           ),
                         ),
-                      const SizedBox(height: 2),
-                      Text(
-                        '/${place.durasiLabel.toLowerCase()}',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 10.5,
-                          color: AppColors.secondaryText,
-                        ),
-                      ),
                     ],
                   ),
                 ),
@@ -164,11 +171,9 @@ class _PhotoBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3.5),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: highlight
-            ? AppColors.primaryOrange
-            : AppColors.white.withValues(alpha: 0.94),
+        color: highlight ? AppColors.primaryDeep : AppColors.white,
         borderRadius: BorderRadius.circular(8),
       ),
       child: Text(
@@ -176,7 +181,7 @@ class _PhotoBadge extends StatelessWidget {
         style: TextStyle(
           fontSize: 9.5,
           fontWeight: FontWeight.w700,
-          letterSpacing: 0.2,
+          letterSpacing: 0.1,
           color: highlight ? AppColors.white : AppColors.charcoal,
         ),
       ),
@@ -184,15 +189,36 @@ class _PhotoBadge extends StatelessWidget {
   }
 }
 
-class _PhotoPlaceholder extends StatelessWidget {
-  const _PhotoPlaceholder();
+class PlacePhotoPlaceholder extends StatelessWidget {
+  const PlacePhotoPlaceholder({super.key, this.caption});
+
+  final String? caption;
 
   @override
   Widget build(BuildContext context) {
-    return const ColoredBox(
-      color: AppColors.lightOrange,
-      child: Center(
-        child: Icon(Icons.storefront, size: 30, color: AppColors.primaryOrange),
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [AppColors.lightOrange, AppColors.canvasDeep],
+        ),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.storefront, size: 28, color: AppColors.primaryDeep),
+          if (caption != null) ...[
+            const SizedBox(height: 4),
+            Text(
+              caption!,
+              style: const TextStyle(
+                fontSize: 10,
+                color: AppColors.secondaryText,
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }

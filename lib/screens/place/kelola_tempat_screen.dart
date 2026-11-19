@@ -6,6 +6,7 @@ import '../../core/theme/app_colors.dart';
 import '../../providers/place_provider.dart';
 import '../../widgets/notification_icon.dart';
 import '../../widgets/owner_place_list.dart';
+import '../../widgets/riwayat_icon_button.dart';
 import '../../widgets/spoth_app_bar.dart';
 
 class KelolaTempatScreen extends ConsumerWidget {
@@ -14,14 +15,12 @@ class KelolaTempatScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
-      backgroundColor: AppColors.white,
+      backgroundColor: AppColors.canvas,
       appBar: const SpothAppBar(
         title: Text('Kelola Tempat'),
-        actions: [NotificationIconButton()],
+        actions: [RiwayatIconButton(), NotificationIconButton()],
       ),
       floatingActionButton: FloatingActionButton.extended(
-        backgroundColor: AppColors.primaryOrange,
-        foregroundColor: AppColors.white,
         icon: const Icon(Icons.add),
         label: const Text('Tambah Tempat'),
         onPressed: () async {
@@ -38,10 +37,15 @@ class KelolaTempatScreen extends ConsumerWidget {
           await ref.read(myPlacesProvider.notifier).refresh();
           await ref.read(hostSummaryProvider.notifier).refresh();
         },
-        child: const SingleChildScrollView(
-          physics: AlwaysScrollableScrollPhysics(),
-          padding: EdgeInsets.all(16),
-          child: OwnerPlaceList(),
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 88),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 1120),
+              child: const OwnerPlaceList(),
+            ),
+          ),
         ),
       ),
     );

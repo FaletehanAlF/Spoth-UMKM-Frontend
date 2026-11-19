@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/services/place_service.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_layout.dart';
 import '../core/theme/app_fonts.dart';
 import '../core/utils/format.dart';
 import '../models/place_model.dart';
@@ -90,22 +91,38 @@ class _OwnerPlaceListState extends ConsumerState<OwnerPlaceList> {
               );
             }
 
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '${items.length} tempat',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: AppColors.secondaryText,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                for (var i = 0; i < items.length; i++) ...[
-                  if (i > 0) const SizedBox(height: 12),
-                  _OwnerPlaceCard(place: items[i]),
-                ],
-              ],
+            return LayoutBuilder(
+              builder: (context, constraints) {
+                final duaKolom = constraints.maxWidth >= 980;
+                final lebarKartu = duaKolom
+                    ? (constraints.maxWidth - 12) / 2
+                    : constraints.maxWidth;
+
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '${items.length} tempat',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppColors.secondaryText,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Wrap(
+                      spacing: 12,
+                      runSpacing: 12,
+                      children: [
+                        for (final item in items)
+                          SizedBox(
+                            width: lebarKartu,
+                            child: _OwnerPlaceCard(place: item),
+                          ),
+                      ],
+                    ),
+                  ],
+                );
+              },
             );
           },
         ),
@@ -131,7 +148,7 @@ class _SearchField extends StatelessWidget {
       height: 50,
       decoration: BoxDecoration(
         color: AppColors.white,
-        borderRadius: BorderRadius.circular(25),
+        borderRadius: BorderRadius.circular(AppRadius.pill),
         border: Border.all(color: AppColors.softBorder),
       ),
       child: Row(
@@ -186,19 +203,17 @@ class _StatusFilterChips extends StatelessWidget {
       final selected = statusAktif == value;
 
       return Material(
-        color: selected ? AppColors.primaryOrange : AppColors.white,
-        borderRadius: BorderRadius.circular(20),
+        color: selected ? AppColors.primaryDeep : AppColors.white,
+        borderRadius: BorderRadius.circular(AppRadius.pill),
         child: InkWell(
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(AppRadius.pill),
           onTap: () => onChanged(value),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(AppRadius.pill),
               border: Border.all(
-                color: selected
-                    ? AppColors.primaryOrange
-                    : AppColors.softBorder,
+                color: selected ? AppColors.primaryDeep : AppColors.softBorder,
               ),
             ),
             child: Text(
@@ -317,7 +332,7 @@ class _OwnerPlaceCardState extends ConsumerState<_OwnerPlaceCard> {
             onPressed: () => Navigator.of(dialogContext).pop(true),
             child: const Text(
               'Hapus',
-              style: TextStyle(color: AppColors.primaryOrange),
+              style: TextStyle(color: AppColors.danger),
             ),
           ),
         ],
@@ -395,15 +410,8 @@ class _OwnerPlaceCardState extends ConsumerState<_OwnerPlaceCard> {
         child: Container(
           decoration: BoxDecoration(
             color: AppColors.white,
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: BorderRadius.circular(AppRadius.lg),
             border: Border.all(color: AppColors.softBorder),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.04),
-                blurRadius: 10,
-                offset: const Offset(0, 3),
-              ),
-            ],
           ),
           padding: const EdgeInsets.all(12),
           child: Row(
@@ -477,9 +485,10 @@ class _OwnerPlaceCardState extends ConsumerState<_OwnerPlaceCard> {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
-                              fontSize: 14,
+                              fontSize: 14.5,
                               fontWeight: FontWeight.w700,
-                              color: AppColors.primaryOrange,
+                              letterSpacing: -0.1,
+                              color: AppColors.charcoal,
                             ),
                           ),
                         ),
@@ -528,8 +537,13 @@ class _StatusBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: isAktif ? AppColors.primaryOrange : AppColors.lightOrange,
-        borderRadius: BorderRadius.circular(12),
+        color: isAktif ? AppColors.sageTint : AppColors.surfaceMuted,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: isAktif
+              ? AppColors.sage.withValues(alpha: 0.25)
+              : AppColors.softBorder,
+        ),
       ),
       child: Text(
         isAktif ? 'AKTIF' : 'NONAKTIF',
@@ -537,7 +551,7 @@ class _StatusBadge extends StatelessWidget {
           fontSize: 9,
           fontWeight: FontWeight.w700,
           letterSpacing: 0.4,
-          color: isAktif ? AppColors.white : AppColors.secondaryText,
+          color: isAktif ? AppColors.success : AppColors.secondaryText,
         ),
       ),
     );
@@ -549,9 +563,19 @@ class _PhotoPlaceholder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const ColoredBox(
-      color: AppColors.lightOrange,
-      child: Icon(Icons.storefront, size: 26, color: AppColors.primaryOrange),
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [AppColors.lightOrange, AppColors.canvasDeep],
+        ),
+      ),
+      child: const Icon(
+        Icons.storefront,
+        size: 26,
+        color: AppColors.primaryDeep,
+      ),
     );
   }
 }

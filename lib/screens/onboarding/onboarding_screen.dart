@@ -21,19 +21,19 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   final List<_OnboardingPage> _pages = const [
     _OnboardingPage(
-      icon: Icons.storefront_outlined,
+      imagePath: 'assets/referensi/onboarding 1.png',
       title: 'Temukan tempat usaha yang sesuai kebutuhan.',
       subtitle:
           'Jelajahi berbagai pilihan lapak, teras, dan booth untuk usaha Anda.',
     ),
     _OnboardingPage(
-      icon: Icons.explore_outlined,
+      imagePath: 'assets/referensi/onboarding 2.png',
       title: 'Jelajahi berbagai pilihan tempat usaha.',
       subtitle:
           'Lihat detail, foto, harga, dan ketersediaan tempat secara lengkap.',
     ),
     _OnboardingPage(
-      icon: Icons.check_circle_outline,
+      imagePath: 'assets/referensi/onboarding 3.png',
       title: 'Sewa tempat usaha dengan mudah dan praktis.',
       subtitle:
           'Pesan dan kelola sewa tempat usaha Anda langsung dari aplikasi.',
@@ -68,7 +68,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     final isLast = _currentPage == _pages.length - 1;
 
     return Scaffold(
-      backgroundColor: AppColors.white,
+      backgroundColor: AppColors.canvas,
       body: SafeArea(
         child: Column(
           children: [
@@ -86,7 +86,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
-                        color: AppColors.primaryOrange,
+                        color: AppColors.primaryInk,
                       ),
                     ),
                   ),
@@ -121,19 +121,29 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                                 child: Column(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-                                    Icon(
-                                      page.icon,
-                                      size: iconSize,
-                                      color: AppColors.primaryOrange,
-                                    ),
+                                    if (page.imagePath != null)
+                                      Image.asset(
+                                        page.imagePath!,
+                                        width: iconSize * 2.2,
+                                        height: iconSize * 2.2,
+                                        fit: BoxFit.contain,
+                                      )
+                                    else
+                                      Icon(
+                                        page.icon!,
+                                        size: iconSize,
+                                        color: AppColors.primaryDeep,
+                                      ),
                                     SizedBox(height: iconSize * 0.25),
                                     Text(
                                       page.title,
                                       textAlign: TextAlign.center,
                                       style: const TextStyle(
-                                        fontSize: 20,
+                                        fontSize: 21,
+                                        height: 1.25,
+                                        letterSpacing: -0.3,
                                         fontWeight: FontWeight.w700,
-                                        color: AppColors.darkText,
+                                        color: AppColors.charcoal,
                                       ),
                                     ),
                                     const SizedBox(height: 12),
@@ -142,6 +152,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                                       textAlign: TextAlign.center,
                                       style: const TextStyle(
                                         fontSize: 14,
+                                        height: 1.6,
                                         color: AppColors.secondaryText,
                                       ),
                                     ),
@@ -168,8 +179,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                   height: 8,
                   decoration: BoxDecoration(
                     color: active
-                        ? AppColors.primaryOrange
-                        : AppColors.lightOrange,
+                        ? AppColors.primaryDeep
+                        : AppColors.neutralBorder,
                     borderRadius: BorderRadius.circular(4),
                   ),
                 );
@@ -200,12 +211,14 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
 class _OnboardingPage {
   const _OnboardingPage({
-    required this.icon,
+    this.icon,
+    this.imagePath,
     required this.title,
     required this.subtitle,
-  });
+  }) : assert(icon != null || imagePath != null);
 
-  final IconData icon;
+  final IconData? icon;
+  final String? imagePath;
   final String title;
   final String subtitle;
 }

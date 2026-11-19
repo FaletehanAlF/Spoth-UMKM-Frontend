@@ -6,14 +6,17 @@ import '../../core/services/api_service.dart';
 import '../../core/services/booking_service.dart';
 import '../../core/services/payment_service.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_layout.dart';
 import '../../core/utils/format.dart';
 import '../../models/booking_model.dart';
 import '../../models/payment_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/booking_provider.dart';
+import '../../providers/riwayat_provider.dart';
 import '../../providers/nav_provider.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/empty_state.dart';
+import '../../widgets/epass_sheet.dart';
 import '../../widgets/shimmer_loading.dart';
 import '../../widgets/spoth_app_bar.dart';
 import '../../widgets/spoth_sidebar_scaffold.dart';
@@ -137,6 +140,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
       });
 
       await ref.read(bookingsProvider.notifier).refresh();
+      await ref.read(riwayatBadgeProvider.notifier).refresh();
     } on ApiException catch (error) {
       if (!mounted) return;
       setState(() => _membayar = false);
@@ -160,23 +164,35 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
   @override
   Widget build(BuildContext context) {
     final page = Scaffold(
-      backgroundColor: AppColors.white,
+      backgroundColor: AppColors.canvas,
       appBar: const SpothAppBar(title: Text('Pembayaran')),
       body: _loading
-          ? const SingleChildScrollView(
-              padding: EdgeInsets.all(20),
-              child: BookingListSkeleton(count: 3),
+          ? Align(
+              alignment: Alignment.topCenter,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: AppWidth.list),
+                child: const SingleChildScrollView(
+                  padding: EdgeInsets.all(20),
+                  child: BookingListSkeleton(count: 3),
+                ),
+              ),
             )
           : _error != null
-          ? Center(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(20),
-                child: EmptyState(
-                  icon: Icons.wifi_off,
-                  title: _error!,
-                  message: 'Periksa koneksi internet Anda lalu coba lagi.',
-                  actionLabel: 'Coba Lagi',
-                  onAction: _load,
+          ? Align(
+              alignment: Alignment.topCenter,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: AppWidth.list),
+                child: Center(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(20),
+                    child: EmptyState(
+                      icon: Icons.wifi_off,
+                      title: _error!,
+                      message: 'Periksa koneksi internet Anda lalu coba lagi.',
+                      actionLabel: 'Coba Lagi',
+                      onAction: _load,
+                    ),
+                  ),
                 ),
               ),
             )
@@ -348,12 +364,29 @@ class _PilihanMetode {
 
 const _pilihanMetode = <_PilihanMetode>[
   _PilihanMetode(
-    'TRANSFER',
-    'Transfer Bank',
-    'Simulasi transfer bank',
-    Icons.account_balance_outlined,
+    'DANA',
+    'DANA',
+    'Bayar dengan saldo DANA',
+    Icons.account_balance_wallet_outlined,
   ),
-  _PilihanMetode('QRIS', 'QRIS', 'Simulasi bayar dengan QR', Icons.qr_code_2),
+  _PilihanMetode(
+    'OVO',
+    'OVO',
+    'Bayar dengan saldo OVO',
+    Icons.phone_android_outlined,
+  ),
+  _PilihanMetode(
+    'GOPAY',
+    'GoPay',
+    'Bayar dengan saldo GoPay',
+    Icons.payments_outlined,
+  ),
+  _PilihanMetode(
+    'SHOPEEPAY',
+    'ShopeePay',
+    'Bayar dengan saldo ShopeePay',
+    Icons.shopping_bag_outlined,
+  ),
 ];
 
 class _RingkasanCard extends StatelessWidget {
@@ -753,188 +786,6 @@ class _SuksesPembayaran extends StatelessWidget {
             onPressed: onSelesai,
           ),
         ],
-      ),
-    );
-  }
-}
-
-class EPassSheet extends ConsumerStatefulWidget {
-  const EPassSheet({super.key, required this.bookingId});
-
-  final String bookingId;
-
-  @override
-  ConsumerState<EPassSheet> createState() => _EPassSheetState();
-}
-
-class _EPassSheetState extends ConsumerState<EPassSheet> {
-  bool _loading = true;
-  String? _error;
-  EPassResult? _hasil;
-
-  @override
-  void initState() {
-    super.initState();
-    _load();
-  }
-
-  Future<void> _load() async {
-    setState(() {
-      _loading = true;
-      _error = null;
-    });
-
-    try {
-      final token = ref.read(authNotifierProvider.select((s) => s.token));
-      if (token == null) return;
-
-      final hasil = await ref
-          .read(paymentServiceProvider)
-          .getEPass(token: token, bookingId: widget.bookingId);
-
-      if (!mounted) return;
-      setState(() {
-        _hasil = hasil;
-        _loading = false;
-      });
-    } catch (_) {
-      if (!mounted) return;
-      setState(() {
-        _error = 'Gagal memuat E-Pass';
-        _loading = false;
-      });
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      constraints: BoxConstraints(
-        maxHeight: MediaQuery.sizeOf(context).height * 0.88,
-      ),
-      decoration: const BoxDecoration(
-        color: AppColors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      child: SafeArea(
-        top: false,
-        child: _loading
-            ? const Padding(
-                padding: EdgeInsets.all(40),
-                child: Center(
-                  child: CircularProgressIndicator(
-                    color: AppColors.primaryOrange,
-                  ),
-                ),
-              )
-            : _error != null
-            ? Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      _error!,
-                      style: const TextStyle(
-                        fontSize: 13,
-                        color: AppColors.secondaryText,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    OutlinedButton(
-                      onPressed: _load,
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.primaryOrange,
-                        side: const BorderSide(color: AppColors.primaryOrange),
-                      ),
-                      child: const Text('Coba Lagi'),
-                    ),
-                  ],
-                ),
-              )
-            : SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(20, 10, 20, 20),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Center(
-                      child: Container(
-                        width: 40,
-                        height: 4,
-                        decoration: BoxDecoration(
-                          color: AppColors.softBorder,
-                          borderRadius: BorderRadius.circular(2),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    const Text(
-                      'E-Pass Pemesanan',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.charcoal,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: AppColors.charcoal,
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Text(
-                        _hasil?.teksEpass ?? '',
-                        style: const TextStyle(
-                          fontFamily: 'monospace',
-                          fontSize: 12.5,
-                          height: 1.55,
-                          color: AppColors.white,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-                    _BarisInfo(
-                      label: 'Penyewa',
-                      nilai: _hasil?.epass.namaTenant ?? '-',
-                    ),
-                    _BarisInfo(
-                      label: 'Pemilik',
-                      nilai: _hasil?.epass.namaHost ?? '-',
-                    ),
-                    _BarisInfo(
-                      label: 'Alamat',
-                      nilai:
-                          '${_hasil?.epass.alamat ?? '-'}, '
-                          '${_hasil?.epass.kota ?? '-'}',
-                    ),
-                    _BarisInfo(
-                      label: 'Metode',
-                      nilai: switch (_hasil?.epass.metodePembayaran) {
-                        'SIMULASI' => 'Simulasi',
-                        'TRANSFER' => 'Transfer Bank',
-                        'QRIS' => 'QRIS',
-                        'TUNAI' => 'Tunai',
-                        _ => _hasil?.epass.metodePembayaran ?? '-',
-                      },
-                    ),
-                    _BarisInfo(
-                      label: 'Status',
-                      nilai: _hasil?.epass.status ?? '-',
-                    ),
-                    const SizedBox(height: 10),
-                    SizedBox(
-                      width: double.infinity,
-                      child: TextButton(
-                        onPressed: () => Navigator.of(context).pop(),
-                        child: const Text('Tutup'),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
       ),
     );
   }

@@ -43,28 +43,44 @@ class PlaceGridSkeleton extends StatelessWidget {
             physics: const NeverScrollableScrollPhysics(),
             gridDelegate: metrik.delegate,
             itemCount: count,
-            itemBuilder: (context, index) => Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  height: metrik.tinggiFoto,
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    color: AppColors.lightOrange,
-                    borderRadius: BorderRadius.circular(16),
+            itemBuilder: (context, index) => Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: AppColors.white,
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: AppColors.softBorder),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    height: metrik.tinggiFoto,
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      color: AppColors.lightOrange,
+                      borderRadius: BorderRadius.circular(14),
+                    ),
                   ),
-                ),
-                const SizedBox(height: 12),
-                Container(
-                  height: 12,
-                  width: double.infinity,
-                  color: AppColors.lightOrange,
-                ),
-                const SizedBox(height: 6),
-                Container(height: 10, width: 90, color: AppColors.lightOrange),
-                const Spacer(),
-                Container(height: 14, width: 72, color: AppColors.lightOrange),
-              ],
+                  const SizedBox(height: 12),
+                  Container(
+                    height: 12,
+                    width: double.infinity,
+                    color: AppColors.lightOrange,
+                  ),
+                  const SizedBox(height: 7),
+                  Container(
+                    height: 10,
+                    width: 90,
+                    color: AppColors.lightOrange,
+                  ),
+                  const Spacer(),
+                  Container(
+                    height: 14,
+                    width: 78,
+                    color: AppColors.lightOrange,
+                  ),
+                ],
+              ),
             ),
           ),
         );
@@ -81,20 +97,20 @@ class PlaceGridMetrics {
   });
 
   factory PlaceGridMetrics.of(double lebarTersedia) {
-    final kolom = lebarTersedia >= 900
+    final kolom = lebarTersedia >= 1200
         ? 4
-        : lebarTersedia >= 600
+        : lebarTersedia >= 720
         ? 3
         : lebarTersedia >= 340
         ? 2
         : 1;
     final lebarKartu = (lebarTersedia - 12 * (kolom - 1)) / kolom;
-    final tinggiFoto = (lebarKartu * 0.62).clamp(96.0, 150.0);
+    final tinggiFoto = (lebarKartu * 0.66).clamp(100.0, 180.0);
 
     return PlaceGridMetrics(
       kolom: kolom,
       tinggiFoto: tinggiFoto,
-      extent: tinggiFoto + 118,
+      extent: tinggiFoto + 128,
     );
   }
 

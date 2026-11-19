@@ -7,11 +7,13 @@ class NavItemData {
     required this.icon,
     required this.activeIcon,
     required this.label,
-  });
+    String? shortLabel,
+  }) : shortLabel = shortLabel ?? label;
 
   final IconData icon;
   final IconData activeIcon;
   final String label;
+  final String shortLabel;
 }
 
 const Map<MainTab, NavItemData> kNavItems = {
@@ -29,6 +31,7 @@ const Map<MainTab, NavItemData> kNavItems = {
     icon: Icons.business_outlined,
     activeIcon: Icons.business,
     label: 'Kelola Tempat',
+    shortLabel: 'Kelola',
   ),
   MainTab.booking: NavItemData(
     icon: Icons.receipt_long_outlined,

@@ -3,11 +3,17 @@ import 'package:flutter/material.dart';
 import '../core/theme/app_colors.dart';
 
 class SpothAppBar extends StatelessWidget implements PreferredSizeWidget {
-  const SpothAppBar({super.key, this.title, this.actions});
+  const SpothAppBar({
+    super.key,
+    this.title,
+    this.actions,
+    this.centerTitle = false,
+  });
 
   final Widget? title;
 
   final List<Widget>? actions;
+  final bool centerTitle;
 
   @override
   Size get preferredSize => const Size.fromHeight(kToolbarHeight + 1);
@@ -15,12 +21,14 @@ class SpothAppBar extends StatelessWidget implements PreferredSizeWidget {
   @override
   Widget build(BuildContext context) {
     return AppBar(
-      backgroundColor: AppColors.white,
-      foregroundColor: AppColors.darkText,
+      backgroundColor: AppColors.canvas,
+      foregroundColor: AppColors.charcoal,
       elevation: 0,
       scrolledUnderElevation: 0,
-      centerTitle: true,
-      title: title,
+      surfaceTintColor: Colors.transparent,
+      centerTitle: centerTitle,
+      titleSpacing: centerTitle ? 0 : 20,
+      title: centerTitle ? (title ?? const Text('Spoth UMKKM')) : title,
       actions: actions,
       bottom: const PreferredSize(
         preferredSize: Size.fromHeight(1),
