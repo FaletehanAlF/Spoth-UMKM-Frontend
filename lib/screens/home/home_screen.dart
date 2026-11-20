@@ -5,7 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../models/user_model.dart';
 import '../../providers/auth_provider.dart';
-import 'owner_home_screen.dart';
+import 'dashboard_screen.dart';
 import 'tenant_home_screen.dart';
 
 class HomeScreen extends ConsumerWidget {
@@ -17,7 +17,7 @@ class HomeScreen extends ConsumerWidget {
     final role = user?.role;
 
     if (role == UserModel.roleHost) {
-      return const OwnerHomeScreen();
+      return const DashboardScreen();
     }
 
     if (role == UserModel.roleTenant) {
