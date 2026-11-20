@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -50,9 +50,7 @@ class _OwnerPlaceListState extends ConsumerState<OwnerPlaceList> {
   void _resetFilter() {
     _searchController.clear();
     setState(() {});
-    final notifier = ref.read(ownerPlacesFilterProvider.notifier);
-    notifier.setKeyword('');
-    notifier.setStatus(null);
+    ref.read(ownerPlacesFilterProvider.notifier).setKeyword('');
   }
 
   @override
@@ -68,12 +66,6 @@ class _OwnerPlaceListState extends ConsumerState<OwnerPlaceList> {
           onChanged: _onSearchChanged,
           onClear: _clearSearch,
         ),
-        const SizedBox(height: 12),
-        _StatusFilterChips(
-          statusAktif: filter.status,
-          onChanged: (status) =>
-              ref.read(ownerPlacesFilterProvider.notifier).setStatus(status),
-        ),
         const SizedBox(height: 14),
         places.when(
           loading: () => const PlaceListSkeleton(count: 3),
@@ -86,7 +78,7 @@ class _OwnerPlaceListState extends ConsumerState<OwnerPlaceList> {
             if (items.isEmpty) {
               return _EmptyPlaces(
                 adaFilter:
-                    filter.keyword.trim().isNotEmpty || filter.status != null,
+                    filter.keyword.trim().isNotEmpty,
                 onReset: _resetFilter,
               );
             }
@@ -181,63 +173,6 @@ class _SearchField extends StatelessWidget {
             )
           else
             const SizedBox(width: 10),
-        ],
-      ),
-    );
-  }
-}
-
-class _StatusFilterChips extends StatelessWidget {
-  const _StatusFilterChips({
-    required this.statusAktif,
-    required this.onChanged,
-  });
-
-  final String? statusAktif;
-
-  final ValueChanged<String?> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    Widget chip({required String? value, required String label}) {
-      final selected = statusAktif == value;
-
-      return Material(
-        color: selected ? AppColors.primaryDeep : AppColors.white,
-        borderRadius: BorderRadius.circular(AppRadius.pill),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(AppRadius.pill),
-          onTap: () => onChanged(value),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(AppRadius.pill),
-              border: Border.all(
-                color: selected ? AppColors.primaryDeep : AppColors.softBorder,
-              ),
-            ),
-            child: Text(
-              label,
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: selected ? AppColors.white : AppColors.charcoal,
-              ),
-            ),
-          ),
-        ),
-      );
-    }
-
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        children: [
-          chip(value: null, label: 'Semua'),
-          const SizedBox(width: 10),
-          chip(value: 'AKTIF', label: 'Aktif'),
-          const SizedBox(width: 10),
-          chip(value: 'NONAKTIF', label: 'Nonaktif'),
         ],
       ),
     );
@@ -464,7 +399,7 @@ class _OwnerPlaceCardState extends ConsumerState<_OwnerPlaceCard> {
                         const SizedBox(width: 2),
                         Expanded(
                           child: Text(
-                            '${place.kategoriLabel} • ${place.kota}',
+                            '${place.kategoriLabel} â€¢ ${place.kota}',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(

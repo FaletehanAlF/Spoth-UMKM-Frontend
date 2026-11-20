@@ -1165,9 +1165,6 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Cari nama atau kota tempat...'), findsOneWidget);
-    expect(find.text('Semua'), findsOneWidget);
-    expect(find.text('Aktif'), findsOneWidget);
-    expect(find.text('Nonaktif'), findsOneWidget);
 
     expect(find.text('1 tempat'), findsOneWidget);
   });

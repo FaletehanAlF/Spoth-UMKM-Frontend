@@ -60,14 +60,47 @@ class BookingScreen extends ConsumerWidget {
                         child: Center(
                           child: Padding(
                             padding: const EdgeInsets.all(20),
-                            child: EmptyState(
-                              icon: Icons.event_note,
-                              title: isHost
-                                  ? 'Belum ada pesanan masuk'
-                                  : 'Belum ada penyewaan',
-                              message: isHost
-                                  ? 'Pesanan untuk tempat Anda akan tampil di sini.'
-                                  : 'Pilih tempat di Beranda lalu tekan "Sewa Tempat Ini".',
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Container(
+                                  width: 64,
+                                  height: 64,
+                                  decoration: const BoxDecoration(
+                                    color: AppColors.lightOrange,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(
+                                    Icons.event_note,
+                                    size: 28,
+                                    color: AppColors.primaryDeep,
+                                  ),
+                                ),
+                                const SizedBox(height: 16),
+                                Text(
+                                  isHost
+                                      ? 'Belum ada pesanan masuk'
+                                      : 'Belum ada penyewaan',
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.charcoal,
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                Text(
+                                  isHost
+                                      ? 'Pesanan untuk tempat Anda akan tampil di sini.'
+                                      : 'Pilih tempat di Beranda lalu tekan "Sewa Tempat Ini".',
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    height: 1.5,
+                                    color: AppColors.secondaryText,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ),

@@ -135,21 +135,57 @@ class _RiwayatScreenState extends ConsumerState<RiwayatScreen> {
               Center(
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.all(20),
-                  child: EmptyState(
-                    icon: Icons.history_outlined,
-                    title: isHost
-                        ? 'Belum Ada Pesanan Masuk'
-                        : 'Belum Ada Riwayat',
-                    message: isHost
-                        ? 'Pesanan dari penyewa akan tampil di sini setelah lunas.'
-                        : 'Penyewaan yang sudah lunas akan tampil di sini.',
-                    actionLabel: isHost ? 'Lihat Pesanan Masuk' : 'Cari Tempat',
-                    onAction: () {
-                      ref
-                          .read(mainNavIndexProvider.notifier)
-                          .setTab(isHost ? MainTab.booking : MainTab.tempat);
-                      context.go('/home');
-                    },
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 64,
+                        height: 64,
+                        decoration: const BoxDecoration(
+                          color: AppColors.lightOrange,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.history_outlined,
+                          size: 28,
+                          color: AppColors.primaryDeep,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        isHost ? 'Belum Ada Pesanan Masuk' : 'Belum Ada Riwayat',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.charcoal,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        isHost
+                            ? 'Pesanan dari penyewa akan tampil di sini setelah lunas.'
+                            : 'Penyewaan yang sudah lunas akan tampil di sini.',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          height: 1.5,
+                          color: AppColors.secondaryText,
+                        ),
+                      ),
+                      const SizedBox(height: 18),
+                      ElevatedButton(
+                        onPressed: () {
+                          ref
+                              .read(mainNavIndexProvider.notifier)
+                              .setTab(isHost ? MainTab.booking : MainTab.tempat);
+                          context.go('/home');
+                        },
+                        child: Text(
+                          isHost ? 'Lihat Pesanan Masuk' : 'Cari Tempat',
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
