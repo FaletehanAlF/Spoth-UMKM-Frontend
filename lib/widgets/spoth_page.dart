@@ -73,10 +73,7 @@ class SpothSectionHeader extends StatelessWidget {
             ],
           ),
         ),
-        if (action != null) ...[
-          const SizedBox(width: 12),
-          action!,
-        ],
+        if (action != null) ...[const SizedBox(width: 12), action!],
       ],
     );
   }

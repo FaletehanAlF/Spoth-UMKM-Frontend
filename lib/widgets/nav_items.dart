@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../models/user_model.dart';
 import '../providers/nav_provider.dart';
 
 class NavItemData {
@@ -44,3 +45,24 @@ const Map<MainTab, NavItemData> kNavItems = {
     label: 'Profil',
   ),
 };
+
+/// Menu navigasi sesuai peran.
+///
+/// Pemilik (HOST) memakai tab pertama sebagai **Dashboard** karena isinya
+/// ringkasan usaha, bukan beranda katalog. Penyewa (TENANT) tetap memakai
+/// **Beranda**.
+List<NavItemData> navItemsForRole(UserModel? user) {
+  final isHost = user?.role == UserModel.roleHost;
+
+  return [
+    for (final tab in tabsForRole(user))
+      if (tab == MainTab.beranda && isHost)
+        const NavItemData(
+          icon: Icons.space_dashboard_outlined,
+          activeIcon: Icons.space_dashboard,
+          label: 'Dashboard',
+        )
+      else
+        kNavItems[tab]!,
+  ];
+}

@@ -27,7 +27,7 @@ class MainShell extends ConsumerWidget {
       index = 0;
     }
 
-    final items = [for (final item in tabs) kNavItems[item]!];
+    final items = navItemsForRole(user);
 
     final content = IndexedStack(
       index: index,

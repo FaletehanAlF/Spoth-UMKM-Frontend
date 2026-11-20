@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/services/place_service.dart';
+import '../core/constants/category_style.dart';
 import '../core/theme/app_colors.dart';
 import '../core/theme/app_fonts.dart';
 import '../core/theme/app_layout.dart';
@@ -216,12 +217,6 @@ class _CategorySheet extends StatelessWidget {
   final String? kategoriAktif;
   final List<CategoryModel>? categories;
 
-  static const _presetIkon = <String, IconData>{
-    'LAPAK_USAHA': Icons.storefront,
-    'TERAS_KOMERSIAL': Icons.deck,
-    'BOOTH_EVENT': Icons.confirmation_number_outlined,
-  };
-
   @override
   Widget build(BuildContext context) {
     // Sentinel string kosong dipakai untuk "Semua Kategori" agar bisa
@@ -230,7 +225,7 @@ class _CategorySheet extends StatelessWidget {
     final items = <(String, String, IconData)>[
       ('', 'Semua Kategori', Icons.apps),
       for (final item in categories ?? const <CategoryModel>[])
-        (item.nama, item.nama, _presetIkon[item.nama] ?? Icons.storefront),
+        (item.nama, categoryLabel(item.nama), categoryIcon(item.nama)),
     ];
 
     // Deduplicate by nilai agar sheet tetap bersih.
@@ -328,12 +323,6 @@ class _CategorySheet extends StatelessWidget {
 class _CategoryChips extends ConsumerWidget {
   const _CategoryChips({required this.kategoriAktif, this.categories});
 
-  static const _ikon = <String, IconData>{
-    'LAPAK_USAHA': Icons.storefront,
-    'TERAS_KOMERSIAL': Icons.deck,
-    'BOOTH_EVENT': Icons.confirmation_number_outlined,
-  };
-
   final String? kategoriAktif;
   final List<CategoryModel>? categories;
 
@@ -401,8 +390,8 @@ class _CategoryChips extends ConsumerWidget {
             const SizedBox(width: 8),
             chip(
               value: item.nama,
-              label: item.nama,
-              icon: _ikon[item.nama] ?? Icons.storefront,
+              label: categoryLabel(item.nama),
+              icon: categoryIcon(item.nama),
               selected: kategoriAktif == item.nama,
             ),
           ],

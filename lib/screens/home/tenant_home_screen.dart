@@ -9,9 +9,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/nav_provider.dart';
 import '../../providers/place_provider.dart';
 import '../../widgets/empty_state.dart';
-import '../../widgets/notification_icon.dart';
 import '../../widgets/place_grid.dart';
-import '../../widgets/riwayat_icon_button.dart';
 import '../../widgets/spoth_app_bar.dart';
 import '../../widgets/spoth_page.dart';
 
@@ -27,8 +25,8 @@ class TenantHomeScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: AppColors.canvas,
-      appBar: SpothAppBar(
-        title: const Text(
+      appBar: const SpothAppBar(
+        title: Text(
           'Spoth UMKM',
           style: TextStyle(
             color: AppColors.charcoal,
@@ -37,7 +35,8 @@ class TenantHomeScreen extends ConsumerWidget {
             letterSpacing: -0.2,
           ),
         ),
-        actions: const [RiwayatIconButton(), NotificationIconButton()],
+        showRiwayat: true,
+        showNotification: true,
       ),
       body: RefreshIndicator(
         color: AppColors.primaryDeep,

@@ -7,13 +7,21 @@ import 'package:image_picker/image_picker.dart';
 import '../../core/services/permission_service.dart';
 import '../../core/services/upload_service.dart';
 import '../../core/theme/app_colors.dart';
-import '../../core/theme/app_fonts.dart';
+import '../../core/theme/app_layout.dart';
 import '../../models/user_model.dart';
 import '../../providers/auth_provider.dart';
-import '../../widgets/notification_icon.dart';
-import '../../widgets/riwayat_icon_button.dart';
 import '../../widgets/spoth_app_bar.dart';
+import 'widgets/profile_account_card.dart';
+import 'widgets/profile_edit_form.dart';
+import 'widgets/profile_info_card.dart';
+import 'widgets/profile_summary_card.dart';
 
+/// Halaman profil dengan dua mode:
+/// 1. **Lihat** — data akun ditampilkan sebagai kartu read-only.
+/// 2. **Edit** — aktif hanya setelah pengguna menekan tombol "Edit Profil".
+///
+/// Pemisahan ini membuat perubahan data tidak pernah terkirim tanpa
+/// persetujuan pengguna dan menjaga tampilan tetap ringkas di layar kecil.
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
 
@@ -32,89 +40,73 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   final ImagePicker _picker = ImagePicker();
 
   static const String _addressKey = 'profile_address';
+
+  bool _isEditing = false;
   bool _isSaving = false;
+  bool _isUploading = false;
+  String? _fotoUrl;
+  String _alamatTersimpan = '';
 
   @override
   void initState() {
     super.initState();
-    _loadAddress();
+    _muatProfil();
   }
 
-  Future<void> _loadAddress() async {
+  Future<void> _muatProfil() async {
     final user = ref.read(authNotifierProvider).user;
     if (user == null) return;
 
-    final address = await _storage.read(key: _addressKey);
+    final alamat = await _storage.read(key: _addressKey);
     if (!mounted) return;
 
     setState(() {
-      _namaController.text = user.nama;
-      _emailController.text = user.email;
-      _noHpController.text = user.noHp ?? '';
-      _alamatController.text = address ?? '';
+      _alamatTersimpan = alamat ?? '';
+      _isiController(user, _alamatTersimpan);
+      _fotoUrl = user.foto;
     });
   }
 
-  Future<void> _onFotoGaleri() async {
-    final token = ref.watch(authNotifierProvider.select((s) => s.token));
-    if (token == null) return;
-
-    if (!await PermissionService.ensureGalleryPermission()) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Izin galeri tidak diizinkan.')),
-      );
-      return;
-    }
-
-    try {
-      final picked = await _picker.pickImage(
-        source: ImageSource.gallery,
-        maxWidth: 2000,
-        maxHeight: 2000,
-      );
-
-      if (picked == null) return;
-
-      final result = await ref
-          .read(uploadServiceProvider)
-          .uploadPhoto(
-            token: token,
-            filename: picked.name,
-            bytes: await picked.readAsBytes(),
-          );
-
-      if (!mounted) return;
-
-      setState(() => _fotoUrl = result.secureUrl);
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Foto berhasil diupload.')));
-    } catch (_) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Gagal mengunggah foto. Coba lagi.')),
-      );
-    }
+  void _isiController(UserModel user, String alamat) {
+    _namaController.text = user.nama;
+    _emailController.text = user.email;
+    _noHpController.text = user.noHp ?? '';
+    _alamatController.text = alamat;
   }
 
-  String? _fotoUrl;
+  Future<void> _mulaiEdit() async {
+    final user = ref.read(authNotifierProvider).user;
+    if (user == null) return;
 
-  Future<void> _onHapusFoto() async {
-    final confirmed = await _confirm(
-      context,
-      'Hapus foto? Foto akan kembali ke foto akun.',
-    );
-    if (!confirmed || !mounted) return;
-    setState(() => _fotoUrl = null);
+    final alamat = await _storage.read(key: _addressKey) ?? _alamatTersimpan;
+    if (!mounted) return;
+
+    setState(() {
+      _alamatTersimpan = alamat;
+      _isiController(user, alamat);
+      _fotoUrl = user.foto;
+      _isEditing = true;
+    });
   }
 
-  Future<void> _onSave() async {
+  void _batalEdit() {
+    final user = ref.read(authNotifierProvider).user;
+    if (user == null) return;
+
+    setState(() {
+      _isiController(user, _alamatTersimpan);
+      _fotoUrl = user.foto;
+      _isEditing = false;
+    });
+  }
+
+  Future<void> _simpan() async {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isSaving = true);
 
-    final ok = await ref
+    final alamat = _alamatController.text.trim();
+    final berhasil = await ref
         .read(authNotifierProvider.notifier)
         .updateProfile(
           nama: _namaController.text.trim(),
@@ -126,31 +118,168 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
     if (!mounted) return;
 
-    await _storage.write(
-      key: _addressKey,
-      value: _alamatController.text.trim(),
-    );
+    if (berhasil) {
+      await _storage.write(key: _addressKey, value: alamat);
+      if (!mounted) return;
 
-    if (!mounted) return;
+      setState(() {
+        _alamatTersimpan = alamat;
+        _isEditing = false;
+        _isSaving = false;
+      });
 
-    if (!ok) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Gagal menyimpan profil.')));
-    } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Profil berhasil disimpan.')),
       );
+    } else {
+      setState(() => _isSaving = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Gagal menyimpan profil. Coba lagi.')),
+      );
     }
-
-    setState(() => _isSaving = false);
   }
 
-  Future<bool> _confirm(BuildContext context, String message) async {
-    final result = await showDialog<bool>(
+  Future<void> _pilihSumberFoto() async {
+    final sumber = await showModalBottomSheet<ImageSource>(
+      context: context,
+      backgroundColor: AppColors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheet) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: AppColors.softBorder,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Ganti foto profil',
+                style: TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.charcoal,
+                ),
+              ),
+              const SizedBox(height: 8),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(
+                  Icons.photo_camera_outlined,
+                  color: AppColors.primaryDeep,
+                ),
+                title: const Text('Kamera'),
+                subtitle: const Text('Ambil foto baru'),
+                onTap: () => Navigator.of(sheet).pop(ImageSource.camera),
+              ),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(
+                  Icons.photo_library_outlined,
+                  color: AppColors.primaryDeep,
+                ),
+                title: const Text('Galeri'),
+                subtitle: const Text('Pilih dari penyimpanan'),
+                onTap: () => Navigator.of(sheet).pop(ImageSource.gallery),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    if (sumber == null) return;
+    await _unggahFoto(sumber);
+  }
+
+  Future<void> _unggahFoto(ImageSource sumber) async {
+    final token = ref.read(authNotifierProvider.select((state) => state.token));
+    if (token == null) return;
+
+    final diizinkan = sumber == ImageSource.camera
+        ? await PermissionService.ensureCameraPermission()
+        : await PermissionService.ensureGalleryPermission();
+
+    if (!diizinkan) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            sumber == ImageSource.camera
+                ? 'Izin kamera tidak diizinkan.'
+                : 'Izin galeri tidak diizinkan.',
+          ),
+        ),
+      );
+      return;
+    }
+
+    setState(() => _isUploading = true);
+
+    try {
+      final picked = await _picker.pickImage(
+        source: sumber,
+        maxWidth: 2000,
+        maxHeight: 2000,
+        imageQuality: 85,
+      );
+
+      if (picked == null) return;
+
+      final hasil = await ref
+          .read(uploadServiceProvider)
+          .uploadPhoto(
+            token: token,
+            filename: picked.name,
+            bytes: await picked.readAsBytes(),
+          );
+
+      if (!mounted) return;
+
+      setState(() => _fotoUrl = hasil.secureUrl);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Foto siap. Tekan Simpan Perubahan untuk menerapkan.'),
+        ),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Gagal mengunggah foto. Coba lagi.')),
+      );
+    } finally {
+      if (mounted) setState(() => _isUploading = false);
+    }
+  }
+
+  void _hapusFoto() {
+    setState(() => _fotoUrl = null);
+  }
+
+  Future<void> _logout() async {
+    final yakin = await _konfirmasi('Keluar dari akun?');
+    if (!mounted || !yakin) return;
+
+    await ref.read(authNotifierProvider.notifier).logout();
+    if (mounted) context.go('/login');
+  }
+
+  Future<bool> _konfirmasi(String pesan) async {
+    final hasil = await showDialog<bool>(
       context: context,
       builder: (dialog) => AlertDialog(
-        content: Text(message),
+        content: Text(pesan),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialog).pop(false),
@@ -163,16 +292,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         ],
       ),
     );
-    return result ?? false;
-  }
-
-  Future<void> _logout() async {
-    final confirmed = await _confirm(context, 'Keluar dari akun?');
-    if (!mounted) return;
-    if (!confirmed) return;
-
-    await ref.read(authNotifierProvider.notifier).logout();
-    if (mounted) context.go('/login');
+    return hasil ?? false;
   }
 
   @override
@@ -190,10 +310,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.canvas,
-      appBar: SpothAppBar(
-        centerTitle: true,
-        actions: const [NotificationIconButton(), RiwayatIconButton()],
-      ),
+      appBar: const SpothAppBar(showRiwayat: true, showNotification: true),
       body: user == null
           ? const Center(
               child: Padding(
@@ -201,311 +318,69 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 child: Text('Silakan login untuk melihat profil Anda.'),
               ),
             )
-          : Align(
-              alignment: Alignment.topCenter,
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 720),
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _PhotoCard(
-                        fotoUrl: _fotoUrl,
-                        user: user,
-                        onGaleri: _onFotoGaleri,
-                        onHapus: _onHapusFoto,
-                      ),
-                      const SizedBox(height: 20),
-                      _EditCard(
+          : LayoutBuilder(
+              builder: (context, constraints) {
+                final duaKolom = constraints.maxWidth >= AppWidth.twoColumn;
+
+                final ringkasan = ProfileSummaryCard(
+                  user: user,
+                  fotoUrl: _fotoUrl,
+                  isEditing: _isEditing,
+                  isUploading: _isUploading,
+                  onEdit: _mulaiEdit,
+                  onGantiFoto: _pilihSumberFoto,
+                  onHapusFoto: _hapusFoto,
+                );
+
+                final detail = _isEditing
+                    ? ProfileEditForm(
                         formKey: _formKey,
                         namaController: _namaController,
                         emailController: _emailController,
                         noHpController: _noHpController,
                         alamatController: _alamatController,
-                        user: user,
-                        onSave: _onSave,
                         isSaving: _isSaving,
-                      ),
-                      const SizedBox(height: 20),
-                      _AccountCard(onLogout: _logout),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-    );
-  }
-}
-
-class _PhotoCard extends StatelessWidget {
-  const _PhotoCard({
-    required this.fotoUrl,
-    required this.user,
-    required this.onGaleri,
-    required this.onHapus,
-  });
-
-  final String? fotoUrl;
-  final UserModel user;
-  final VoidCallback onGaleri;
-  final VoidCallback onHapus;
-
-  @override
-  Widget build(BuildContext context) {
-    final initial = user.nama.trim().isNotEmpty
-        ? user.nama.trim()[0].toUpperCase()
-        : 'S';
-
-    return Center(
-      child: Column(
-        children: [
-          Stack(
-            alignment: Alignment.center,
-            children: [
-              CircleAvatar(
-                radius: 44,
-                backgroundColor: AppColors.lightOrange,
-                backgroundImage: fotoUrl == null
-                    ? null
-                    : NetworkImage(fotoUrl!),
-                child: fotoUrl == null
-                    ? Text(
-                        initial,
-                        style: const TextStyle(
-                          color: AppColors.primaryDeep,
-                          fontSize: 28,
-                          fontWeight: FontWeight.w700,
-                        ),
+                        onSave: _simpan,
+                        onCancel: _batalEdit,
                       )
-                    : null,
-              ),
-              Positioned(
-                bottom: 0,
-                right: 0,
-                child: Material(
-                  color: AppColors.primaryDeep,
-                  shape: const CircleBorder(),
-                  child: InkResponse(
-                    onTap: onGaleri,
-                    child: const Padding(
-                      padding: EdgeInsets.all(6),
-                      child: Icon(
-                        Icons.photo_camera_outlined,
-                        size: 18,
-                        color: AppColors.white,
+                    : Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          ProfileInfoCard(user: user, alamat: _alamatTersimpan),
+                          const SizedBox(height: 20),
+                          ProfileAccountCard(onLogout: _logout),
+                        ],
+                      );
+
+                return SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+                  child: Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(
+                        maxWidth: AppWidth.page,
                       ),
+                      child: duaKolom
+                          ? Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                SizedBox(width: 320, child: ringkasan),
+                                const SizedBox(width: 24),
+                                Expanded(child: detail),
+                              ],
+                            )
+                          : Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                ringkasan,
+                                const SizedBox(height: 20),
+                                detail,
+                              ],
+                            ),
                     ),
                   ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Text(
-            fotoUrl == null ? 'Tap untuk ambil dari galeri' : 'Foto aktif',
-            style: const TextStyle(
-              fontSize: 12.5,
-              color: AppColors.secondaryText,
+                );
+              },
             ),
-          ),
-          const SizedBox(height: 10),
-          TextButton.icon(
-            onPressed: onHapus,
-            icon: const Icon(Icons.delete_outline_rounded, size: 16),
-            label: const Text('Hapus foto'),
-            style: TextButton.styleFrom(
-              foregroundColor: AppColors.danger,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _EditCard extends StatelessWidget {
-  const _EditCard({
-    required this.formKey,
-    required this.namaController,
-    required this.emailController,
-    required this.noHpController,
-    required this.alamatController,
-    required this.user,
-    required this.onSave,
-    required this.isSaving,
-  });
-
-  final GlobalKey<FormState> formKey;
-  final TextEditingController namaController;
-  final TextEditingController emailController;
-  final TextEditingController noHpController;
-  final TextEditingController alamatController;
-  final UserModel user;
-  final VoidCallback onSave;
-  final bool isSaving;
-
-  static const String _exampleAlamat =
-      'Jalan Sudirman No. 45, Buahbatu, Bandung';
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      elevation: 0,
-      margin: EdgeInsets.zero,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(14),
-        side: BorderSide(color: AppColors.softBorder),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 18, 20, 18),
-        child: Form(
-          key: formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Edit Profil',
-                style: AppFonts.heading(
-                  fontSize: 17,
-                  weight: 700,
-                  color: AppColors.charcoal,
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: namaController,
-                enabled: !isSaving,
-                validator: (value) =>
-                    (value?.trim().isEmpty ?? true) ? 'Nama wajib diisi' : null,
-                decoration: InputDecoration(
-                  labelText: 'Nama Lengkap',
-                  prefixIcon: const Icon(
-                    Icons.person_outline_rounded,
-                    size: 20,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 14),
-              TextFormField(
-                controller: noHpController,
-                enabled: !isSaving,
-                keyboardType: TextInputType.phone,
-                decoration: InputDecoration(
-                  labelText: 'Nomor Telepon (Opsional)',
-                  prefixIcon: const Icon(Icons.phone_outlined, size: 20),
-                ),
-              ),
-              const SizedBox(height: 14),
-              TextFormField(
-                controller: alamatController,
-                enabled: !isSaving,
-                keyboardType: TextInputType.multiline,
-                maxLines: 3,
-                onTap: () {
-                  if (alamatController.text.trim().isEmpty) {
-                    alamatController.text = _exampleAlamat;
-                  }
-                },
-                decoration: InputDecoration(
-                  labelText: 'Alamat (Kamu bisa isi sendiri)',
-                  hintText: _exampleAlamat,
-                  prefixIcon: const Icon(Icons.home_outlined, size: 20),
-                ),
-              ),
-              const SizedBox(height: 14),
-              TextFormField(
-                controller: emailController,
-                enabled: false,
-                decoration: InputDecoration(
-                  labelText: 'Email',
-                  hintText: user.email,
-                  prefixIcon: const Icon(Icons.mail_outline_rounded, size: 20),
-                ),
-              ),
-              const SizedBox(height: 20),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: isSaving ? null : onSave,
-                  icon: const Icon(Icons.save_outlined, size: 18),
-                  label: const Text('Simpan Profil'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primaryDeep,
-                    foregroundColor: AppColors.white,
-                    minimumSize: const Size.fromHeight(48),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _AccountCard extends StatelessWidget {
-  const _AccountCard({required this.onLogout});
-
-  final VoidCallback onLogout;
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      elevation: 0,
-      margin: EdgeInsets.zero,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(14),
-        side: BorderSide(color: AppColors.softBorder),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(18),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'Akun',
-              style: AppFonts.heading(
-                fontSize: 15,
-                weight: 700,
-                color: AppColors.charcoal,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Amankan akunmu, keluarkan dari perangkat ini jika perlu.',
-              style: const TextStyle(
-                fontSize: 12,
-                color: AppColors.secondaryText,
-              ),
-            ),
-            const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton(
-                onPressed: onLogout,
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColors.primaryInk,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                ),
-                child: const Text('Keluar'),
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

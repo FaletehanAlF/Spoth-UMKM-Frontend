@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../core/theme/app_colors.dart';
+import 'notification_icon.dart';
+import 'riwayat_icon_button.dart';
 
 class SpothAppBar extends StatelessWidget implements PreferredSizeWidget {
   const SpothAppBar({
@@ -8,12 +10,26 @@ class SpothAppBar extends StatelessWidget implements PreferredSizeWidget {
     this.title,
     this.actions,
     this.centerTitle = true,
+    this.leading,
+    this.showRiwayat = false,
+    this.showNotification = false,
   });
 
   final Widget? title;
 
   final List<Widget>? actions;
   final bool centerTitle;
+
+  /// Override tombol kiri. Jika null, AppBar otomatis menampilkan tombol
+  /// kembali pada halaman yang bisa di-pop.
+  final Widget? leading;
+
+  /// Tampilkan ikon riwayat di pojok kiri. Jangan dipakai bersamaan dengan
+  /// halaman yang membutuhkan tombol kembali.
+  final bool showRiwayat;
+
+  /// Tampilkan ikon lonceng di pojok kanan.
+  final bool showNotification;
 
   @override
   Size get preferredSize => const Size.fromHeight(kToolbarHeight + 1);
@@ -28,6 +44,7 @@ class SpothAppBar extends StatelessWidget implements PreferredSizeWidget {
       surfaceTintColor: Colors.transparent,
       centerTitle: centerTitle,
       titleSpacing: centerTitle ? 0 : 20,
+      leading: leading ?? (showRiwayat ? const RiwayatIconButton() : null),
       title: centerTitle
           ? (title ??
                 const Text(
@@ -40,7 +57,10 @@ class SpothAppBar extends StatelessWidget implements PreferredSizeWidget {
                   ),
                 ))
           : title,
-      actions: actions,
+      actions: [
+        ...?actions,
+        if (showNotification) const NotificationIconButton(),
+      ],
       bottom: const PreferredSize(
         preferredSize: Size.fromHeight(1),
         child: Divider(height: 1, thickness: 1, color: AppColors.softBorder),

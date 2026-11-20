@@ -10,6 +10,7 @@ import '../../core/services/permission_service.dart';
 import '../../core/services/place_service.dart';
 import '../../core/services/upload_service.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_layout.dart';
 import '../../core/utils/format.dart';
 import '../../models/category_model.dart';
 import '../../models/place_model.dart';
@@ -18,6 +19,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/nav_provider.dart';
 import '../../providers/place_provider.dart';
 import '../../widgets/availability_rule_section.dart';
+import '../../widgets/category_picker.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/shimmer_loading.dart';
 import '../../widgets/spoth_app_bar.dart';
@@ -64,7 +66,7 @@ class _PlaceFormScreenState extends ConsumerState<PlaceFormScreen> {
 
   String _kategori = PlaceModel.kategoriValues.first;
   final _kategoriLainController = TextEditingController();
-  static const String _kategoriLain = 'Lainnya';
+  static const String _kategoriLain = CategoryPicker.customValue;
   bool get _isKategoriCustom => _kategori == _kategoriLain;
   List<CategoryModel> _categories = const [];
   bool _categoriesLoading = false;
@@ -634,58 +636,33 @@ class _PlaceFormScreenState extends ConsumerState<PlaceFormScreen> {
                       ),
                       const SizedBox(height: 8),
                       if (_categoriesLoading)
-                        const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 14),
-                          child: Center(child: Text('Memuat kategori...')),
-                        )
-                      else if (_categoriesError != null) ...[
-                        Center(
-                          child: EmptyState(
-                            icon: Icons.wifi_off,
-                            title: 'Gagal memuat kategori',
-                            message:
-                                'Periksa koneksi internet Anda lalu coba lagi.',
-                            actionLabel: 'Coba Lagi',
-                            onAction: _loadCategories,
-                          ),
-                        ),
-                      ] else
-                        DropdownButtonFormField<String>(
-                          initialValue: _kategori,
-                          isExpanded: true,
-                          onChanged: (value) {
-                            if (value == null) return;
-                            setState(() => _kategori = value);
-                          },
-                          items: [
-                            for (final item in _categories)
-                              DropdownMenuItem(
-                                value: item.nama,
-                                child: Text(item.nama),
-                              ),
-                            DropdownMenuItem(
-                              value: _kategoriLain,
-                              child: const Text(
-                                'Lainnya (ketik kategori sendiri)',
-                              ),
-                            ),
-                          ],
-                        ),
-                      if (_isKategoriCustom) ...[
-                        const SizedBox(height: 10),
-                        TextFormField(
-                          controller: _kategoriLainController,
-                          textCapitalization: TextCapitalization.words,
-                          decoration: const InputDecoration(
-                            labelText: 'Nama Kategori Lain',
-                            hintText: 'Contoh: Warung Minuman',
-                          ),
+                        const _CategoryPickerSkeleton()
+                      else if (_categoriesError != null)
+                        _CategoryPickerError(onRetry: _loadCategories)
+                      else ...[
+                        CategoryPicker(
+                          categories: _categories,
+                          selected: _kategori,
                           enabled: !_submitting,
-                          validator: (value) =>
-                              value == null || value.trim().isEmpty
-                              ? 'Nama kategori lain wajib diisi'
-                              : null,
+                          onChanged: (value) =>
+                              setState(() => _kategori = value),
                         ),
+                        if (_isKategoriCustom) ...[
+                          const SizedBox(height: 10),
+                          TextFormField(
+                            controller: _kategoriLainController,
+                            textCapitalization: TextCapitalization.words,
+                            decoration: const InputDecoration(
+                              labelText: 'Nama Kategori Lain',
+                              hintText: 'Contoh: Warung Minuman',
+                            ),
+                            enabled: !_submitting,
+                            validator: (value) =>
+                                value == null || value.trim().isEmpty
+                                ? 'Nama kategori lain wajib diisi'
+                                : null,
+                          ),
+                        ],
                       ],
                       const SizedBox(height: 16),
                       TextFormField(
@@ -1091,6 +1068,57 @@ class _MiniBadge extends StatelessWidget {
           fontWeight: FontWeight.w700,
           color: AppColors.white,
         ),
+      ),
+    );
+  }
+}
+
+class _CategoryPickerSkeleton extends StatelessWidget {
+  const _CategoryPickerSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return ShimmerLoading(
+      child: Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        children: const [
+          ShimmerBox(width: 116, height: 38, radius: AppRadius.pill),
+          ShimmerBox(width: 132, height: 38, radius: AppRadius.pill),
+          ShimmerBox(width: 104, height: 38, radius: AppRadius.pill),
+          ShimmerBox(width: 88, height: 38, radius: AppRadius.pill),
+        ],
+      ),
+    );
+  }
+}
+
+class _CategoryPickerError extends StatelessWidget {
+  const _CategoryPickerError({required this.onRetry});
+
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(12, 10, 8, 10),
+      decoration: BoxDecoration(
+        color: AppColors.lightOrange,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        border: Border.all(color: AppColors.softBorder),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.wifi_off, size: 18, color: AppColors.primaryDeep),
+          const SizedBox(width: 8),
+          const Expanded(
+            child: Text(
+              'Gagal memuat kategori. Periksa koneksi internet Anda.',
+              style: TextStyle(fontSize: 12, color: AppColors.secondaryText),
+            ),
+          ),
+          TextButton(onPressed: onRetry, child: const Text('Coba Lagi')),
+        ],
       ),
     );
   }

@@ -137,7 +137,9 @@ class _RiwayatScreenState extends ConsumerState<RiwayatScreen> {
                   padding: const EdgeInsets.all(20),
                   child: EmptyState(
                     icon: Icons.history_outlined,
-                    title: isHost ? 'Belum Ada Pesanan Masuk' : 'Belum Ada Riwayat',
+                    title: isHost
+                        ? 'Belum Ada Pesanan Masuk'
+                        : 'Belum Ada Riwayat',
                     message: isHost
                         ? 'Pesanan dari penyewa akan tampil di sini setelah lunas.'
                         : 'Penyewaan yang sudah lunas akan tampil di sini.',
@@ -145,9 +147,7 @@ class _RiwayatScreenState extends ConsumerState<RiwayatScreen> {
                     onAction: () {
                       ref
                           .read(mainNavIndexProvider.notifier)
-                          .setTab(
-                            isHost ? MainTab.booking : MainTab.tempat,
-                          );
+                          .setTab(isHost ? MainTab.booking : MainTab.tempat);
                       context.go('/home');
                     },
                   ),

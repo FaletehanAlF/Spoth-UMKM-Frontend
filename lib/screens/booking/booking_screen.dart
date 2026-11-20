@@ -10,8 +10,6 @@ import '../../providers/auth_provider.dart';
 import '../../providers/booking_provider.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/empty_state.dart';
-import '../../widgets/notification_icon.dart';
-import '../../widgets/riwayat_icon_button.dart';
 import '../../widgets/shimmer_loading.dart';
 import '../../widgets/spoth_app_bar.dart';
 
@@ -26,9 +24,7 @@ class BookingScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: AppColors.canvas,
-      appBar: const SpothAppBar(
-        actions: [RiwayatIconButton(), NotificationIconButton()],
-      ),
+      appBar: const SpothAppBar(showRiwayat: true, showNotification: true),
       body: Align(
         alignment: Alignment.topCenter,
         child: ConstrainedBox(
