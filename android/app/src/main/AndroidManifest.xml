@@ -1,4 +1,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Kamera (untuk image_picker camera pick). -->
+    <uses-permission android:name="android.permission.CAMERA"/>
+    <!-- Galeri (Android 13+: READ_MEDIA_IMAGES). -->
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES"/>
+    <!-- Galeri (Android 12 ke bawah: READ_EXTERNAL_STORAGE). -->
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32"/>
     <!-- Notifikasi lokal (flutter_local_notifications) pada Android 13+. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <uses-permission android:name="android.permission.INTERNET"/>

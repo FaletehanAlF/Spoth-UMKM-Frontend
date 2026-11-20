@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../core/services/api_service.dart';
+import '../../core/services/permission_service.dart';
 import '../../core/services/place_service.dart';
 import '../../core/services/upload_service.dart';
 import '../../core/theme/app_colors.dart';
@@ -329,6 +330,14 @@ class _PlaceFormScreenState extends ConsumerState<PlaceFormScreen> {
   }
 
   Future<void> _addPhotoFromSource(ImageSource source) async {
+    if (source == ImageSource.camera) {
+      final granted = await PermissionService.ensureCameraPermission();
+      if (!granted) {
+        _showSnack('Izin kamera tidak diizinkan — tidak bisa ambil foto.');
+        return;
+      }
+    }
+
     try {
       final picked = await _picker.pickImage(
         source: source,
