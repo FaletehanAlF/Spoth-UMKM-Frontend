@@ -78,15 +78,13 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       if (!mounted) return;
 
       setState(() => _fotoUrl = result.secureUrl);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Foto berhasil diupload.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Foto berhasil diupload.')));
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Gagal mengunggah foto. Coba lagi.'),
-        ),
+        const SnackBar(content: Text('Gagal mengunggah foto. Coba lagi.')),
       );
     }
   }
@@ -127,9 +125,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     if (!mounted) return;
 
     if (!ok) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Gagal menyimpan profil.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Gagal menyimpan profil.')));
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Profil berhasil disimpan.')),
@@ -168,7 +166,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     if (mounted) context.go('/login');
   }
 
-
   @override
   void dispose() {
     _namaController.dispose();
@@ -185,7 +182,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     return Scaffold(
       backgroundColor: AppColors.canvas,
       appBar: SpothAppBar(
-        title: const Text('Spoth UMKKM'),
         centerTitle: true,
         actions: const [NotificationIconButton(), RiwayatIconButton()],
       ),
@@ -261,7 +257,9 @@ class _PhotoCard extends StatelessWidget {
               CircleAvatar(
                 radius: 44,
                 backgroundColor: AppColors.lightOrange,
-                backgroundImage: fotoUrl == null ? null : NetworkImage(fotoUrl!),
+                backgroundImage: fotoUrl == null
+                    ? null
+                    : NetworkImage(fotoUrl!),
                 child: fotoUrl == null
                     ? Text(
                         initial,
@@ -297,7 +295,10 @@ class _PhotoCard extends StatelessWidget {
           const SizedBox(height: 12),
           Text(
             fotoUrl == null ? 'Tap untuk ambil dari galeri' : 'Foto aktif',
-            style: const TextStyle(fontSize: 12.5, color: AppColors.secondaryText),
+            style: const TextStyle(
+              fontSize: 12.5,
+              color: AppColors.secondaryText,
+            ),
           ),
           const SizedBox(height: 10),
           TextButton.icon(
@@ -370,12 +371,14 @@ class _EditCard extends StatelessWidget {
               TextFormField(
                 controller: namaController,
                 enabled: !isSaving,
-                validator: (value) => (value?.trim().isEmpty ?? true)
-                    ? 'Nama wajib diisi'
-                    : null,
+                validator: (value) =>
+                    (value?.trim().isEmpty ?? true) ? 'Nama wajib diisi' : null,
                 decoration: InputDecoration(
                   labelText: 'Nama Lengkap',
-                  prefixIcon: const Icon(Icons.person_outline_rounded, size: 20),
+                  prefixIcon: const Icon(
+                    Icons.person_outline_rounded,
+                    size: 20,
+                  ),
                 ),
               ),
               const SizedBox(height: 14),

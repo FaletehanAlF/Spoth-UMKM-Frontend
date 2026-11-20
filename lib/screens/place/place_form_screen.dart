@@ -70,7 +70,8 @@ class _PlaceFormScreenState extends ConsumerState<PlaceFormScreen> {
   String? _categoriesError;
 
   /// Kategorienya dikirim ke backend; kalau mode lainya maka dari teks.
-  String get _kategoriValue => _isKategoriCustom ? _kategoriLainController.text.trim() : _kategori;
+  String get _kategoriValue =>
+      _isKategoriCustom ? _kategoriLainController.text.trim() : _kategori;
   String _tipeDurasi = PlaceModel.durasiValues.first;
   String? _placeId;
   DateTime? _tanggalMulaiTersedia;
@@ -102,9 +103,7 @@ class _PlaceFormScreenState extends ConsumerState<PlaceFormScreen> {
     });
 
     try {
-      final categories = await ref
-          .read(placeServiceProvider)
-          .listCategories();
+      final categories = await ref.read(placeServiceProvider).listCategories();
       if (!mounted) return;
       setState(() => _categories = categories);
     } on Exception catch (error) {
@@ -635,13 +634,13 @@ class _PlaceFormScreenState extends ConsumerState<PlaceFormScreen> {
                           child: EmptyState(
                             icon: Icons.wifi_off,
                             title: 'Gagal memuat kategori',
-                            message: 'Periksa koneksi internet Anda lalu coba lagi.',
+                            message:
+                                'Periksa koneksi internet Anda lalu coba lagi.',
                             actionLabel: 'Coba Lagi',
                             onAction: _loadCategories,
                           ),
                         ),
-                      ]
-                      else
+                      ] else
                         DropdownButtonFormField<String>(
                           initialValue: _kategori,
                           isExpanded: true,
@@ -657,7 +656,9 @@ class _PlaceFormScreenState extends ConsumerState<PlaceFormScreen> {
                               ),
                             DropdownMenuItem(
                               value: _kategoriLain,
-                              child: const Text('Lainnya (ketik kategori sendiri)'),
+                              child: const Text(
+                                'Lainnya (ketik kategori sendiri)',
+                              ),
                             ),
                           ],
                         ),
@@ -671,7 +672,8 @@ class _PlaceFormScreenState extends ConsumerState<PlaceFormScreen> {
                             hintText: 'Contoh: Warung Minuman',
                           ),
                           enabled: !_submitting,
-                          validator: (value) => value == null || value.trim().isEmpty
+                          validator: (value) =>
+                              value == null || value.trim().isEmpty
                               ? 'Nama kategori lain wajib diisi'
                               : null,
                         ),

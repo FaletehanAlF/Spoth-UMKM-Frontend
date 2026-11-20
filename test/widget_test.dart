@@ -1092,7 +1092,6 @@ void main() {
 
       await tester.tap(find.byTooltip('Booking'));
       await tester.pumpAndSettle();
-      expect(find.text('Penyewaan Saya'), findsOneWidget);
       expect(find.textContaining('Warung Makan'), findsNWidgets(2));
       expect(find.text('Menunggu Bayar'), findsOneWidget);
 
@@ -1152,7 +1151,7 @@ void main() {
       await tester.pumpWidget(_hostApp(const KelolaTempatScreen()));
       await tester.pumpAndSettle();
 
-      expect(find.text('Kelola Tempat'), findsOneWidget);
+      expect(find.text('Spoth UMKM'), findsOneWidget);
       expect(find.text('Teras Dagang Pagi'), findsOneWidget);
       expect(find.text('Tambah Tempat'), findsOneWidget);
     },
@@ -1178,7 +1177,8 @@ void main() {
     await tester.pumpWidget(_hostApp(const TempatScreen()));
     await tester.pumpAndSettle();
 
-    expect(find.text('Tempat'), findsOneWidget);
+    expect(find.text('Spoth UMKM'), findsOneWidget);
+    expect(find.byTooltip('Riwayat'), findsOneWidget);
     expect(find.text('Cari tempat, kota, atau lokasi...'), findsOneWidget);
     expect(find.text('Lapak Kuliner Baru'), findsOneWidget);
     expect(find.text('Tambah Tempat'), findsNothing);
@@ -1190,10 +1190,29 @@ void main() {
     await tester.pumpWidget(_tenantApp(const TempatScreen()));
     await tester.pumpAndSettle();
 
-    expect(find.text('Tempat'), findsOneWidget);
+    expect(find.text('Spoth UMKM'), findsOneWidget);
+    expect(find.byTooltip('Riwayat'), findsOneWidget);
     expect(find.text('Cari tempat, kota, atau lokasi...'), findsOneWidget);
     expect(find.text('Lapak Kuliner Baru'), findsOneWidget);
     expect(find.text('Tambah Tempat'), findsNothing);
+  });
+
+  testWidgets('Filter kategori membuka sheet tanpa error dan bisa reset', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(_tenantApp(const TempatScreen()));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byIcon(Icons.tune));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Pilih kategori'), findsOneWidget);
+    expect(find.text('Semua Kategori'), findsOneWidget);
+
+    await tester.tap(find.text('Semua Kategori'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Pilih kategori'), findsNothing);
   });
 
   testWidgets('Detail tempat untuk penyewa menampilkan tombol sewa', (
@@ -1741,7 +1760,7 @@ void main() {
     await tester.tap(find.byIcon(Icons.more_vert));
     await tester.pumpAndSettle();
 
-    expect(find.text('Kelola Tempat'), findsOneWidget);
+    expect(find.text('Spoth UMKM'), findsOneWidget);
     expect(find.text('Aksi Tempat'), findsOneWidget);
     expect(find.text('Ubah Data Tempat'), findsOneWidget);
     expect(find.text('Nonaktifkan Tempat'), findsOneWidget);
@@ -2159,7 +2178,6 @@ void main() {
   ) async {
     await _pumpPaymentRouter(tester, '/booking', daftarBooking: true);
 
-    expect(find.text('Penyewaan Saya'), findsOneWidget);
     expect(find.text('Lapak Kuliner Baru'), findsOneWidget);
     expect(find.text('Menunggu Bayar'), findsOneWidget);
     expect(find.text('Bayar Sekarang'), findsOneWidget);

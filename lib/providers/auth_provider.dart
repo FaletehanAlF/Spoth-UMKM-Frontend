@@ -125,11 +125,7 @@ class AuthNotifier extends Notifier<AuthState> {
     state = const AuthState(status: AuthStatus.unauthenticated);
   }
 
-  Future<bool> updateProfile({
-    String? nama,
-    String? noHp,
-    String? foto,
-  }) async {
+  Future<bool> updateProfile({String? nama, String? noHp, String? foto}) async {
     final token = state.token;
     if (token == null) return false;
 
