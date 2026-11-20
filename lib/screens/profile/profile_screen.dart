@@ -4,6 +4,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../core/services/permission_service.dart';
 import '../../core/services/upload_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_fonts.dart';
@@ -57,6 +58,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   Future<void> _onFotoGaleri() async {
     final token = ref.watch(authNotifierProvider.select((s) => s.token));
     if (token == null) return;
+
+    if (!await PermissionService.ensureGalleryPermission()) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Izin galeri tidak diizinkan.')),
+      );
+      return;
+    }
 
     try {
       final picked = await _picker.pickImage(

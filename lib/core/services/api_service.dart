@@ -6,7 +6,11 @@ import 'package:http/http.dart' as http;
 
 import '../config/app_config.dart';
 
-final apiServiceProvider = Provider<ApiService>((ref) => ApiService());
+final apiServiceProvider = Provider<ApiService>((ref) {
+  final service = ApiService();
+  ref.onDispose(service.close);
+  return service;
+});
 
 class ApiException implements Exception {
   const ApiException({
@@ -62,59 +66,79 @@ class ApiService {
     return body;
   }
 
-  Future<http.Response> _withTimeout(Future<http.Response> request) async {
+  /// Pembungkus semua request HTTP (pola dari dokumentasi guru:
+  /// try-catch `TimeoutException` + `ClientException`).
+  ///
+  /// `http.ClientException` dipakai (bukan `SocketException`) supaya kode
+  /// tetap bisa di-compile ke Flutter Web — `dart:io` tidak tersedia di web.
+  Future<Map<String, dynamic>> _send(
+    Future<http.Response> Function() request,
+  ) async {
     try {
-      return await request.timeout(timeout);
+      final response = await request().timeout(timeout);
+      return _handleResponse(response);
+    } on ApiException {
+      rethrow;
     } on TimeoutException {
       throw const ApiException(
         statusCode: 408,
         message:
             'Permintaan melebihi batas waktu. Periksa koneksi internet Anda.',
       );
+    } on http.ClientException {
+      throw const ApiException(
+        statusCode: 0,
+        message:
+            'Tidak dapat terhubung ke server. Periksa koneksi internet Anda.',
+      );
+    } catch (error) {
+      throw ApiException(
+        statusCode: 0,
+        message: 'Terjadi kesalahan jaringan: $error',
+      );
     }
   }
 
-  Future<Map<String, dynamic>> get(String path, {String? token}) async {
-    final response = await _withTimeout(
-      _client.get(_uri(path), headers: _headers(token: token)),
+  Future<Map<String, dynamic>> get(String path, {String? token}) {
+    return _send(
+      () => _client.get(_uri(path), headers: _headers(token: token)),
     );
-    return _handleResponse(response);
   }
 
   Future<Map<String, dynamic>> post(
     String path,
     Map<String, dynamic> body, {
     String? token,
-  }) async {
-    final response = await _withTimeout(
-      _client.post(
+  }) {
+    return _send(
+      () => _client.post(
         _uri(path),
         headers: _headers(token: token),
         body: jsonEncode(body),
       ),
     );
-    return _handleResponse(response);
   }
 
   Future<Map<String, dynamic>> patch(
     String path,
     Map<String, dynamic> body, {
     String? token,
-  }) async {
-    final response = await _withTimeout(
-      _client.patch(
+  }) {
+    return _send(
+      () => _client.patch(
         _uri(path),
         headers: _headers(token: token),
         body: jsonEncode(body),
       ),
     );
-    return _handleResponse(response);
   }
 
-  Future<Map<String, dynamic>> delete(String path, {String? token}) async {
-    final response = await _withTimeout(
-      _client.delete(_uri(path), headers: _headers(token: token)),
+  Future<Map<String, dynamic>> delete(String path, {String? token}) {
+    return _send(
+      () => _client.delete(_uri(path), headers: _headers(token: token)),
     );
-    return _handleResponse(response);
   }
+
+  /// Menutup koneksi HTTP saat provider di-dispose (hindari kebocoran).
+  void close() => _client.close();
 }

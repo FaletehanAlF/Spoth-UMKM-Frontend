@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../core/theme/app_colors.dart';
-import '../../providers/auth_provider.dart';
-import '../../providers/nav_provider.dart';
-import '../../widgets/bottom_nav_pill.dart';
-import '../../widgets/nav_items.dart';
-import '../../widgets/spoth_sidebar.dart';
-import '../booking/booking_screen.dart';
-import '../home/home_screen.dart';
-import '../place/kelola_tempat_screen.dart';
-import '../place/tempat_screen.dart';
-import '../profile/profile_screen.dart';
+import '../core/theme/app_colors.dart';
+import '../providers/auth_provider.dart';
+import '../providers/nav_provider.dart';
+import '../widgets/bottom_nav_pill.dart';
+import '../widgets/nav_items.dart';
+import '../widgets/spoth_sidebar.dart';
+import 'booking/booking_screen.dart';
+import 'home/home_screen.dart';
+import 'place/kelola_tempat_screen.dart';
+import 'place/tempat_screen.dart';
+import 'profile/profile_screen.dart';
 
 class MainShell extends ConsumerWidget {
   const MainShell({super.key});
@@ -78,7 +78,6 @@ class MainShell extends ConsumerWidget {
     return Scaffold(
       backgroundColor: AppColors.canvas,
       body: SafeArea(
-        top: false,
         child: Align(
           alignment: Alignment.topCenter,
           child: ConstrainedBox(

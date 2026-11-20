@@ -11,7 +11,7 @@ import '../../screens/auth/register_screen.dart';
 import '../../screens/booking/booking_form_screen.dart';
 import '../../screens/booking/payment_screen.dart';
 import '../../screens/booking/riwayat_screen.dart';
-import '../../screens/main/main_shell.dart';
+import '../../screens/main_shell.dart';
 import '../../screens/notification/notification_screen.dart';
 import '../../screens/onboarding/onboarding_screen.dart';
 import '../../screens/place/place_detail_screen.dart';

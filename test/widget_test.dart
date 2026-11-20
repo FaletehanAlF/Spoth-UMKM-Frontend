@@ -30,8 +30,8 @@ import 'package:spoth_umkm/screens/booking/booking_form_screen.dart';
 import 'package:spoth_umkm/screens/booking/booking_screen.dart';
 import 'package:spoth_umkm/screens/booking/payment_screen.dart';
 import 'package:spoth_umkm/screens/home/home_screen.dart';
-import 'package:spoth_umkm/screens/home/owner_home_screen.dart';
-import 'package:spoth_umkm/screens/main/main_shell.dart';
+import 'package:spoth_umkm/screens/home/dashboard_screen.dart';
+import 'package:spoth_umkm/screens/main_shell.dart';
 import 'package:spoth_umkm/screens/notification/notification_screen.dart';
 import 'package:spoth_umkm/screens/onboarding/onboarding_screen.dart';
 import 'package:spoth_umkm/screens/place/place_detail_screen.dart';
@@ -1118,32 +1118,35 @@ void main() {
     expect(find.text('Tambah Tempat'), findsOneWidget);
   });
 
-  testWidgets('Home pemilik menampilkan ringkasan dan daftar tempat miliknya', (
+  testWidgets('Home pemilik menampilkan ringkasan usaha di dashboard', (
     WidgetTester tester,
   ) async {
     await _pumpSized(tester, const HomeScreen(), host: true);
 
-    expect(find.text('Spoth UMKM'), findsOneWidget);
-
+    expect(
+      find.text('Ringkasan keuangan & tempat Anda dalam satu pandangan.'),
+      findsOneWidget,
+    );
+    expect(find.text('Pendapatan'), findsOneWidget);
     expect(find.text('Total Tempat'), findsOneWidget);
     expect(find.text('Tempat Aktif'), findsOneWidget);
     expect(find.text('Rp 750.000'), findsOneWidget);
-
     expect(find.text('Kelola Tempat'), findsOneWidget);
+    expect(find.text('Riwayat Penyewaan'), findsOneWidget);
+    expect(find.text('Teras Dagang Pagi'), findsOneWidget);
     expect(find.text('Tambah Tempat'), findsNothing);
   });
 
-  testWidgets('Beranda pemilik menampilkan galeri jelajah tempat lain', (
-    WidgetTester tester,
-  ) async {
-    await _pumpSized(tester, const HomeScreen(), host: true);
+  testWidgets(
+    'Beranda pemilik menampilkan ringkasan & daftar tempat miliknya',
+    (WidgetTester tester) async {
+      await _pumpSized(tester, const HomeScreen(), host: true);
 
-    expect(find.text('Jelajahi Tempat Lain'), findsOneWidget);
-    expect(find.text('Lihat Semua'), findsOneWidget);
-
-    expect(find.text('Lapak Kuliner Baru'), findsOneWidget);
-    expect(find.text('Booth Bazar Sekolah'), findsOneWidget);
-  });
+      expect(find.text('Teras Dagang Pagi'), findsOneWidget);
+      expect(find.byTooltip('Riwayat'), findsOneWidget);
+      expect(find.byTooltip('Notifikasi'), findsOneWidget);
+    },
+  );
 
   testWidgets(
     'Kelola Tempat (pemilik) menampilkan daftar miliknya + tombol tambah',
@@ -2307,7 +2310,7 @@ void main() {
   testWidgets('Ikon Riwayat tampil di AppBar beranda pemilik', (
     WidgetTester tester,
   ) async {
-    await tester.pumpWidget(_hostApp(const OwnerHomeScreen()));
+    await tester.pumpWidget(_hostApp(const DashboardScreen()));
     await tester.pumpAndSettle();
 
     expect(find.byIcon(Icons.history_rounded), findsOneWidget);
