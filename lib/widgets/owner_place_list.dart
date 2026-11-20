@@ -189,20 +189,67 @@ class _EmptyPlaces extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (adaFilter) {
-      return EmptyState(
-        icon: Icons.search_off,
-        title: 'Tidak ada tempat yang cocok',
-        message: 'Coba kata kunci lain atau pilih filter status yang berbeda.',
-        actionLabel: 'Reset Filter',
-        onAction: onReset,
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.search_off, size: 40, color: AppColors.primaryDeep),
+            const SizedBox(height: 12),
+            const Text(
+              'Tidak ada tempat yang cocok',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+                color: AppColors.charcoal,
+              ),
+            ),
+            const SizedBox(height: 4),
+            const Text(
+              'Coba kata kunci lain.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 12.5,
+                height: 1.45,
+                color: AppColors.secondaryText,
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextButton(onPressed: onReset, child: const Text('Reset')),
+          ],
+        ),
       );
     }
 
-    return const EmptyState(
-      icon: Icons.storefront,
-      title: 'Belum ada tempat',
-      message:
-          'Tambahkan tempat usaha pertama Anda dengan tombol "Tambah Tempat".',
+    return const Padding(
+      padding: EdgeInsets.symmetric(vertical: 24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.storefront, size: 40, color: AppColors.primaryDeep),
+          SizedBox(height: 12),
+          Text(
+            'Belum ada tempat',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
+              color: AppColors.charcoal,
+            ),
+          ),
+          SizedBox(height: 4),
+          Text(
+            'Tambahkan tempat usaha pertama Anda dengan tombol "Tambah Tempat".',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 12.5,
+              height: 1.45,
+              color: AppColors.secondaryText,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -220,35 +267,6 @@ class _OwnerPlaceCardState extends ConsumerState<_OwnerPlaceCard> {
   bool _acting = false;
 
   PlaceModel get place => widget.place;
-
-  Future<void> _toggleStatus() async {
-    if (_acting) return;
-
-    setState(() => _acting = true);
-    try {
-      final token = ref.read(authNotifierProvider.select((s) => s.token));
-      if (token == null) return;
-
-      await ref
-          .read(placeServiceProvider)
-          .updatePlace(
-            token: token,
-            id: place.id,
-            payload: {'status': place.isAktif ? 'NONAKTIF' : 'AKTIF'},
-          );
-
-      await ref.read(myPlacesProvider.notifier).refresh();
-      await ref.read(hostSummaryProvider.notifier).refresh();
-    } catch (_) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Gagal mengubah status tempat.')),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _acting = false);
-    }
-  }
 
   Future<void> _delete() async {
     if (_acting) return;
@@ -324,8 +342,6 @@ class _OwnerPlaceCardState extends ConsumerState<_OwnerPlaceCard> {
     switch (pilih) {
       case _AksiKelola.ubah:
         await _edit();
-      case _AksiKelola.ubahStatus:
-        await _toggleStatus();
       case _AksiKelola.hapus:
         await _delete();
     }
@@ -509,7 +525,7 @@ class _PhotoPlaceholder extends StatelessWidget {
   }
 }
 
-enum _AksiKelola { ubah, ubahStatus, hapus }
+enum _AksiKelola { ubah, hapus }
 
 class _KelolaSheet extends StatelessWidget {
   const _KelolaSheet({required this.place});
@@ -569,16 +585,6 @@ class _KelolaSheet extends StatelessWidget {
               label: 'Ubah Data Tempat',
               keterangan: 'Ubah nama, harga, foto, dan keterangan tempat',
               onTap: () => Navigator.of(context).pop(_AksiKelola.ubah),
-            ),
-            _KelolaAction(
-              icon: place.isAktif
-                  ? Icons.visibility_off_outlined
-                  : Icons.visibility_outlined,
-              label: place.isAktif ? 'Nonaktifkan Tempat' : 'Aktifkan Tempat',
-              keterangan: place.isAktif
-                  ? 'Tempat tidak akan tampil untuk disewa'
-                  : 'Tempat kembali tampil untuk disewa',
-              onTap: () => Navigator.of(context).pop(_AksiKelola.ubahStatus),
             ),
             _KelolaAction(
               icon: Icons.delete_outline,

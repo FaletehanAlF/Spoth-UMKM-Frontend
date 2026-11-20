@@ -78,9 +78,7 @@ class BookingScreen extends ConsumerWidget {
                                 ),
                                 const SizedBox(height: 16),
                                 Text(
-                                  isHost
-                                      ? 'Belum ada pesanan masuk'
-                                      : 'Belum ada penyewaan',
+                                  'Belum ada penyewaan',
                                   textAlign: TextAlign.center,
                                   style: const TextStyle(
                                     fontSize: 16,
@@ -91,7 +89,7 @@ class BookingScreen extends ConsumerWidget {
                                 const SizedBox(height: 6),
                                 Text(
                                   isHost
-                                      ? 'Pesanan untuk tempat Anda akan tampil di sini.'
+                                      ? 'Penyewaan untuk tempat Anda akan tampil di sini.'
                                       : 'Pilih tempat di Beranda lalu tekan "Sewa Tempat Ini".',
                                   textAlign: TextAlign.center,
                                   style: const TextStyle(
