@@ -625,11 +625,17 @@ class _RecentBookingsSection extends ConsumerWidget {
                 onPressed: () => ref
                     .read(mainNavIndexProvider.notifier)
                     .setTab(MainTab.booking),
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 8,
+                  ),
+                ),
                 child: const Text('Lihat Semua'),
               ),
             ],
           ),
-          const SizedBox(height: 2),
+          const SizedBox(height: 10),
           bookings.when(
             loading: () => const Padding(
               padding: EdgeInsets.symmetric(vertical: 10),
