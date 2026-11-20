@@ -27,7 +27,7 @@ class KelolaTempatScreen extends ConsumerWidget {
         },
       ),
       body: RefreshIndicator(
-        color: AppColors.primaryOrange,
+        color: AppColors.primaryDeep,
         onRefresh: () async {
           await ref.read(myPlacesProvider.notifier).refresh();
           await ref.read(hostSummaryProvider.notifier).refresh();
