@@ -7,7 +7,7 @@ class SpothAppBar extends StatelessWidget implements PreferredSizeWidget {
     super.key,
     this.title,
     this.actions,
-    this.centerTitle = false,
+    this.centerTitle = true,
   });
 
   final Widget? title;
@@ -28,7 +28,18 @@ class SpothAppBar extends StatelessWidget implements PreferredSizeWidget {
       surfaceTintColor: Colors.transparent,
       centerTitle: centerTitle,
       titleSpacing: centerTitle ? 0 : 20,
-      title: centerTitle ? (title ?? const Text('Spoth UMKKM')) : title,
+      title: centerTitle
+          ? (title ??
+                const Text(
+                  'Spoth UMKM',
+                  style: TextStyle(
+                    color: AppColors.charcoal,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -0.2,
+                  ),
+                ))
+          : title,
       actions: actions,
       bottom: const PreferredSize(
         preferredSize: Size.fromHeight(1),

@@ -19,7 +19,9 @@ Future<void> main() async {
     // Abaikan; aplikasi tetap berjalan dan pengguna diarahkan ke login.
   }
 
-  runApp(UncontrolledProviderScope(container: container, child: const SpothApp()));
+  runApp(
+    UncontrolledProviderScope(container: container, child: const SpothApp()),
+  );
 }
 
 class SpothApp extends ConsumerWidget {

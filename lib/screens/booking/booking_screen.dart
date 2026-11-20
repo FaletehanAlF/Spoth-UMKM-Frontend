@@ -26,9 +26,8 @@ class BookingScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: AppColors.canvas,
-      appBar: SpothAppBar(
-        title: Text(isHost ? 'Pesanan Masuk' : 'Penyewaan Saya'),
-        actions: const [RiwayatIconButton(), NotificationIconButton()],
+      appBar: const SpothAppBar(
+        actions: [RiwayatIconButton(), NotificationIconButton()],
       ),
       body: Align(
         alignment: Alignment.topCenter,

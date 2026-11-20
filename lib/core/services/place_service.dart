@@ -104,7 +104,10 @@ class PlaceService {
     if (categories == null) {
       throw const FormatException('Respons daftar kategori tidak valid');
     }
-    return categories.whereType<Map<String, dynamic>>().map(CategoryModel.fromJson).toList();
+    return categories
+        .whereType<Map<String, dynamic>>()
+        .map(CategoryModel.fromJson)
+        .toList();
   }
 
   Future<PlaceModel> createPlace({

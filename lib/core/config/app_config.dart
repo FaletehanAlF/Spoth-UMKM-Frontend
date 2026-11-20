@@ -5,7 +5,7 @@ class AppConfig {
 
   static const String appName = 'SPOTH UMKM';
 
-  static const String lanHost = '192.168.1.7';
+  static const String lanHost = '10.2.10.84';
 
   static const int port = 3000;
 

@@ -32,9 +32,7 @@ class _PlaceCatalogState extends ConsumerState<PlaceCatalog> {
 
   Future<void> _loadCategories() async {
     try {
-      final categories = await ref
-          .read(placeServiceProvider)
-          .listCategories();
+      final categories = await ref.read(placeServiceProvider).listCategories();
       if (!mounted) return;
       setState(() => _categories = categories);
     } catch (_) {
@@ -66,19 +64,20 @@ class _PlaceCatalogState extends ConsumerState<PlaceCatalog> {
   Future<void> _showFilterSheet() async {
     final kategoriAktif = ref.read(tenantSearchProvider).kategori;
 
-    final dipilih = await showModalBottomSheet<String?>(
+    final dipilih = await showModalBottomSheet<String>(
       context: context,
       backgroundColor: Colors.transparent,
       useSafeArea: true,
       constraints: const BoxConstraints(maxWidth: 520),
-      builder: (sheetContext) => _CategorySheet(
-        kategoriAktif: kategoriAktif,
-        categories: _categories,
-      ),
+      builder: (sheetContext) =>
+          _CategorySheet(kategoriAktif: kategoriAktif, categories: _categories),
     );
 
+    // `null` = sheet ditutup tanpa memilih; string kosong = "Semua Kategori".
     if (dipilih != null) {
-      ref.read(tenantSearchProvider.notifier).setKategori(dipilih);
+      ref
+          .read(tenantSearchProvider.notifier)
+          .setKategori(dipilih.isEmpty ? null : dipilih);
     }
   }
 
@@ -173,18 +172,22 @@ class _PlaceCatalogState extends ConsumerState<PlaceCatalog> {
                     ),
                     const SizedBox(width: 10),
                     Material(
-                      color: AppColors.charcoal,
+                      color: AppColors.white,
                       borderRadius: BorderRadius.circular(AppRadius.md),
                       child: InkWell(
                         borderRadius: BorderRadius.circular(AppRadius.md),
                         onTap: _showFilterSheet,
-                        child: const SizedBox(
+                        child: Container(
                           width: 52,
                           height: 52,
-                          child: Icon(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(AppRadius.md),
+                            border: Border.all(color: AppColors.softBorder),
+                          ),
+                          child: const Icon(
                             Icons.tune,
                             size: 20,
-                            color: AppColors.white,
+                            color: AppColors.primaryDeep,
                           ),
                         ),
                       ),
@@ -221,105 +224,102 @@ class _CategorySheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final items = <(String?, String, IconData)>[
-      (null, 'Semua Kategori', Icons.apps),
+    // Sentinel string kosong dipakai untuk "Semua Kategori" agar bisa
+    // dibedakan dari `null` yang berarti sheet ditutup tanpa memilih.
+    final aktif = kategoriAktif ?? '';
+    final items = <(String, String, IconData)>[
+      ('', 'Semua Kategori', Icons.apps),
       for (final item in categories ?? const <CategoryModel>[])
         (item.nama, item.nama, _presetIkon[item.nama] ?? Icons.storefront),
-      if (kategoriAktif != null &&
-          (categories?.any((c) => c.nama == kategoriAktif) ?? false))
-        (null, 'Semua Kategori', Icons.apps), // duplicate-safe
     ];
 
-    // Deduplicate by nama to keep the sheet clean.
+    // Deduplicate by nilai agar sheet tetap bersih.
     final seen = <String>{};
-    final unique = items.where((entry) {
-      final nama = entry.$2;
-      if (seen.contains(nama)) return false;
-      seen.add(nama);
-      return true;
-    }).toList();
+    final unique = items.where((entry) => seen.add(entry.$1)).toList();
 
-    final nama = <String, String>{
-      for (final entry in unique) entry.$1!.isEmpty ? '' : entry.$1!: entry.$2,
-    };
-    final ikon = <String, IconData>{
-      for (final entry in unique) entry.$1!.isEmpty ? '' : entry.$1!: entry.$3,
-    };
-    final options = unique.map((entry) => entry.$1).toList();
-
-    return Container(
-      decoration: const BoxDecoration(
-        color: AppColors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      padding: EdgeInsets.fromLTRB(
-        20,
-        10,
-        20,
-        20 + MediaQuery.paddingOf(context).bottom,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Center(
-            child: Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: AppColors.softBorder,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Pilih kategori',
-            style: AppFonts.heading(
-              fontSize: 20,
-              weight: 700,
-              letterSpacing: -0.4,
-              color: AppColors.charcoal,
-            ),
-          ),
-          const SizedBox(height: 8),
-          for (final option in options)
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppRadius.md),
-              ),
-              leading: Container(
-                width: 38,
-                height: 38,
+    return Material(
+      color: AppColors.white,
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+      clipBehavior: Clip.antiAlias,
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(
+          20,
+          10,
+          20,
+          20 + MediaQuery.paddingOf(context).bottom,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
                 decoration: BoxDecoration(
-                  color: AppColors.lightOrange,
-                  borderRadius: BorderRadius.circular(AppRadius.sm),
-                ),
-                child: Icon(
-                  ikon[option],
-                  size: 18,
-                  color: AppColors.primaryDeep,
+                  color: AppColors.softBorder,
+                  borderRadius: BorderRadius.circular(2),
                 ),
               ),
-              title: Text(
-                nama[option] ?? '',
-                style: const TextStyle(fontSize: 14.5),
-              ),
-              trailing: kategoriAktif == option
-                  ? const Icon(
-                      Icons.check_circle,
-                      color: AppColors.primaryDeep,
-                      size: 20,
-                    )
-                  : const Icon(
-                      Icons.circle_outlined,
-                      color: AppColors.neutralBorder,
-                      size: 20,
-                    ),
-              onTap: () => Navigator.of(context).pop(option),
             ),
-        ],
+            const SizedBox(height: 16),
+            Text(
+              'Pilih kategori',
+              style: AppFonts.heading(
+                fontSize: 20,
+                weight: 700,
+                letterSpacing: -0.4,
+                color: AppColors.charcoal,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Flexible(
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    for (final option in unique)
+                      ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(AppRadius.md),
+                        ),
+                        leading: Container(
+                          width: 38,
+                          height: 38,
+                          decoration: BoxDecoration(
+                            color: AppColors.lightOrange,
+                            borderRadius: BorderRadius.circular(AppRadius.sm),
+                          ),
+                          child: Icon(
+                            option.$3,
+                            size: 18,
+                            color: AppColors.primaryDeep,
+                          ),
+                        ),
+                        title: Text(
+                          option.$2,
+                          style: const TextStyle(fontSize: 14.5),
+                        ),
+                        trailing: aktif == option.$1
+                            ? const Icon(
+                                Icons.check_circle,
+                                color: AppColors.primaryDeep,
+                                size: 20,
+                              )
+                            : const Icon(
+                                Icons.circle_outlined,
+                                color: AppColors.neutralBorder,
+                                size: 20,
+                              ),
+                        onTap: () => Navigator.of(context).pop(option.$1),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

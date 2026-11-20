@@ -17,7 +17,6 @@ class KelolaTempatScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: AppColors.canvas,
       appBar: const SpothAppBar(
-        title: Text('Kelola Tempat'),
         actions: [RiwayatIconButton(), NotificationIconButton()],
       ),
       floatingActionButton: FloatingActionButton.extended(

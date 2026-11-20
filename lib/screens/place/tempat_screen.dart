@@ -7,6 +7,7 @@ import '../../providers/auth_provider.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/notification_icon.dart';
 import '../../widgets/place_catalog.dart';
+import '../../widgets/riwayat_icon_button.dart';
 import '../../widgets/spoth_app_bar.dart';
 
 class TempatScreen extends ConsumerWidget {
@@ -23,8 +24,7 @@ class TempatScreen extends ConsumerWidget {
       return Scaffold(
         backgroundColor: AppColors.canvas,
         appBar: const SpothAppBar(
-          title: Text('Tempat'),
-          actions: [NotificationIconButton()],
+          actions: [NotificationIconButton(), RiwayatIconButton()],
         ),
         body: const Center(
           child: SingleChildScrollView(
@@ -51,8 +51,7 @@ class _TempatKatalogPage extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppColors.canvas,
       appBar: const SpothAppBar(
-        title: Text('Tempat'),
-        actions: [NotificationIconButton()],
+        actions: [NotificationIconButton(), RiwayatIconButton()],
       ),
       body: const SafeArea(child: PlaceCatalog()),
     );
