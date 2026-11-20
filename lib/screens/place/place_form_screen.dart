@@ -761,22 +761,39 @@ class _PlaceFormScreenState extends ConsumerState<PlaceFormScreen> {
                         ),
                       ),
                       const SizedBox(height: 8),
-                      GridView.count(
-                        crossAxisCount: 3,
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        mainAxisSpacing: 8,
-                        crossAxisSpacing: 8,
-                        childAspectRatio: 1,
-                        children: [
-                          for (var i = 0; i < _photos.length; i++)
-                            _PhotoThumb(
-                              photo: _photos[i],
-                              onRemove: () => _removePhoto(i),
-                            ),
-                          if (_photos.length < _maxPhotos)
-                            _AddPhotoTile(onTap: _showPickSheet),
-                        ],
+                      LayoutBuilder(
+                        builder: (context, constraints) {
+                          final kolom = constraints.maxWidth >= 720
+                              ? 5
+                              : constraints.maxWidth >= 480
+                              ? 4
+                              : 3;
+
+                          return GridView.builder(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            gridDelegate:
+                                SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: kolom,
+                                  mainAxisSpacing: 8,
+                                  crossAxisSpacing: 8,
+                                  childAspectRatio: 1,
+                                ),
+                            itemCount:
+                                _photos.length +
+                                (_photos.length < _maxPhotos ? 1 : 0),
+                            itemBuilder: (context, index) {
+                              if (index < _photos.length) {
+                                return _PhotoThumb(
+                                  photo: _photos[index],
+                                  onRemove: () => _removePhoto(index),
+                                );
+                              }
+
+                              return _AddPhotoTile(onTap: _showPickSheet);
+                            },
+                          );
+                        },
                       ),
                       const SizedBox(height: 16),
                       TextFormField(
