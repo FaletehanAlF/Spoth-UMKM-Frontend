@@ -265,7 +265,7 @@ class _KpiCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: AppColors.white,
         borderRadius: BorderRadius.circular(AppRadius.lg),
@@ -275,15 +275,15 @@ class _KpiCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            width: 34,
-            height: 34,
+            width: 32,
+            height: 32,
             decoration: BoxDecoration(
               color: data.surface,
               shape: BoxShape.circle,
             ),
-            child: Icon(data.icon, size: 18, color: data.tone),
+            child: Icon(data.icon, size: 17, color: data.tone),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 10),
           FittedBox(
             fit: BoxFit.scaleDown,
             alignment: Alignment.centerLeft,
@@ -291,7 +291,7 @@ class _KpiCard extends StatelessWidget {
               data.value,
               maxLines: 1,
               style: const TextStyle(
-                fontSize: 19,
+                fontSize: 18,
                 fontWeight: FontWeight.w700,
                 letterSpacing: -0.3,
                 color: AppColors.charcoal,
