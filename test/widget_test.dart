@@ -1133,7 +1133,6 @@ void main() {
     expect(find.text('Rp 750.000'), findsOneWidget);
     expect(find.text('Kelola Tempat'), findsOneWidget);
     expect(find.text('Riwayat Penyewaan'), findsOneWidget);
-    expect(find.text('Teras Dagang Pagi'), findsOneWidget);
     expect(find.text('Tambah Tempat'), findsNothing);
   });
 
@@ -1142,7 +1141,6 @@ void main() {
     (WidgetTester tester) async {
       await _pumpSized(tester, const HomeScreen(), host: true);
 
-      expect(find.text('Teras Dagang Pagi'), findsOneWidget);
       expect(find.byTooltip('Riwayat'), findsOneWidget);
       expect(find.byTooltip('Notifikasi'), findsOneWidget);
     },
