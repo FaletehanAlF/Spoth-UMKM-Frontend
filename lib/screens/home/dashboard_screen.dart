@@ -147,11 +147,6 @@ class _WelcomeHeader extends StatelessWidget {
                   color: AppColors.charcoal,
                 ),
               ),
-              const SizedBox(height: 4),
-              const Text(
-                'Ringkasan keuangan & tempat Anda dalam satu pandangan.',
-                style: TextStyle(fontSize: 13, color: AppColors.secondaryText),
-              ),
             ],
           ),
         ),

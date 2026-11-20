@@ -1123,10 +1123,6 @@ void main() {
   ) async {
     await _pumpSized(tester, const HomeScreen(), host: true);
 
-    expect(
-      find.text('Ringkasan keuangan & tempat Anda dalam satu pandangan.'),
-      findsOneWidget,
-    );
     expect(find.text('Pendapatan'), findsOneWidget);
     expect(find.text('Total Tempat'), findsOneWidget);
     expect(find.text('Tempat Aktif'), findsOneWidget);
