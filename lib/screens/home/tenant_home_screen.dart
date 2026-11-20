@@ -79,7 +79,7 @@ class TenantHomeScreen extends ConsumerWidget {
                   const SizedBox(height: 12),
                   const _PlacePreviewGrid(),
                   const SizedBox(height: 24),
-                  const _OwnerNote(),
+                  const _EntryNote(),
                 ],
               ),
             ),
@@ -377,8 +377,8 @@ class _SectionLink extends StatelessWidget {
   }
 }
 
-class _OwnerNote extends StatelessWidget {
-  const _OwnerNote();
+class _EntryNote extends StatelessWidget {
+  const _EntryNote();
 
   @override
   Widget build(BuildContext context) {

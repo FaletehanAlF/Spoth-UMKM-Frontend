@@ -31,7 +31,7 @@ import 'package:spoth_umkm/screens/booking/booking_screen.dart';
 import 'package:spoth_umkm/screens/booking/payment_screen.dart';
 import 'package:spoth_umkm/screens/home/home_screen.dart';
 import 'package:spoth_umkm/screens/home/dashboard_screen.dart';
-import 'package:spoth_umkm/screens/main/main_shell.dart';
+import 'package:spoth_umkm/screens/main_shell.dart';
 import 'package:spoth_umkm/screens/notification/notification_screen.dart';
 import 'package:spoth_umkm/screens/onboarding/onboarding_screen.dart';
 import 'package:spoth_umkm/screens/place/place_detail_screen.dart';
