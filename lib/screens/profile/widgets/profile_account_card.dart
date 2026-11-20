@@ -43,13 +43,14 @@ class ProfileAccountCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: AppSpacing.lg),
-          OutlinedButton.icon(
+          ElevatedButton.icon(
             onPressed: onLogout,
-            icon: const Icon(Icons.logout, size: 18, color: AppColors.danger),
-            label: const Text(
-              'Keluar',
-              style: TextStyle(color: AppColors.danger),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.danger,
+              foregroundColor: AppColors.white,
             ),
+            icon: const Icon(Icons.logout, size: 18),
+            label: const Text('Keluar'),
           ),
         ],
       ),

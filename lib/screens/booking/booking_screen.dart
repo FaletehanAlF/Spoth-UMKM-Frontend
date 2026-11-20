@@ -49,22 +49,27 @@ class BookingScreen extends ConsumerWidget {
             data: (items) {
               if (items.isEmpty) {
                 return RefreshIndicator(
-                  color: AppColors.primaryOrange,
+                  color: AppColors.primaryDeep,
                   onRefresh: () =>
                       ref.read(bookingsProvider.notifier).refresh(),
                   child: ListView(
                     physics: const AlwaysScrollableScrollPhysics(),
                     children: [
-                      Padding(
-                        padding: const EdgeInsets.all(20),
-                        child: EmptyState(
-                          icon: Icons.event_note,
-                          title: isHost
-                              ? 'Belum ada pesanan masuk'
-                              : 'Belum ada penyewaan',
-                          message: isHost
-                              ? 'Pesanan untuk tempat Anda akan tampil di sini.'
-                              : 'Pilih tempat di Beranda lalu tekan "Sewa Tempat Ini".',
+                      SizedBox(
+                        height: MediaQuery.sizeOf(context).height * 0.6,
+                        child: Center(
+                          child: Padding(
+                            padding: const EdgeInsets.all(20),
+                            child: EmptyState(
+                              icon: Icons.event_note,
+                              title: isHost
+                                  ? 'Belum ada pesanan masuk'
+                                  : 'Belum ada penyewaan',
+                              message: isHost
+                                  ? 'Pesanan untuk tempat Anda akan tampil di sini.'
+                                  : 'Pilih tempat di Beranda lalu tekan "Sewa Tempat Ini".',
+                            ),
+                          ),
                         ),
                       ),
                     ],

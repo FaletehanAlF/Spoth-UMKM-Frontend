@@ -372,32 +372,6 @@ class _NetRevenueCard extends StatelessWidget {
             komisi: komisi,
             bersih: bersih.toDouble(),
           ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: _RevenueLegend(
-                  color: AppColors.primaryDeep,
-                  label: 'Tercatat',
-                  value: _ringkas(pendapatan),
-                ),
-              ),
-              Expanded(
-                child: _RevenueLegend(
-                  color: AppColors.secondaryText,
-                  label: 'Komisi',
-                  value: _ringkas(komisi),
-                ),
-              ),
-              Expanded(
-                child: _RevenueLegend(
-                  color: AppColors.sage,
-                  label: 'Bersih',
-                  value: _ringkas(bersih),
-                ),
-              ),
-            ],
-          ),
         ],
       ),
     );
@@ -488,59 +462,6 @@ class _RevenueBar {
   final String label;
   final double nilai;
   final Color warna;
-}
-
-class _RevenueLegend extends StatelessWidget {
-  const _RevenueLegend({
-    required this.color,
-    required this.label,
-    required this.value,
-  });
-
-  final Color color;
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Container(
-              width: 8,
-              height: 8,
-              decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-            ),
-            const SizedBox(width: 6),
-            Expanded(
-              child: Text(
-                label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontSize: 10.5,
-                  color: AppColors.secondaryText,
-                ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 2),
-        Text(
-          value,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: const TextStyle(
-            fontSize: 11.5,
-            fontWeight: FontWeight.w700,
-            color: AppColors.charcoal,
-          ),
-        ),
-      ],
-    );
-  }
 }
 
 class _QuickActions extends ConsumerWidget {

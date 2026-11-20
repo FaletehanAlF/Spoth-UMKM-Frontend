@@ -85,7 +85,6 @@ class _PlaceCatalogState extends ConsumerState<PlaceCatalog> {
   @override
   Widget build(BuildContext context) {
     final kategoriAktif = ref.watch(tenantSearchProvider).kategori;
-    final jumlah = ref.watch(tenantPlacesProvider).value?.length;
 
     return RefreshIndicator(
       color: AppColors.primaryDeep,
@@ -99,27 +98,7 @@ class _PlaceCatalogState extends ConsumerState<PlaceCatalog> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Tempat Usaha',
-                  style: AppFonts.heading(
-                    fontSize: 26,
-                    weight: 700,
-                    height: 1.15,
-                    letterSpacing: -0.7,
-                    color: AppColors.charcoal,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  jumlah != null
-                      ? '$jumlah tempat usaha siap disewa'
-                      : 'Temukan ruang yang pas untuk usahamu.',
-                  style: const TextStyle(
-                    fontSize: 12.5,
-                    color: AppColors.secondaryText,
-                  ),
-                ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 8),
                 Row(
                   children: [
                     Expanded(
