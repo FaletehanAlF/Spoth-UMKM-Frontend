@@ -863,6 +863,8 @@ class _InsightCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 14),
+          _BookingBarChart(summary: summary),
+          const SizedBox(height: 14),
           ClipRRect(
             borderRadius: BorderRadius.circular(AppRadius.pill),
             child: LinearProgressIndicator(
@@ -908,6 +910,91 @@ class _InsightCard extends StatelessWidget {
       ),
     );
   }
+}
+
+class _BookingBarChart extends StatelessWidget {
+  const _BookingBarChart({required this.summary});
+
+  final PlaceSummaryModel summary;
+
+  @override
+  Widget build(BuildContext context) {
+    final menunggu = summary.pemesananMenunggu;
+    final lunas = summary.pemesananLunas;
+    final lainnya = (summary.totalPemesanan - menunggu - lunas)
+        .clamp(0, 1 << 30);
+    final maksimum = [
+      menunggu,
+      lunas,
+      lainnya,
+      1,
+    ].reduce((a, b) => a > b ? a : b).toDouble();
+
+    final batang = [
+      _BarData('Menunggu', menunggu, AppColors.primaryInk),
+      _BarData('Lunas', lunas, AppColors.sage),
+      _BarData('Lainnya', lainnya, AppColors.secondaryText),
+    ];
+
+    return SizedBox(
+      height: 128,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          for (final item in batang)
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 6),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    Text(
+                      '${item.nilai}',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: item.warna,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 320),
+                      curve: Curves.easeOut,
+                      height: (item.nilai / maksimum * 74).clamp(6.0, 74.0),
+                      width: 24,
+                      decoration: BoxDecoration(
+                        color: item.warna,
+                        borderRadius: const BorderRadius.vertical(
+                          top: Radius.circular(8),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      item.label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 10,
+                        color: AppColors.secondaryText,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _BarData {
+  const _BarData(this.label, this.nilai, this.warna);
+
+  final String label;
+  final int nilai;
+  final Color warna;
 }
 
 class _MiniStat extends StatelessWidget {

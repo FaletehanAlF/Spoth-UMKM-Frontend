@@ -649,18 +649,69 @@ class _PlaceFormScreenState extends ConsumerState<PlaceFormScreen> {
                         ),
                         if (_isKategoriCustom) ...[
                           const SizedBox(height: 10),
-                          TextFormField(
-                            controller: _kategoriLainController,
-                            textCapitalization: TextCapitalization.words,
-                            decoration: const InputDecoration(
-                              labelText: 'Nama Kategori Lain',
-                              hintText: 'Contoh: Warung Minuman',
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: AppColors.lightOrange,
+                              borderRadius: BorderRadius.circular(AppRadius.md),
+                              border: Border.all(color: AppColors.softBorder),
                             ),
-                            enabled: !_submitting,
-                            validator: (value) =>
-                                value == null || value.trim().isEmpty
-                                ? 'Nama kategori lain wajib diisi'
-                                : null,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Container(
+                                      width: 30,
+                                      height: 30,
+                                      decoration: const BoxDecoration(
+                                        color: AppColors.white,
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: const Icon(
+                                        Icons.edit_outlined,
+                                        size: 16,
+                                        color: AppColors.primaryDeep,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    const Expanded(
+                                      child: Text(
+                                        'Kategori baru',
+                                        style: TextStyle(
+                                          fontSize: 12.5,
+                                          fontWeight: FontWeight.w700,
+                                          color: AppColors.charcoal,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 10),
+                                TextFormField(
+                                  controller: _kategoriLainController,
+                                  textCapitalization: TextCapitalization.words,
+                                  decoration: const InputDecoration(
+                                    labelText: 'Nama Kategori Lain',
+                                    hintText: 'Contoh: Warung Minuman',
+                                    prefixIcon: Icon(Icons.category_outlined),
+                                  ),
+                                  enabled: !_submitting,
+                                  validator: (value) =>
+                                      value == null || value.trim().isEmpty
+                                      ? 'Nama kategori lain wajib diisi'
+                                      : null,
+                                ),
+                                const SizedBox(height: 6),
+                                const Text(
+                                  'Nama ini akan dipakai sebagai kategori tempatmu.',
+                                  style: TextStyle(
+                                    fontSize: 10.5,
+                                    color: AppColors.secondaryText,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ],
                       ],

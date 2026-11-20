@@ -38,11 +38,7 @@ class ProfileSummaryCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(AppSpacing.xl),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [AppColors.lightOrange, AppColors.white],
-        ),
+        color: AppColors.surfaceMuted,
         borderRadius: BorderRadius.circular(AppRadius.xl),
         border: Border.all(color: AppColors.softBorder),
       ),

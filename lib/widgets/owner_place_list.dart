@@ -564,13 +564,7 @@ class _PhotoPlaceholder extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [AppColors.lightOrange, AppColors.canvasDeep],
-        ),
-      ),
+      decoration: const BoxDecoration(color: AppColors.lightOrange),
       child: const Icon(
         Icons.storefront,
         size: 26,
