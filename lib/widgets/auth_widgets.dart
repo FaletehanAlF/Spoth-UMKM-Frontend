@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../core/theme/app_colors.dart';
@@ -92,71 +92,79 @@ class _AuthBrandPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     final tampilkanKartu = availableHeight >= 660;
 
-    return Container(
-      decoration: const BoxDecoration(color: AppColors.primaryDeep),
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(56, 44, 96, 36),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const AuthBrand(logoSize: 38, textColor: AppColors.white),
-            const SizedBox(height: 56),
-            Text(
-              'Ruang kecil,\nusaha besar.',
-              style: AppFonts.heading(
-                fontSize: 46,
-                weight: 700,
-                height: 1.04,
-                letterSpacing: -1.6,
-                color: AppColors.white,
-              ),
-            ),
-            const SizedBox(height: 18),
-            ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 420),
-              child: const Text(
-                'SPOTH UMKM mempertemukan pemilik lapak, teras, dan booth '
-                'dengan orang-orang yang siap memulai usahanya.',
-                style: TextStyle(
-                  fontSize: 15,
-                  height: 1.6,
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        Image.asset('assets/referensi/login-register.jpg', fit: BoxFit.cover),
+        // Lapisan gelap tipis agar teks putih dan logo tetap terbaca.
+        Container(color: Colors.black.withValues(alpha: 0.45)),
+        SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(56, 44, 96, 36),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const AuthBrand(logoSize: 38, textColor: AppColors.white),
+              const SizedBox(height: 56),
+              Text(
+                'Ruang kecil,\nusaha besar.',
+                style: AppFonts.heading(
+                  fontSize: 46,
+                  weight: 700,
+                  height: 1.04,
+                  letterSpacing: -1.6,
                   color: AppColors.white,
                 ),
               ),
-            ),
-            const SizedBox(height: 26),
-            const Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                _BrandTag(
-                  icon: Icons.storefront_outlined,
-                  label: 'Lapak usaha',
+              const SizedBox(height: 18),
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 420),
+                child: const Text(
+                  'SPOTH UMKM mempertemukan pemilik lapak, teras, dan booth '
+                  'dengan orang-orang yang siap memulai usahanya.',
+                  style: TextStyle(
+                    fontSize: 15,
+                    height: 1.6,
+                    color: AppColors.white,
+                  ),
                 ),
-                _BrandTag(icon: Icons.deck_outlined, label: 'Teras komersial'),
-                _BrandTag(
-                  icon: Icons.confirmation_number_outlined,
-                  label: 'Booth event',
-                ),
-              ],
-            ),
-            if (tampilkanKartu) ...[
-              const SizedBox(height: 36),
-              const _AuthPlacePreview(),
-            ],
-            const SizedBox(height: 36),
-            Text(
-              '“Tumbuh bersama UMKM Indonesia”',
-              style: TextStyle(
-                fontSize: 12,
-                fontStyle: FontStyle.italic,
-                fontWeight: FontWeight.w600,
-                color: AppColors.white,
               ),
-            ),
-          ],
+              const SizedBox(height: 26),
+              const Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  _BrandTag(
+                    icon: Icons.storefront_outlined,
+                    label: 'Lapak usaha',
+                  ),
+                  _BrandTag(
+                    icon: Icons.deck_outlined,
+                    label: 'Teras komersial',
+                  ),
+                  _BrandTag(
+                    icon: Icons.confirmation_number_outlined,
+                    label: 'Booth event',
+                  ),
+                ],
+              ),
+              if (tampilkanKartu) ...[
+                const SizedBox(height: 36),
+                const _AuthPlacePreview(),
+              ],
+              const SizedBox(height: 36),
+              Text(
+                '“Tumbuh bersama UMKM Indonesia”',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontStyle: FontStyle.italic,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.white,
+                ),
+              ),
+            ],
+          ),
         ),
-      ),
+      ],
     );
   }
 }
@@ -270,7 +278,11 @@ class _AuthPlacePreview extends StatelessWidget {
 }
 
 class AuthBrand extends StatelessWidget {
-  const AuthBrand({super.key, this.logoSize = 42, this.textColor = AppColors.charcoal});
+  const AuthBrand({
+    super.key,
+    this.logoSize = 42,
+    this.textColor = AppColors.charcoal,
+  });
 
   final double logoSize;
   final Color textColor;
@@ -697,7 +709,6 @@ class AuthMessage extends StatelessWidget {
     );
   }
 }
-
 
 class _AuthWaveClipper extends CustomClipper<Path> {
   const _AuthWaveClipper();

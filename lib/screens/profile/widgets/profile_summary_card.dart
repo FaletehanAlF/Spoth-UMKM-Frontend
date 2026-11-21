@@ -38,7 +38,7 @@ class ProfileSummaryCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(AppSpacing.xl),
       decoration: BoxDecoration(
-        color: AppColors.surfaceMuted,
+        color: AppColors.white,
         borderRadius: BorderRadius.circular(AppRadius.xl),
         border: Border.all(color: AppColors.softBorder),
       ),
@@ -149,16 +149,6 @@ class ProfileSummaryCard extends StatelessWidget {
               onPressed: onEdit,
               icon: const Icon(Icons.edit_outlined, size: 18),
               label: const Text('Edit Profil'),
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            const Text(
-              'Data profil hanya berubah setelah kamu menekan Edit Profil.',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 11,
-                height: 1.4,
-                color: AppColors.secondaryText,
-              ),
             ),
           ],
         ],
