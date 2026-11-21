@@ -46,7 +46,7 @@ class ProfileAccountCard extends StatelessWidget {
           ElevatedButton.icon(
             onPressed: onLogout,
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.danger,
+              backgroundColor: const Color(0xFFF87171),
               foregroundColor: AppColors.white,
             ),
             icon: const Icon(Icons.logout, size: 18),
