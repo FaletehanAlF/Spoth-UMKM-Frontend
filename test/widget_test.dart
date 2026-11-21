@@ -1,10 +1,10 @@
 ﻿import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
-import 'package:http/http.dart' as http;
 
 import 'package:spoth_umkm/core/services/api_service.dart';
 import 'package:spoth_umkm/core/services/booking_service.dart';
@@ -428,7 +428,7 @@ class _FakePlaceService extends PlaceService {
 }
 
 class _FakeUploadService extends UploadService {
-  _FakeUploadService() : super(http.Client());
+  _FakeUploadService() : super(Dio());
 
   int callCount = 0;
   final List<String> uploadedFiles = [];
