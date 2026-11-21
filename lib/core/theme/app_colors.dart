@@ -4,14 +4,14 @@ class AppColors {
   const AppColors._();
 
   /// Aksen brand utama untuk ikon, garis, dan sorotan.
-  static const Color primaryOrange = Color(0xFFF97316);
+  static const Color primaryOrange = Color(0xFFFB923C);
 
   /// Oranye yang lebih pekat untuk tombol dan pilihan aktif agar teks putih
   /// tetap nyaman dibaca.
-  static const Color primaryDeep = Color(0xFFC2410C);
+  static const Color primaryDeep = Color(0xFFF97316);
 
   /// Oranye gelap untuk teks aksen di atas latar krem.
-  static const Color primaryInk = Color(0xFF9A3412);
+  static const Color primaryInk = Color(0xFFEA580C);
 
   static const Color white = Color(0xFFFFFFFF);
 
