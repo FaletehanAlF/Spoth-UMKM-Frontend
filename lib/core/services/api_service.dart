@@ -1,8 +1,7 @@
-import 'dart:async';
 import 'dart:convert';
 
+import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:http/http.dart' as http;
 
 import '../config/app_config.dart';
 
@@ -28,10 +27,10 @@ class ApiException implements Exception {
 }
 
 class ApiService {
-  ApiService({http.Client? client, this.timeout = const Duration(seconds: 15)})
-    : _client = client ?? http.Client();
+  ApiService({Dio? dio, this.timeout = const Duration(seconds: 15)})
+    : _client = dio ?? Dio();
 
-  final http.Client _client;
+  final Dio _client;
 
   final Duration timeout;
 
@@ -45,18 +44,25 @@ class ApiService {
     };
   }
 
-  Map<String, dynamic> _handleResponse(http.Response response) {
+  Map<String, dynamic> _handleResponse(Response response) {
+    final statusCode = response.statusCode ?? 0;
+    final data = response.data;
     Map<String, dynamic> body = <String, dynamic>{};
 
-    if (response.body.isNotEmpty) {
+    if (data is Map<String, dynamic>) {
+      body = data;
+    } else if (data != null && data.toString().isNotEmpty) {
       try {
-        body = jsonDecode(response.body) as Map<String, dynamic>;
+        final decoded = jsonDecode(data.toString());
+        if (decoded is Map<String, dynamic>) {
+          body = decoded;
+        }
       } catch (_) {}
     }
 
-    if (response.statusCode >= 400) {
+    if (statusCode >= 400) {
       throw ApiException(
-        statusCode: response.statusCode,
+        statusCode: statusCode,
         message:
             (body['message'] as String?) ?? 'Terjadi kesalahan pada server',
         errors: body['errors'] as List<dynamic>?,
@@ -66,26 +72,44 @@ class ApiService {
     return body;
   }
 
-  /// Pembungkus semua request HTTP (pola dari dokumentasi guru:
-  /// try-catch `TimeoutException` + `ClientException`).
+  /// Pembungkus semua request HTTP menggunakan Dio.
   ///
-  /// `http.ClientException` dipakai (bukan `SocketException`) supaya kode
-  /// tetap bisa di-compile ke Flutter Web — `dart:io` tidak tersedia di web.
+  /// Semua kondisi jaringan ditangkap menjadi [ApiException] agar service
+  /// lain dapat menangani kesalahan jaringan secara konsisten.
   Future<Map<String, dynamic>> _send(
-    Future<http.Response> Function() request,
+    Future<Response<dynamic>> Function() request,
   ) async {
     try {
       final response = await request().timeout(timeout);
       return _handleResponse(response);
     } on ApiException {
       rethrow;
-    } on TimeoutException {
-      throw const ApiException(
-        statusCode: 408,
-        message:
-            'Permintaan melebihi batas waktu. Periksa koneksi internet Anda.',
-      );
-    } on http.ClientException {
+    } on DioException catch (error) {
+      if (error.response != null) {
+        final data = error.response!.data;
+        final message = data is Map<String, dynamic>
+            ? (data['message'] as String?) ??
+                error.message ??
+                'Terjadi kesalahan pada server'
+            : error.message ?? 'Terjadi kesalahan pada server';
+        throw ApiException(
+          statusCode: error.response!.statusCode ?? 0,
+          message: message,
+          errors: null,
+        );
+      }
+
+      if (error.type == DioExceptionType.connectionTimeout ||
+          error.type == DioExceptionType.sendTimeout ||
+          error.type == DioExceptionType.receiveTimeout ||
+          error.type == DioExceptionType.transformTimeout) {
+        throw const ApiException(
+          statusCode: 408,
+          message:
+              'Permintaan melebihi batas waktu. Periksa koneksi internet Anda.',
+        );
+      }
+
       throw const ApiException(
         statusCode: 0,
         message:
@@ -101,7 +125,10 @@ class ApiService {
 
   Future<Map<String, dynamic>> get(String path, {String? token}) {
     return _send(
-      () => _client.get(_uri(path), headers: _headers(token: token)),
+      () => _client.getUri(
+        _uri(path),
+        options: Options(headers: _headers(token: token)),
+      ),
     );
   }
 
@@ -111,10 +138,10 @@ class ApiService {
     String? token,
   }) {
     return _send(
-      () => _client.post(
+      () => _client.postUri(
         _uri(path),
-        headers: _headers(token: token),
-        body: jsonEncode(body),
+        options: Options(headers: _headers(token: token)),
+        data: jsonEncode(body),
       ),
     );
   }
@@ -125,20 +152,23 @@ class ApiService {
     String? token,
   }) {
     return _send(
-      () => _client.patch(
+      () => _client.patchUri(
         _uri(path),
-        headers: _headers(token: token),
-        body: jsonEncode(body),
+        options: Options(headers: _headers(token: token)),
+        data: jsonEncode(body),
       ),
     );
   }
 
   Future<Map<String, dynamic>> delete(String path, {String? token}) {
     return _send(
-      () => _client.delete(_uri(path), headers: _headers(token: token)),
+      () => _client.deleteUri(
+        _uri(path),
+        options: Options(headers: _headers(token: token)),
+      ),
     );
   }
 
-  /// Menutup koneksi HTTP saat provider di-dispose (hindari kebocoran).
-  void close() => _client.close();
+  /// Menutup koneksi saat provider di-dispose (hindari kebocoran).
+  void close({bool force = true}) => _client.close(force: force);
 }

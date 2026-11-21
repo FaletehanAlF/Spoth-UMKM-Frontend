@@ -1,28 +1,27 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:http/http.dart' as http;
 
 import '../config/app_config.dart';
 import 'api_service.dart';
 
 final uploadServiceProvider = Provider<UploadService>((ref) {
-  return UploadService(http.Client());
+  return UploadService(Dio());
 });
 
 class UploadResult {
   const UploadResult({required this.secureUrl, this.publicId});
 
   final String secureUrl;
-
   final String? publicId;
 }
 
 class UploadService {
   UploadService(this._client);
 
-  final http.Client _client;
+  final Dio _client;
 
   static const Duration _timeout = Duration(seconds: 60);
 
@@ -48,32 +47,60 @@ class UploadService {
     required List<int> bytes,
     String? mimeType,
   }) async {
-    final request =
-        http.MultipartRequest(
-            'POST',
-            Uri.parse('${AppConfig.baseUrl}/uploads/photo'),
-          )
-          ..headers.addAll({
-            'Accept': 'application/json',
-            'Authorization': 'Bearer $token',
-          });
-
-    request.files.add(
-      http.MultipartFile.fromBytes(
-        'foto',
+    final formData = FormData.fromMap({
+      'foto': MultipartFile.fromBytes(
         bytes,
         filename: filename,
-        contentType: http.MediaType.parse(mimeType ?? mimeTypeFor(filename)),
+        contentType: DioMediaType.parse(mimeType ?? mimeTypeFor(filename)),
       ),
-    );
+    });
 
-    http.StreamedResponse streamed;
     try {
-      streamed = await _client.send(request).timeout(_timeout);
-    } on TimeoutException {
+      final response = await _client
+          .postUri(
+            Uri.parse('${AppConfig.baseUrl}/uploads/photo'),
+            options: Options(
+              headers: {
+                'Accept': 'application/json',
+                'Authorization': 'Bearer $token',
+              },
+              connectTimeout: _timeout,
+              receiveTimeout: _timeout,
+            ),
+            data: formData,
+          )
+          .timeout(_timeout);
+
+      final body = response.data is Map<String, dynamic>
+          ? response.data as Map<String, dynamic>
+          : (jsonDecode(response.data.toString()) as Map<String, dynamic>);
+
+      final data = body['data'];
+      final secureUrl = data is Map<String, dynamic>
+          ? data['secure_url'] as String?
+          : null;
+
+      if (secureUrl == null || secureUrl.isEmpty) {
+        throw const FormatException('Respons upload tidak berisi secure_url');
+      }
+
+      return UploadResult(
+        secureUrl: secureUrl,
+        publicId: data is Map<String, dynamic>
+            ? data['public_id'] as String?
+            : null,
+      );
+    } on DioException catch (error) {
+      if (error.response != null && (error.response!.statusCode ?? 0) >= 400) {
+        throw const ApiException(
+          statusCode: 0,
+          message: 'Gagal mengunggah gambar. Silakan coba lagi.',
+        );
+      }
+
       throw const ApiException(
-        statusCode: 408,
-        message: 'Upload melebihi batas waktu. Periksa koneksi internet Anda.',
+        statusCode: 0,
+        message: 'Tidak dapat terhubung ke server. Periksa koneksi Anda.',
       );
     } catch (_) {
       throw const ApiException(
@@ -81,40 +108,5 @@ class UploadService {
         message: 'Tidak dapat terhubung ke server. Periksa koneksi Anda.',
       );
     }
-
-    final response = await http.Response.fromStream(streamed);
-
-    Map<String, dynamic> body = <String, dynamic>{};
-    if (response.body.isNotEmpty) {
-      try {
-        body = jsonDecode(response.body) as Map<String, dynamic>;
-      } catch (_) {
-        body = <String, dynamic>{};
-      }
-    }
-
-    if (response.statusCode >= 400) {
-      throw ApiException(
-        statusCode: response.statusCode,
-        message: (body['message'] as String?) ?? 'Gagal mengunggah gambar',
-        errors: body['errors'] as List<dynamic>?,
-      );
-    }
-
-    final data = body['data'];
-    final secureUrl = data is Map<String, dynamic>
-        ? data['secure_url'] as String?
-        : null;
-
-    if (secureUrl == null || secureUrl.isEmpty) {
-      throw const FormatException('Respons upload tidak berisi secure_url');
-    }
-
-    return UploadResult(
-      secureUrl: secureUrl,
-      publicId: data is Map<String, dynamic>
-          ? data['public_id'] as String?
-          : null,
-    );
   }
 }
