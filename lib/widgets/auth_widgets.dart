@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'dart:math' as math;
+
 import 'package:flutter/services.dart';
 
 import '../core/theme/app_colors.dart';
@@ -51,7 +53,7 @@ class AuthScaffold extends StatelessWidget {
                     availableHeight: constraints.maxHeight,
                   ),
                 ),
-                Container(width: 1, color: AppColors.softBorder),
+                const SizedBox(width: 16, child: _WavyDivider()),
                 Expanded(
                   flex: 10,
                   child: Container(
@@ -692,4 +694,44 @@ class AuthMessage extends StatelessWidget {
       ),
     );
   }
+}
+
+class _WavyDivider extends StatelessWidget {
+  const _WavyDivider();
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomPaint(
+      size: const Size(16, double.infinity),
+      painter: _WavePainter(),
+    );
+  }
+}
+
+class _WavePainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final path = Path();
+    final centerX = size.width / 2;
+    path.moveTo(centerX, 0);
+
+    for (
+      var y = 0.0;
+      y < size.height;
+      y += 4
+    ) {
+      final t = (y / size.height) * 2 * math.pi * 2;
+      final x = centerX + math.sin(t) * 4;
+      path.lineTo(x, y);
+    }
+
+    final paint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.6
+      ..color = AppColors.primaryOrange;
+    canvas.drawPath(path, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _WavePainter oldDelegate) => false;
 }
