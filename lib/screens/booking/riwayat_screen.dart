@@ -175,6 +175,12 @@ class _RiwayatScreenState extends ConsumerState<RiwayatScreen> {
                       ),
                       const SizedBox(height: 18),
                       ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 18,
+                            vertical: 12,
+                          ),
+                        ),
                         onPressed: () {
                           ref
                               .read(mainNavIndexProvider.notifier)
@@ -183,6 +189,9 @@ class _RiwayatScreenState extends ConsumerState<RiwayatScreen> {
                         },
                         child: Text(
                           isHost ? 'Lihat Pesanan Masuk' : 'Cari Tempat',
+                          maxLines: 1,
+                          softWrap: false,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                     ],

@@ -398,38 +398,40 @@ class _CatalogGrid extends ConsumerWidget {
       ),
       data: (items) {
         if (items.isEmpty) {
-          return const Padding(
-            padding: EdgeInsets.symmetric(vertical: 24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.storefront,
-                  size: 40,
-                  color: AppColors.primaryDeep,
-                ),
-                SizedBox(height: 12),
-                Text(
-                  'Tempat tidak ditemukan',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.charcoal,
+          return const Center(
+            child: Padding(
+              padding: EdgeInsets.symmetric(vertical: 24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.storefront,
+                    size: 40,
+                    color: AppColors.primaryDeep,
                   ),
-                ),
-                SizedBox(height: 4),
-                Text(
-                  'Coba ubah kata kunci atau kategori pencarian. '
-                  'Mungkin ada ruang lain yang lebih cocok.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 12.5,
-                    height: 1.45,
-                    color: AppColors.secondaryText,
+                  SizedBox(height: 12),
+                  Text(
+                    'Tempat tidak ditemukan',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.charcoal,
+                    ),
                   ),
-                ),
-              ],
+                  SizedBox(height: 4),
+                  Text(
+                    'Coba ubah kata kunci atau kategori pencarian. '
+                    'Mungkin ada ruang lain yang lebih cocok.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 12.5,
+                      height: 1.45,
+                      color: AppColors.secondaryText,
+                    ),
+                  ),
+                ],
+              ),
             ),
           );
         }

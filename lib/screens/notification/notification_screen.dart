@@ -70,14 +70,38 @@ class NotificationScreen extends ConsumerWidget {
           if (items.isEmpty) {
             return dibatasi(
               const Center(
-                child: SingleChildScrollView(
+                child: Padding(
                   padding: EdgeInsets.all(20),
-                  child: EmptyState(
-                    icon: Icons.notifications_none,
-                    title: 'Belum ada notifikasi',
-                    message:
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.notifications_none,
+                        size: 44,
+                        color: AppColors.primaryDeep,
+                      ),
+                      SizedBox(height: 14),
+                      Text(
+                        'Belum ada notifikasi',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.charcoal,
+                        ),
+                      ),
+                      SizedBox(height: 6),
+                      Text(
                         'Notifikasi akan muncul di sini ketika ada aktivitas '
                         'penyewaan terkait akun Anda.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 13,
+                          height: 1.5,
+                          color: AppColors.secondaryText,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
