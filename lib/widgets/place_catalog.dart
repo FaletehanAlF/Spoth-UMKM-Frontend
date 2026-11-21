@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/services/place_service.dart';
+import '../core/constants/category_style.dart';
 import '../core/theme/app_colors.dart';
 import '../core/theme/app_fonts.dart';
 import '../core/theme/app_layout.dart';
@@ -84,7 +85,6 @@ class _PlaceCatalogState extends ConsumerState<PlaceCatalog> {
   @override
   Widget build(BuildContext context) {
     final kategoriAktif = ref.watch(tenantSearchProvider).kategori;
-    final jumlah = ref.watch(tenantPlacesProvider).value?.length;
 
     return RefreshIndicator(
       color: AppColors.primaryDeep,
@@ -98,27 +98,7 @@ class _PlaceCatalogState extends ConsumerState<PlaceCatalog> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Tempat Usaha',
-                  style: AppFonts.heading(
-                    fontSize: 26,
-                    weight: 700,
-                    height: 1.15,
-                    letterSpacing: -0.7,
-                    color: AppColors.charcoal,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  jumlah != null
-                      ? '$jumlah tempat usaha siap disewa'
-                      : 'Temukan ruang yang pas untuk usahamu.',
-                  style: const TextStyle(
-                    fontSize: 12.5,
-                    color: AppColors.secondaryText,
-                  ),
-                ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 8),
                 Row(
                   children: [
                     Expanded(
@@ -216,12 +196,6 @@ class _CategorySheet extends StatelessWidget {
   final String? kategoriAktif;
   final List<CategoryModel>? categories;
 
-  static const _presetIkon = <String, IconData>{
-    'LAPAK_USAHA': Icons.storefront,
-    'TERAS_KOMERSIAL': Icons.deck,
-    'BOOTH_EVENT': Icons.confirmation_number_outlined,
-  };
-
   @override
   Widget build(BuildContext context) {
     // Sentinel string kosong dipakai untuk "Semua Kategori" agar bisa
@@ -230,7 +204,7 @@ class _CategorySheet extends StatelessWidget {
     final items = <(String, String, IconData)>[
       ('', 'Semua Kategori', Icons.apps),
       for (final item in categories ?? const <CategoryModel>[])
-        (item.nama, item.nama, _presetIkon[item.nama] ?? Icons.storefront),
+        (item.nama, categoryLabel(item.nama), categoryIcon(item.nama)),
     ];
 
     // Deduplicate by nilai agar sheet tetap bersih.
@@ -328,12 +302,6 @@ class _CategorySheet extends StatelessWidget {
 class _CategoryChips extends ConsumerWidget {
   const _CategoryChips({required this.kategoriAktif, this.categories});
 
-  static const _ikon = <String, IconData>{
-    'LAPAK_USAHA': Icons.storefront,
-    'TERAS_KOMERSIAL': Icons.deck,
-    'BOOTH_EVENT': Icons.confirmation_number_outlined,
-  };
-
   final String? kategoriAktif;
   final List<CategoryModel>? categories;
 
@@ -401,8 +369,8 @@ class _CategoryChips extends ConsumerWidget {
             const SizedBox(width: 8),
             chip(
               value: item.nama,
-              label: item.nama,
-              icon: _ikon[item.nama] ?? Icons.storefront,
+              label: categoryLabel(item.nama),
+              icon: categoryIcon(item.nama),
               selected: kategoriAktif == item.nama,
             ),
           ],
@@ -430,12 +398,39 @@ class _CatalogGrid extends ConsumerWidget {
       ),
       data: (items) {
         if (items.isEmpty) {
-          return const EmptyState(
-            icon: Icons.storefront,
-            title: 'Tempat tidak ditemukan',
-            message:
-                'Coba ubah kata kunci atau kategori pencarian. '
-                'Mungkin ada ruang lain yang lebih cocok.',
+          return const Padding(
+            padding: EdgeInsets.symmetric(vertical: 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.storefront,
+                  size: 40,
+                  color: AppColors.primaryDeep,
+                ),
+                SizedBox(height: 12),
+                Text(
+                  'Tempat tidak ditemukan',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.charcoal,
+                  ),
+                ),
+                SizedBox(height: 4),
+                Text(
+                  'Coba ubah kata kunci atau kategori pencarian. '
+                  'Mungkin ada ruang lain yang lebih cocok.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    height: 1.45,
+                    color: AppColors.secondaryText,
+                  ),
+                ),
+              ],
+            ),
           );
         }
 

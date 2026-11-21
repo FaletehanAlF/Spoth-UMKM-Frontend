@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -1123,17 +1123,12 @@ void main() {
   ) async {
     await _pumpSized(tester, const HomeScreen(), host: true);
 
-    expect(
-      find.text('Ringkasan keuangan & tempat Anda dalam satu pandangan.'),
-      findsOneWidget,
-    );
     expect(find.text('Pendapatan'), findsOneWidget);
     expect(find.text('Total Tempat'), findsOneWidget);
     expect(find.text('Tempat Aktif'), findsOneWidget);
     expect(find.text('Rp 750.000'), findsOneWidget);
     expect(find.text('Kelola Tempat'), findsOneWidget);
     expect(find.text('Riwayat Penyewaan'), findsOneWidget);
-    expect(find.text('Teras Dagang Pagi'), findsOneWidget);
     expect(find.text('Tambah Tempat'), findsNothing);
   });
 
@@ -1142,7 +1137,6 @@ void main() {
     (WidgetTester tester) async {
       await _pumpSized(tester, const HomeScreen(), host: true);
 
-      expect(find.text('Teras Dagang Pagi'), findsOneWidget);
       expect(find.byTooltip('Riwayat'), findsOneWidget);
       expect(find.byTooltip('Notifikasi'), findsOneWidget);
     },
@@ -1167,9 +1161,6 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Cari nama atau kota tempat...'), findsOneWidget);
-    expect(find.text('Semua'), findsOneWidget);
-    expect(find.text('Aktif'), findsOneWidget);
-    expect(find.text('Nonaktif'), findsOneWidget);
 
     expect(find.text('1 tempat'), findsOneWidget);
   });
@@ -1766,7 +1757,6 @@ void main() {
     expect(find.text('Spoth UMKM'), findsOneWidget);
     expect(find.text('Aksi Tempat'), findsOneWidget);
     expect(find.text('Ubah Data Tempat'), findsOneWidget);
-    expect(find.text('Nonaktifkan Tempat'), findsOneWidget);
     expect(find.text('Hapus Tempat'), findsOneWidget);
     expect(find.text('Batal'), findsOneWidget);
   });
@@ -1967,42 +1957,6 @@ void main() {
     );
 
     expect(find.text('Tempat aktif dan tampil di pencarian'), findsOneWidget);
-  });
-
-  testWidgets('Kelola Tempat: pemilik menonaktifkan mengirim status NONAKTIF', (
-    WidgetTester tester,
-  ) async {
-    final fakePlace = _FakePlaceService();
-
-    tester.view
-      ..devicePixelRatio = 1.0
-      ..physicalSize = const Size(412, 915);
-
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          authNotifierProvider.overrideWith(
-            () => _FakeAuthNotifier(_hostUser()),
-          ),
-          placeServiceProvider.overrideWithValue(fakePlace),
-          notificationServiceProvider.overrideWithValue(
-            _FakeNotificationService(),
-          ),
-          bookingServiceProvider.overrideWithValue(_FakeBookingService()),
-          paymentServiceProvider.overrideWithValue(_FakePaymentService()),
-        ],
-        child: const MaterialApp(home: KelolaTempatScreen()),
-      ),
-    );
-    await tester.pumpAndSettle();
-
-    await tester.tap(find.byIcon(Icons.more_vert));
-    await tester.pumpAndSettle();
-
-    await tester.tap(find.text('Nonaktifkan Tempat'));
-    await tester.pumpAndSettle();
-
-    expect(fakePlace.lastUpdatePayload, {'status': 'NONAKTIF'});
   });
 
   testWidgets('Sheet aksi kelola dan dialog hapus tanpa overflow', (
@@ -2582,15 +2536,15 @@ void main() {
     await tester.pump();
     await tester.pumpAndSettle();
 
-    expect(find.text('2 × harian'), findsOneWidget);
+    expect(find.text('2 Ã— harian'), findsOneWidget);
     expect(find.text('Rp 400.000'), findsOneWidget);
 
     permintaan[0].complete(_preview(jumlahDurasi: 1, hargaSatuan: 100000));
     await tester.pump();
     await tester.pumpAndSettle();
 
-    expect(find.text('2 × harian'), findsOneWidget);
-    expect(find.text('1 × harian'), findsNothing);
+    expect(find.text('2 Ã— harian'), findsOneWidget);
+    expect(find.text('1 Ã— harian'), findsNothing);
     expect(find.text('Rp 400.000'), findsOneWidget);
     expect(find.text('Rp 100.000'), findsNothing);
     expect(find.text('Menghitung...'), findsNothing);

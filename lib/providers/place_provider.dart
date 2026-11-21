@@ -63,11 +63,9 @@ final tenantPlacesProvider =
     );
 
 class OwnerPlacesFilter {
-  const OwnerPlacesFilter({this.keyword = '', this.status});
+  const OwnerPlacesFilter({this.keyword = ''});
 
   final String keyword;
-
-  final String? status;
 }
 
 class OwnerPlacesFilterNotifier extends Notifier<OwnerPlacesFilter> {
@@ -75,11 +73,7 @@ class OwnerPlacesFilterNotifier extends Notifier<OwnerPlacesFilter> {
   OwnerPlacesFilter build() => const OwnerPlacesFilter();
 
   void setKeyword(String keyword) {
-    state = OwnerPlacesFilter(keyword: keyword, status: state.status);
-  }
-
-  void setStatus(String? status) {
-    state = OwnerPlacesFilter(keyword: state.keyword, status: status);
+    state = OwnerPlacesFilter(keyword: keyword);
   }
 }
 
@@ -103,7 +97,6 @@ class MyPlacesNotifier extends AsyncNotifier<List<PlaceModel>> {
         .getMyPlaces(
           token: token,
           keyword: filter.keyword.trim().isEmpty ? null : filter.keyword.trim(),
-          status: filter.status,
         );
   }
 

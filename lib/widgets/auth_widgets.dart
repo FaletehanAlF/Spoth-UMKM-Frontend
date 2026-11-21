@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'dart:math' as math;
+
 import 'package:flutter/services.dart';
 
 import '../core/theme/app_colors.dart';
@@ -51,6 +53,7 @@ class AuthScaffold extends StatelessWidget {
                     availableHeight: constraints.maxHeight,
                   ),
                 ),
+                const SizedBox(width: 16, child: _WavyDivider()),
                 Expanded(
                   flex: 10,
                   child: Container(
@@ -90,13 +93,13 @@ class _AuthBrandPanel extends StatelessWidget {
     final tampilkanKartu = availableHeight >= 660;
 
     return Container(
-      decoration: const BoxDecoration(color: AppColors.canvasDeep),
+      decoration: const BoxDecoration(color: AppColors.primaryDeep),
       child: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(56, 44, 48, 36),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const AuthBrand(logoSize: 38),
+            const AuthBrand(logoSize: 38, textColor: AppColors.white),
             const SizedBox(height: 56),
             Text(
               'Ruang kecil,\nusaha besar.',
@@ -105,7 +108,7 @@ class _AuthBrandPanel extends StatelessWidget {
                 weight: 700,
                 height: 1.04,
                 letterSpacing: -1.6,
-                color: AppColors.charcoal,
+                color: AppColors.white,
               ),
             ),
             const SizedBox(height: 18),
@@ -117,7 +120,7 @@ class _AuthBrandPanel extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 15,
                   height: 1.6,
-                  color: AppColors.secondaryText,
+                  color: AppColors.white,
                 ),
               ),
             ),
@@ -148,7 +151,7 @@ class _AuthBrandPanel extends StatelessWidget {
                 fontSize: 12,
                 fontStyle: FontStyle.italic,
                 fontWeight: FontWeight.w600,
-                color: AppColors.secondaryText,
+                color: AppColors.white,
               ),
             ),
           ],
@@ -169,21 +172,21 @@ class _BrandTag extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
       decoration: BoxDecoration(
-        color: AppColors.white.withValues(alpha: 0.7),
+        color: AppColors.white.withValues(alpha: 0.18),
         borderRadius: BorderRadius.circular(AppRadius.pill),
-        border: Border.all(color: AppColors.softBorder),
+        border: Border.all(color: AppColors.white.withValues(alpha: 0.35)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 15, color: AppColors.primaryDeep),
+          Icon(icon, size: 15, color: AppColors.white),
           const SizedBox(width: 6),
           Text(
             label,
             style: const TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w600,
-              color: AppColors.charcoal,
+              color: AppColors.white,
             ),
           ),
         ],
@@ -267,9 +270,10 @@ class _AuthPlacePreview extends StatelessWidget {
 }
 
 class AuthBrand extends StatelessWidget {
-  const AuthBrand({super.key, this.logoSize = 42});
+  const AuthBrand({super.key, this.logoSize = 42, this.textColor = AppColors.charcoal});
 
   final double logoSize;
+  final Color textColor;
 
   @override
   Widget build(BuildContext context) {
@@ -290,13 +294,13 @@ class AuthBrand extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 10),
-        const Text(
+        Text(
           'SPOTH UMKM',
           style: TextStyle(
             fontSize: 15,
             fontWeight: FontWeight.w800,
             letterSpacing: 0.2,
-            color: AppColors.charcoal,
+            color: textColor,
           ),
         ),
       ],
@@ -690,4 +694,44 @@ class AuthMessage extends StatelessWidget {
       ),
     );
   }
+}
+
+class _WavyDivider extends StatelessWidget {
+  const _WavyDivider();
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomPaint(
+      size: const Size(16, double.infinity),
+      painter: _WavePainter(),
+    );
+  }
+}
+
+class _WavePainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final path = Path();
+    final centerX = size.width / 2;
+    path.moveTo(centerX, 0);
+
+    for (
+      var y = 0.0;
+      y < size.height;
+      y += 4
+    ) {
+      final t = (y / size.height) * 2 * math.pi * 2;
+      final x = centerX + math.sin(t) * 4;
+      path.lineTo(x, y);
+    }
+
+    final paint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.6
+      ..color = AppColors.primaryOrange;
+    canvas.drawPath(path, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _WavePainter oldDelegate) => false;
 }

@@ -4,9 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../providers/place_provider.dart';
-import '../../widgets/notification_icon.dart';
 import '../../widgets/owner_place_list.dart';
-import '../../widgets/riwayat_icon_button.dart';
 import '../../widgets/spoth_app_bar.dart';
 
 class KelolaTempatScreen extends ConsumerWidget {
@@ -16,9 +14,7 @@ class KelolaTempatScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
       backgroundColor: AppColors.canvas,
-      appBar: const SpothAppBar(
-        actions: [RiwayatIconButton(), NotificationIconButton()],
-      ),
+      appBar: const SpothAppBar(showRiwayat: true, showNotification: true),
       floatingActionButton: FloatingActionButton.extended(
         icon: const Icon(Icons.add),
         label: const Text('Tambah Tempat'),
@@ -31,7 +27,7 @@ class KelolaTempatScreen extends ConsumerWidget {
         },
       ),
       body: RefreshIndicator(
-        color: AppColors.primaryOrange,
+        color: AppColors.primaryDeep,
         onRefresh: () async {
           await ref.read(myPlacesProvider.notifier).refresh();
           await ref.read(hostSummaryProvider.notifier).refresh();

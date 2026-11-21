@@ -73,11 +73,14 @@ class EmptyState extends StatelessWidget {
               ),
               if (actionLabel != null && onAction != null) ...[
                 const SizedBox(height: 18),
-                SizedBox(
-                  width: 190,
-                  child: ElevatedButton(
-                    onPressed: onAction,
-                    child: Text(actionLabel!),
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 300),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: onAction,
+                      child: Text(actionLabel!),
+                    ),
                   ),
                 ),
               ],

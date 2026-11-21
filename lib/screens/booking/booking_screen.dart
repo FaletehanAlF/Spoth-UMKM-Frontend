@@ -10,8 +10,6 @@ import '../../providers/auth_provider.dart';
 import '../../providers/booking_provider.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/empty_state.dart';
-import '../../widgets/notification_icon.dart';
-import '../../widgets/riwayat_icon_button.dart';
 import '../../widgets/shimmer_loading.dart';
 import '../../widgets/spoth_app_bar.dart';
 
@@ -26,9 +24,7 @@ class BookingScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: AppColors.canvas,
-      appBar: const SpothAppBar(
-        actions: [RiwayatIconButton(), NotificationIconButton()],
-      ),
+      appBar: const SpothAppBar(showRiwayat: true, showNotification: true),
       body: Align(
         alignment: Alignment.topCenter,
         child: ConstrainedBox(
@@ -53,22 +49,58 @@ class BookingScreen extends ConsumerWidget {
             data: (items) {
               if (items.isEmpty) {
                 return RefreshIndicator(
-                  color: AppColors.primaryOrange,
+                  color: AppColors.primaryDeep,
                   onRefresh: () =>
                       ref.read(bookingsProvider.notifier).refresh(),
                   child: ListView(
                     physics: const AlwaysScrollableScrollPhysics(),
                     children: [
-                      Padding(
-                        padding: const EdgeInsets.all(20),
-                        child: EmptyState(
-                          icon: Icons.event_note,
-                          title: isHost
-                              ? 'Belum ada pesanan masuk'
-                              : 'Belum ada penyewaan',
-                          message: isHost
-                              ? 'Pesanan untuk tempat Anda akan tampil di sini.'
-                              : 'Pilih tempat di Beranda lalu tekan "Sewa Tempat Ini".',
+                      SizedBox(
+                        height: MediaQuery.sizeOf(context).height * 0.6,
+                        child: Center(
+                          child: Padding(
+                            padding: const EdgeInsets.all(20),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Container(
+                                  width: 64,
+                                  height: 64,
+                                  decoration: const BoxDecoration(
+                                    color: AppColors.lightOrange,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(
+                                    Icons.event_note,
+                                    size: 28,
+                                    color: AppColors.primaryDeep,
+                                  ),
+                                ),
+                                const SizedBox(height: 16),
+                                Text(
+                                  'Belum ada penyewaan',
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.charcoal,
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                Text(
+                                  isHost
+                                      ? 'Penyewaan untuk tempat Anda akan tampil di sini.'
+                                      : 'Pilih tempat di Beranda lalu tekan "Sewa Tempat Ini".',
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    height: 1.5,
+                                    color: AppColors.secondaryText,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                         ),
                       ),
                     ],
