@@ -150,63 +150,47 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 const SizedBox(height: 4),
                 Row(
                   children: [
-                    Expanded(
-                      child: Row(
-                        children: [
-                          Checkbox(
-                            value: _rememberMe,
-                            onChanged: isLoading
-                                ? null
-                                : (value) => setState(
-                                    () => _rememberMe = value ?? true,
-                                  ),
-                            activeColor: AppColors.primaryOrange,
-                            visualDensity: VisualDensity.compact,
-                            materialTapTargetSize:
-                                MaterialTapTargetSize.shrinkWrap,
-                            overlayColor: const WidgetStatePropertyAll<Color?>(
-                              Colors.transparent,
-                            ),
-                            side: const BorderSide(
-                              color: AppColors.neutralBorder,
-                              width: 1.4,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Flexible(
-                            child: MouseRegion(
-                              cursor: isLoading
-                                  ? SystemMouseCursors.basic
-                                  : SystemMouseCursors.click,
-                              child: GestureDetector(
-                                behavior: HitTestBehavior.opaque,
-                                onTap: isLoading
-                                    ? null
-                                    : () => setState(
-                                        () => _rememberMe = !_rememberMe,
-                                      ),
-                                child: const Text(
-                                  'Ingat saya',
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w600,
-                                    color: AppColors.darkText,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
+                    Checkbox(
+                      value: _rememberMe,
+                      onChanged: isLoading
+                          ? null
+                          : (value) =>
+                                setState(() => _rememberMe = value ?? true),
+                      activeColor: AppColors.primaryOrange,
+                      visualDensity: VisualDensity.compact,
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      overlayColor: const WidgetStatePropertyAll<Color?>(
+                        Colors.transparent,
+                      ),
+                      side: const BorderSide(
+                        color: AppColors.neutralBorder,
+                        width: 1.4,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(4),
                       ),
                     ),
+                    const SizedBox(width: 8),
                     Flexible(
-                      child: AuthTextLink(
-                        label: 'Lupa password?',
-                        enabled: !isLoading,
-                        onTap: () => context.push('/forgot-password'),
+                      child: MouseRegion(
+                        cursor: isLoading
+                            ? SystemMouseCursors.basic
+                            : SystemMouseCursors.click,
+                        child: GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onTap: isLoading
+                              ? null
+                              : () =>
+                                    setState(() => _rememberMe = !_rememberMe),
+                          child: const Text(
+                            'Ingat saya',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.darkText,
+                            ),
+                          ),
+                        ),
                       ),
                     ),
                   ],

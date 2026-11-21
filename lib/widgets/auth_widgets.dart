@@ -642,39 +642,6 @@ class AuthFooterLink extends StatelessWidget {
   }
 }
 
-class AuthBackLink extends StatelessWidget {
-  const AuthBackLink({super.key, required this.label, required this.onTap});
-
-  final String label;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: onTap,
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.arrow_back, size: 18, color: AppColors.primaryInk),
-            const SizedBox(width: 6),
-            Text(
-              label,
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: AppColors.primaryInk,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 class AuthMessage extends StatelessWidget {
   const AuthMessage({super.key, required this.text});
 
