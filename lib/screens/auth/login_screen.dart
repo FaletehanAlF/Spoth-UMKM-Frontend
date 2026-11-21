@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/nav_provider.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/auth_widgets.dart';
 
@@ -97,6 +98,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     if (success) {
       await _persistRememberMe();
       if (!mounted) return;
+
+      // Selalu mulai dari tab pertama setelah login:
+      // pemilik melihat Dashboard, penyewa melihat Beranda.
+      ref.read(mainNavIndexProvider.notifier).setTab(MainTab.beranda);
       context.go('/home');
     }
   }
