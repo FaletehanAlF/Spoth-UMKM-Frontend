@@ -51,6 +51,7 @@ class AuthScaffold extends StatelessWidget {
                     availableHeight: constraints.maxHeight,
                   ),
                 ),
+                Container(width: 1, color: AppColors.softBorder),
                 Expanded(
                   flex: 10,
                   child: Container(

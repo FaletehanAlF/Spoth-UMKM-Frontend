@@ -202,10 +202,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         ],
                       ),
                     ),
-                    AuthTextLink(
-                      label: 'Lupa password?',
-                      enabled: !isLoading,
-                      onTap: () => context.push('/forgot-password'),
+                    Flexible(
+                      child: AuthTextLink(
+                        label: 'Lupa password?',
+                        enabled: !isLoading,
+                        onTap: () => context.push('/forgot-password'),
+                      ),
                     ),
                   ],
                 ),
