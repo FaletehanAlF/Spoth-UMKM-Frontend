@@ -64,21 +64,15 @@ class UploadService {
                 'Accept': 'application/json',
                 'Authorization': 'Bearer $token',
               },
-              connectTimeout: _timeout,
               receiveTimeout: _timeout,
             ),
             data: formData,
           )
           .timeout(_timeout);
 
-      final body = response.data is Map<String, dynamic>
-          ? response.data as Map<String, dynamic>
-          : (jsonDecode(response.data.toString()) as Map<String, dynamic>);
-
-      final data = body['data'];
-      final secureUrl = data is Map<String, dynamic>
-          ? data['secure_url'] as String?
-          : null;
+      final body = _decodeMap(response.data);
+      final data = _asMap(body['data']);
+      final secureUrl = data['secure_url'] as String?;
 
       if (secureUrl == null || secureUrl.isEmpty) {
         throw const FormatException('Respons upload tidak berisi secure_url');
@@ -86,27 +80,32 @@ class UploadService {
 
       return UploadResult(
         secureUrl: secureUrl,
-        publicId: data is Map<String, dynamic>
-            ? data['public_id'] as String?
-            : null,
+        publicId: data['public_id'] as String?,
       );
-    } on DioException catch (error) {
-      if (error.response != null && (error.response!.statusCode ?? 0) >= 400) {
-        throw const ApiException(
-          statusCode: 0,
-          message: 'Gagal mengunggah gambar. Silakan coba lagi.',
-        );
-      }
+    } on DioException {
+      throw const ApiException(
+        statusCode: 0,
+        message: 'Gagal mengunggah gambar. Silakan coba lagi.',
+      );
+    }
+  }
 
-      throw const ApiException(
-        statusCode: 0,
-        message: 'Tidak dapat terhubung ke server. Periksa koneksi Anda.',
-      );
+  static Map<String, dynamic> _asMap(dynamic value) {
+    if (value is Map<String, dynamic>) {
+      return value;
+    }
+    return _decodeMap(value);
+  }
+
+  static Map<String, dynamic> _decodeMap(dynamic value) {
+    if (value is Map<String, dynamic>) {
+      return value;
+    }
+    try {
+      final decoded = jsonDecode(value.toString());
+      return decoded is Map<String, dynamic> ? decoded : {};
     } catch (_) {
-      throw const ApiException(
-        statusCode: 0,
-        message: 'Tidak dapat terhubung ke server. Periksa koneksi Anda.',
-      );
+      return {};
     }
   }
 }

@@ -26,95 +26,39 @@ class ApiException implements Exception {
   String toString() => 'ApiException($statusCode): $message';
 }
 
+/// Interface HTTP tunggal untuk layanan API.
+///
+/// Semua request ditangkap menjadi [ApiException] supaya call site
+/// mudah dimengerti: timeout -> 408, koneksi gagal -> 0.
 class ApiService {
   ApiService({Dio? dio, this.timeout = const Duration(seconds: 15)})
-    : _client = dio ?? Dio();
+    : _dio = dio ?? Dio();
 
-  final Dio _client;
-
+  final Dio _dio;
   final Duration timeout;
 
-  Uri _uri(String path) => Uri.parse('${AppConfig.baseUrl}$path');
+  /// Buat URI lengkap dari path API.
+  Uri uri(String path) => Uri.parse('${AppConfig.baseUrl}$path');
 
-  Map<String, String> _headers({String? token}) {
-    return {
-      'Content-Type': 'application/json',
-      'Accept': 'application/json',
-      if (token != null) 'Authorization': 'Bearer $token',
-    };
-  }
+  Map<String, String> headers({String? token}) => {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json',
+    if (token != null) 'Authorization': 'Bearer $token',
+  };
 
-  Map<String, dynamic> _handleResponse(Response response) {
-    final statusCode = response.statusCode ?? 0;
-    final data = response.data;
-    Map<String, dynamic> body = <String, dynamic>{};
-
-    if (data is Map<String, dynamic>) {
-      body = data;
-    } else if (data != null && data.toString().isNotEmpty) {
-      try {
-        final decoded = jsonDecode(data.toString());
-        if (decoded is Map<String, dynamic>) {
-          body = decoded;
-        }
-      } catch (_) {}
-    }
-
-    if (statusCode >= 400) {
-      throw ApiException(
-        statusCode: statusCode,
-        message:
-            (body['message'] as String?) ?? 'Terjadi kesalahan pada server',
-        errors: body['errors'] as List<dynamic>?,
-      );
-    }
-
-    return body;
-  }
-
-  /// Pembungkus semua request HTTP menggunakan Dio.
+  /// Mulai satu request lewat [request].
   ///
-  /// Semua kondisi jaringan ditangkap menjadi [ApiException] agar service
-  /// lain dapat menangani kesalahan jaringan secara konsisten.
-  Future<Map<String, dynamic>> _send(
+  /// Return value: body response berbentuk map JSON.
+  Future<Map<String, dynamic>> send(
     Future<Response<dynamic>> Function() request,
   ) async {
     try {
       final response = await request().timeout(timeout);
-      return _handleResponse(response);
+      return _parseBody(response);
     } on ApiException {
       rethrow;
     } on DioException catch (error) {
-      if (error.response != null) {
-        final data = error.response!.data;
-        final message = data is Map<String, dynamic>
-            ? (data['message'] as String?) ??
-                error.message ??
-                'Terjadi kesalahan pada server'
-            : error.message ?? 'Terjadi kesalahan pada server';
-        throw ApiException(
-          statusCode: error.response!.statusCode ?? 0,
-          message: message,
-          errors: null,
-        );
-      }
-
-      if (error.type == DioExceptionType.connectionTimeout ||
-          error.type == DioExceptionType.sendTimeout ||
-          error.type == DioExceptionType.receiveTimeout ||
-          error.type == DioExceptionType.transformTimeout) {
-        throw const ApiException(
-          statusCode: 408,
-          message:
-              'Permintaan melebihi batas waktu. Periksa koneksi internet Anda.',
-        );
-      }
-
-      throw const ApiException(
-        statusCode: 0,
-        message:
-            'Tidak dapat terhubung ke server. Periksa koneksi internet Anda.',
-      );
+      throw _toApiException(error);
     } catch (error) {
       throw ApiException(
         statusCode: 0,
@@ -124,11 +68,8 @@ class ApiService {
   }
 
   Future<Map<String, dynamic>> get(String path, {String? token}) {
-    return _send(
-      () => _client.getUri(
-        _uri(path),
-        options: Options(headers: _headers(token: token)),
-      ),
+    return send(
+      () => _dio.getUri(uri(path), options: _options(token)),
     );
   }
 
@@ -137,10 +78,10 @@ class ApiService {
     Map<String, dynamic> body, {
     String? token,
   }) {
-    return _send(
-      () => _client.postUri(
-        _uri(path),
-        options: Options(headers: _headers(token: token)),
+    return send(
+      () => _dio.postUri(
+        uri(path),
+        options: _options(token),
         data: jsonEncode(body),
       ),
     );
@@ -151,24 +92,67 @@ class ApiService {
     Map<String, dynamic> body, {
     String? token,
   }) {
-    return _send(
-      () => _client.patchUri(
-        _uri(path),
-        options: Options(headers: _headers(token: token)),
+    return send(
+      () => _dio.patchUri(
+        uri(path),
+        options: _options(token),
         data: jsonEncode(body),
       ),
     );
   }
 
   Future<Map<String, dynamic>> delete(String path, {String? token}) {
-    return _send(
-      () => _client.deleteUri(
-        _uri(path),
-        options: Options(headers: _headers(token: token)),
-      ),
+    return send(() => _dio.deleteUri(uri(path), options: _options(token)));
+  }
+
+  Options _options(String? token) => Options(headers: headers(token: token));
+
+  Map<String, dynamic> _parseBody(Response<dynamic> response) {
+    return _asMap(response.data);
+  }
+
+  ApiException _toApiException(DioException error) {
+    if (error.response != null) {
+      final statusCode = error.response!.statusCode ?? 0;
+      final body = _asMap(error.response!.data);
+      return ApiException(
+        statusCode: statusCode,
+        message:
+            (body['message'] as String?) ??
+            error.message ??
+            'Terjadi kesalahan pada server',
+        errors: body['errors'] as List<dynamic>?,
+      );
+    }
+
+    if (error.type == DioExceptionType.connectionTimeout ||
+        error.type == DioExceptionType.sendTimeout ||
+        error.type == DioExceptionType.receiveTimeout ||
+        error.type == DioExceptionType.transformTimeout) {
+      return const ApiException(
+        statusCode: 408,
+        message:
+            'Permintaan melebihi batas waktu. Periksa koneksi internet Anda.',
+      );
+    }
+
+    return const ApiException(
+      statusCode: 0,
+      message: 'Tidak dapat terhubung ke server. Periksa koneksi internet Anda.',
     );
   }
 
-  /// Menutup koneksi saat provider di-dispose (hindari kebocoran).
-  void close({bool force = true}) => _client.close(force: force);
+  static Map<String, dynamic> _asMap(dynamic value) {
+    if (value is Map<String, dynamic>) {
+      return value;
+    }
+    try {
+      final decoded = jsonDecode(value.toString());
+      return decoded is Map<String, dynamic> ? decoded : {};
+    } catch (_) {
+      return {};
+    }
+  }
+
+  void close({bool force = true}) => _dio.close(force: force);
 }
