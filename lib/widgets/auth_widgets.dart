@@ -146,7 +146,7 @@ class _AuthBrandPanel extends StatelessWidget {
             ],
             const SizedBox(height: 36),
             Text(
-              'â€œTumbuh bersama UMKM Indonesiaâ€',
+              '“Tumbuh bersama UMKM Indonesia”',
               style: TextStyle(
                 fontSize: 12,
                 fontStyle: FontStyle.italic,
@@ -580,6 +580,8 @@ class AuthTextLink extends StatelessWidget {
           padding: const EdgeInsets.symmetric(vertical: 10),
           child: Text(
             label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: TextStyle(
               fontSize: fontSize,
               fontWeight: FontWeight.w700,
