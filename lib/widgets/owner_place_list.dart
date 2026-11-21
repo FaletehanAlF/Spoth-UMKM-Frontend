@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -77,8 +77,7 @@ class _OwnerPlaceListState extends ConsumerState<OwnerPlaceList> {
           data: (items) {
             if (items.isEmpty) {
               return _EmptyPlaces(
-                adaFilter:
-                    filter.keyword.trim().isNotEmpty,
+                adaFilter: filter.keyword.trim().isNotEmpty,
                 onReset: _resetFilter,
               );
             }
@@ -188,67 +187,83 @@ class _EmptyPlaces extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tinggi = MediaQuery.sizeOf(context).height * 0.5;
+
     if (adaFilter) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.search_off, size: 40, color: AppColors.primaryDeep),
-            const SizedBox(height: 12),
-            const Text(
-              'Tidak ada tempat yang cocok',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w700,
-                color: AppColors.charcoal,
-              ),
+      return SizedBox(
+        height: tinggi,
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.search_off,
+                  size: 40,
+                  color: AppColors.primaryDeep,
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  'Tidak ada tempat yang cocok',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.charcoal,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                const Text(
+                  'Coba kata kunci lain.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    height: 1.45,
+                    color: AppColors.secondaryText,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextButton(onPressed: onReset, child: const Text('Reset')),
+              ],
             ),
-            const SizedBox(height: 4),
-            const Text(
-              'Coba kata kunci lain.',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 12.5,
-                height: 1.45,
-                color: AppColors.secondaryText,
-              ),
-            ),
-            const SizedBox(height: 12),
-            TextButton(onPressed: onReset, child: const Text('Reset')),
-          ],
+          ),
         ),
       );
     }
 
-    return const Padding(
-      padding: EdgeInsets.symmetric(vertical: 24),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.storefront, size: 40, color: AppColors.primaryDeep),
-          SizedBox(height: 12),
-          Text(
-            'Belum ada tempat',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w700,
-              color: AppColors.charcoal,
-            ),
+    return SizedBox(
+      height: tinggi,
+      child: const Center(
+        child: Padding(
+          padding: EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.storefront, size: 40, color: AppColors.primaryDeep),
+              SizedBox(height: 12),
+              Text(
+                'Belum ada tempat',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.charcoal,
+                ),
+              ),
+              SizedBox(height: 4),
+              Text(
+                'Tambahkan tempat usaha pertama Anda dengan tombol "Tambah Tempat".',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 12.5,
+                  height: 1.45,
+                  color: AppColors.secondaryText,
+                ),
+              ),
+            ],
           ),
-          SizedBox(height: 4),
-          Text(
-            'Tambahkan tempat usaha pertama Anda dengan tombol "Tambah Tempat".',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 12.5,
-              height: 1.45,
-              color: AppColors.secondaryText,
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
