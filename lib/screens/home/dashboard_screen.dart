@@ -186,30 +186,14 @@ class _KpiGrid extends StatelessWidget {
       ),
     ];
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final width = constraints.maxWidth;
-        final columns = width >= 880
-            ? 4
-            : width >= 480
-            ? 2
-            : 1;
-        final gap = width >= 480 ? AppSpacing.xxl : AppSpacing.xl;
-
-        return Wrap(
-          spacing: gap,
-          runSpacing: AppSpacing.xxl,
-          children: [
-            for (var i = 0; i < items.length; i++)
-              SizedBox(
-                width: columns == 1
-                    ? double.infinity
-                    : (width - gap * (columns - 1)) / columns,
-                child: _KpiCard(data: items[i]),
-              ),
-          ],
-        );
-      },
+    return GridView.count(
+      crossAxisCount: 2,
+      mainAxisSpacing: AppSpacing.xxl,
+      crossAxisSpacing: AppSpacing.xxl,
+      childAspectRatio: 2,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      children: [for (final item in items) _KpiCard(data: item)],
     );
   }
 }
