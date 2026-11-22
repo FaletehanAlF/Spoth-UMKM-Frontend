@@ -407,7 +407,7 @@ class AuthField extends StatelessWidget {
         Text(
           label,
           style: const TextStyle(
-            fontSize: 12.5,
+            fontSize: 13.5,
             fontWeight: FontWeight.w600,
             color: AppColors.charcoal,
           ),
@@ -435,7 +435,7 @@ class AuthField extends StatelessWidget {
             fillColor: AppColors.surfaceMuted,
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 16,
-              vertical: 15,
+              vertical: 16,
             ),
             border: _border(const BorderSide(color: AppColors.neutralBorder)),
             enabledBorder: _border(
@@ -485,7 +485,7 @@ class AuthRoleOption extends StatelessWidget {
         onTap: onTap,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 150),
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
           decoration: BoxDecoration(
             color: selected ? AppColors.lightOrange : AppColors.white,
             borderRadius: BorderRadius.circular(AppRadius.md),
@@ -500,7 +500,7 @@ class AuthRoleOption extends StatelessWidget {
                 selected
                     ? Icons.radio_button_checked
                     : Icons.radio_button_unchecked,
-                size: 20,
+                size: 22,
                 color: selected
                     ? AppColors.primaryDeep
                     : AppColors.secondaryText,
@@ -524,7 +524,7 @@ class AuthRoleOption extends StatelessWidget {
                     Text(
                       description,
                       style: const TextStyle(
-                        fontSize: 12.5,
+                        fontSize: 13,
                         height: 1.4,
                         color: AppColors.secondaryText,
                       ),
@@ -555,10 +555,10 @@ class AuthPasswordToggle extends StatelessWidget {
     return IconButton(
       style: IconButton.styleFrom(overlayColor: Colors.transparent),
       padding: EdgeInsets.zero,
-      constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+      constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
       icon: Icon(
         hidden ? Icons.visibility_outlined : Icons.visibility_off_outlined,
-        size: 20,
+        size: 22,
         color: AppColors.secondaryText,
       ),
       tooltip: hidden ? 'Tampilkan password' : 'Sembunyikan password',
@@ -666,7 +666,7 @@ class AuthMessage extends StatelessWidget {
               text,
               style: const TextStyle(
                 color: AppColors.danger,
-                fontSize: 12.5,
+                fontSize: 13,
                 height: 1.45,
               ),
             ),

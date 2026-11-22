@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_colors.dart';
@@ -270,8 +270,8 @@ class _KpiCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            width: 32,
-            height: 32,
+            width: 36,
+            height: 36,
             decoration: BoxDecoration(
               color: data.surface,
               shape: BoxShape.circle,
@@ -356,10 +356,7 @@ class _NetRevenueCard extends StatelessWidget {
           const SizedBox(height: 2),
           const Text(
             'Perbandingan pendapatan tercatat, komisi, dan bersih.',
-            style: TextStyle(
-              fontSize: 11,
-              color: AppColors.secondaryText,
-            ),
+            style: TextStyle(fontSize: 11, color: AppColors.secondaryText),
           ),
           const SizedBox(height: 16),
           _RevenueBarChart(
@@ -386,9 +383,12 @@ class _RevenueBarChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final maksimum = [pendapatan, komisi, bersih, 1.0].reduce(
-      (a, b) => a > b ? a : b,
-    );
+    final maksimum = [
+      pendapatan,
+      komisi,
+      bersih,
+      1.0,
+    ].reduce((a, b) => a > b ? a : b);
 
     final batang = [
       _RevenueBar('Tercatat', pendapatan, AppColors.primaryDeep),
@@ -413,7 +413,7 @@ class _RevenueBarChart extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        fontSize: 9,
+                        fontSize: 11,
                         fontWeight: FontWeight.w700,
                         color: item.warna,
                       ),
@@ -437,7 +437,7 @@ class _RevenueBarChart extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
-                        fontSize: 10,
+                        fontSize: 11,
                         color: AppColors.secondaryText,
                       ),
                     ),
@@ -540,8 +540,8 @@ class _QuickActionTile extends StatelessWidget {
           child: Row(
             children: [
               Container(
-                width: 34,
-                height: 34,
+                width: 40,
+                height: 40,
                 decoration: const BoxDecoration(
                   color: AppColors.lightOrange,
                   shape: BoxShape.circle,
@@ -571,7 +571,7 @@ class _QuickActionTile extends StatelessWidget {
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
-                        fontSize: 10.5,
+                        fontSize: 12,
                         height: 1.3,
                         color: AppColors.secondaryText,
                       ),
@@ -692,8 +692,8 @@ class _RecentBookingTile extends ConsumerWidget {
           child: Row(
             children: [
               Container(
-                width: 38,
-                height: 38,
+                width: 42,
+                height: 42,
                 decoration: const BoxDecoration(
                   color: AppColors.lightOrange,
                   shape: BoxShape.circle,
@@ -721,12 +721,12 @@ class _RecentBookingTile extends ConsumerWidget {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      '${booking.namaTenant ?? 'Penyewa'} Â· '
+                      '${booking.namaTenant ?? 'Penyewa'} · '
                       '${formatDateString(booking.tanggalMulai)}',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
-                        fontSize: 10.5,
+                        fontSize: 12,
                         color: AppColors.secondaryText,
                       ),
                     ),
@@ -798,7 +798,7 @@ class _StatusBadge extends StatelessWidget {
       child: Text(
         label,
         style: TextStyle(
-          fontSize: 9,
+          fontSize: 11,
           fontWeight: FontWeight.w700,
           color: foreground,
         ),
@@ -838,7 +838,7 @@ class _InlineMessage extends StatelessWidget {
             child: Text(
               message,
               style: const TextStyle(
-                fontSize: 11.5,
+                fontSize: 12.5,
                 color: AppColors.secondaryText,
               ),
             ),
