@@ -571,9 +571,12 @@ class _PlaceFormScreenState extends ConsumerState<PlaceFormScreen> {
             labelText: 'Nama Tempat',
             hintText: 'Contoh: Lapak Kuliner Pasar Baru',
           ),
-          validator: (value) => (value == null || value.trim().isEmpty)
-              ? 'Nama tempat wajib diisi'
-              : null,
+          validator: (value) {
+            final text = value?.trim() ?? '';
+            if (text.isEmpty) return 'Nama tempat wajib diisi';
+            if (text.length < 5) return 'Nama tempat minimal 5 karakter';
+            return null;
+          },
         ),
         const SizedBox(height: 16),
         const Text(
@@ -646,9 +649,12 @@ class _PlaceFormScreenState extends ConsumerState<PlaceFormScreen> {
                       prefixIcon: Icon(Icons.category_outlined),
                     ),
                     enabled: !_submitting,
-                    validator: (value) => value == null || value.trim().isEmpty
-                        ? 'Nama kategori lain wajib diisi'
-                        : null,
+                    validator: (value) {
+                      final text = value?.trim() ?? '';
+                      if (text.isEmpty) return 'Nama kategori lain wajib diisi';
+                      if (text.length < 3) return 'Nama kategori minimal 3 karakter';
+                      return null;
+                    },
                   ),
                   const SizedBox(height: 6),
                   const Text(
@@ -670,9 +676,12 @@ class _PlaceFormScreenState extends ConsumerState<PlaceFormScreen> {
             labelText: 'Alamat',
             hintText: 'Contoh: Jl. Merdeka No. 10',
           ),
-          validator: (value) => (value == null || value.trim().isEmpty)
-              ? 'Alamat wajib diisi'
-              : null,
+          validator: (value) {
+            final text = value?.trim() ?? '';
+            if (text.isEmpty) return 'Alamat wajib diisi';
+            if (text.length < 5) return 'Alamat minimal 5 karakter';
+            return null;
+          },
         ),
         const SizedBox(height: 16),
         TextFormField(
@@ -682,9 +691,12 @@ class _PlaceFormScreenState extends ConsumerState<PlaceFormScreen> {
             labelText: 'Kota',
             hintText: 'Contoh: Bandung',
           ),
-          validator: (value) => (value == null || value.trim().isEmpty)
-              ? 'Kota wajib diisi'
-              : null,
+          validator: (value) {
+            final text = value?.trim() ?? '';
+            if (text.isEmpty) return 'Kota wajib diisi';
+            if (text.length < 3) return 'Kota minimal 3 karakter';
+            return null;
+          },
         ),
         const SizedBox(height: 16),
         TextFormField(
@@ -1096,6 +1108,7 @@ class _PlaceFormScreenState extends ConsumerState<PlaceFormScreen> {
                     ),
                     child: Form(
                       key: _formKey,
+                      autovalidateMode: AutovalidateMode.onUserInteraction,
                       child: _buildFormContent(duaKolom: duaKolom),
                     ),
                   ),
