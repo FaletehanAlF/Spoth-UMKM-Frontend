@@ -27,21 +27,7 @@ class AppTheme {
       error: AppColors.danger,
     );
 
-    const textTheme = TextTheme(
-      displaySmall: TextStyle(
-        color: AppColors.charcoal,
-        fontSize: 34,
-        height: 1.12,
-        letterSpacing: -1,
-        fontWeight: FontWeight.w700,
-      ),
-      headlineMedium: TextStyle(
-        color: AppColors.charcoal,
-        fontSize: 28,
-        height: 1.18,
-        letterSpacing: -0.8,
-        fontWeight: FontWeight.w700,
-      ),
+    final textTheme = const TextTheme(
       headlineSmall: TextStyle(
         color: AppColors.charcoal,
         fontSize: 23,
@@ -70,17 +56,17 @@ class AppTheme {
       ),
       bodyLarge: TextStyle(
         color: AppColors.darkText,
-        fontSize: 15,
-        height: 1.55,
+        fontSize: 16,
+        height: 1.5,
       ),
       bodyMedium: TextStyle(
         color: AppColors.darkText,
-        fontSize: 13.5,
+        fontSize: 14,
         height: 1.5,
       ),
       bodySmall: TextStyle(
         color: AppColors.secondaryText,
-        fontSize: 12,
+        fontSize: 13,
         height: 1.45,
       ),
       labelLarge: TextStyle(
@@ -91,13 +77,13 @@ class AppTheme {
       ),
       labelMedium: TextStyle(
         color: AppColors.secondaryText,
-        fontSize: 12,
+        fontSize: 13,
         height: 1.3,
         fontWeight: FontWeight.w600,
       ),
       labelSmall: TextStyle(
         color: AppColors.secondaryText,
-        fontSize: 11,
+        fontSize: 12,
         height: 1.3,
         fontWeight: FontWeight.w500,
       ),
@@ -117,19 +103,21 @@ class AppTheme {
       dividerColor: AppColors.softBorder,
       disabledColor: AppColors.neutralBorder,
       visualDensity: VisualDensity.standard,
-      splashFactory: InkSparkle.splashFactory,
-      appBarTheme: const AppBarTheme(
+      appBarTheme: AppBarTheme(
         backgroundColor: AppColors.canvas,
         foregroundColor: AppColors.charcoal,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         scrolledUnderElevation: 0,
         centerTitle: false,
-        titleSpacing: 20,
+        titleSpacing: AppSpacing.xxl,
         toolbarHeight: kToolbarHeight,
-        iconTheme: IconThemeData(color: AppColors.darkText, size: 22),
-        actionsIconTheme: IconThemeData(color: AppColors.darkText, size: 22),
-        titleTextStyle: TextStyle(
+        iconTheme: const IconThemeData(color: AppColors.darkText, size: 22),
+        actionsIconTheme: const IconThemeData(
+          color: AppColors.darkText,
+          size: 22,
+        ),
+        titleTextStyle: const TextStyle(
           fontFamily: AppFonts.fontFamily,
           color: AppColors.charcoal,
           fontSize: 18,
@@ -146,8 +134,11 @@ class AppTheme {
           disabledForegroundColor: AppColors.white,
           elevation: 0,
           shadowColor: Colors.transparent,
-          minimumSize: const Size.fromHeight(48),
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          minimumSize: const Size.fromHeight(52),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.xxl,
+            vertical: AppSpacing.lg,
+          ),
           shape: controlShape,
           textStyle: const TextStyle(
             fontFamily: AppFonts.fontFamily,
@@ -161,7 +152,10 @@ class AppTheme {
         style: OutlinedButton.styleFrom(
           foregroundColor: AppColors.charcoal,
           minimumSize: const Size.fromHeight(48),
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.xxl,
+            vertical: AppSpacing.lg,
+          ),
           side: const BorderSide(color: AppColors.neutralBorder, width: 1.1),
           shape: controlShape,
           textStyle: const TextStyle(
@@ -174,7 +168,10 @@ class AppTheme {
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
           foregroundColor: AppColors.primaryInk,
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.lg,
+            vertical: AppSpacing.md,
+          ),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppRadius.sm),
           ),
@@ -188,17 +185,15 @@ class AppTheme {
       floatingActionButtonTheme: FloatingActionButtonThemeData(
         backgroundColor: AppColors.primaryDeep,
         foregroundColor: AppColors.white,
-        elevation: 2,
-        focusElevation: 3,
-        hoverElevation: 3,
-        highlightElevation: 1,
+        elevation: 0,
+        highlightElevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+        ),
         extendedTextStyle: const TextStyle(
           fontFamily: AppFonts.fontFamily,
           fontSize: 14,
           fontWeight: FontWeight.w700,
-        ),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppRadius.lg),
         ),
       ),
       cardTheme: CardThemeData(
@@ -216,8 +211,8 @@ class AppTheme {
         fillColor: AppColors.surfaceMuted,
         isDense: false,
         contentPadding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 15,
+          horizontal: AppSpacing.xl,
+          vertical: AppSpacing.xl,
         ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppRadius.md),
@@ -257,12 +252,12 @@ class AppTheme {
         ),
         errorStyle: const TextStyle(
           color: AppColors.danger,
-          fontSize: 12,
+          fontSize: 13,
           height: 1.35,
         ),
         helperStyle: const TextStyle(
           color: AppColors.secondaryText,
-          fontSize: 12,
+          fontSize: 13,
         ),
         prefixIconColor: AppColors.secondaryText,
         suffixIconColor: AppColors.secondaryText,
@@ -273,7 +268,10 @@ class AppTheme {
         disabledColor: AppColors.canvasDeep,
         side: const BorderSide(color: AppColors.softBorder),
         shape: const StadiumBorder(),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.lg,
+          vertical: AppSpacing.md,
+        ),
         labelStyle: const TextStyle(
           color: AppColors.charcoal,
           fontSize: 13,
@@ -302,15 +300,11 @@ class AppTheme {
         fillColor: WidgetStateProperty.resolveWith(
           (states) => states.contains(WidgetState.selected)
               ? AppColors.primaryDeep
-              : AppColors.secondaryText,
+              : AppColors.primaryDeep.withValues(alpha: 0.2),
         ),
       ),
       switchTheme: SwitchThemeData(
-        thumbColor: WidgetStateProperty.resolveWith(
-          (states) => states.contains(WidgetState.selected)
-              ? AppColors.white
-              : AppColors.white,
-        ),
+        thumbColor: const WidgetStatePropertyAll(AppColors.white),
         trackColor: WidgetStateProperty.resolveWith(
           (states) => states.contains(WidgetState.selected)
               ? AppColors.primaryDeep
@@ -360,11 +354,11 @@ class AppTheme {
         contentTextStyle: const TextStyle(
           fontFamily: AppFonts.fontFamily,
           color: AppColors.white,
-          fontSize: 13.5,
+          fontSize: 13,
           height: 1.4,
         ),
         behavior: SnackBarBehavior.floating,
-        elevation: 2,
+        elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppRadius.md),
         ),
@@ -400,7 +394,7 @@ class AppTheme {
         subtitleTextStyle: TextStyle(
           fontFamily: AppFonts.fontFamily,
           color: AppColors.secondaryText,
-          fontSize: 12.5,
+          fontSize: 12,
           height: 1.4,
         ),
       ),
@@ -409,7 +403,7 @@ class AppTheme {
         selectionColor: AppColors.primaryOrange.withValues(alpha: 0.22),
         selectionHandleColor: AppColors.primaryDeep,
       ),
-      pageTransitionsTheme: const PageTransitionsTheme(
+      pageTransitionsTheme: PageTransitionsTheme(
         builders: {
           TargetPlatform.android: FadeForwardsPageTransitionsBuilder(),
           TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),

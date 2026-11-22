@@ -314,7 +314,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       body: user == null
           ? const Center(
               child: Padding(
-                padding: EdgeInsets.all(24),
+                padding: EdgeInsets.all(AppSpacing.mega),
                 child: Text('Silakan login untuk melihat profil Anda.'),
               ),
             )
@@ -353,7 +353,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       );
 
                 return SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.ultra,
+                    AppSpacing.ultra,
+                    AppSpacing.ultra,
+                    AppSpacing.mega,
+                  ),
                   child: Center(
                     child: ConstrainedBox(
                       constraints: const BoxConstraints(
@@ -363,8 +368,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           ? Row(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                SizedBox(width: 320, child: ringkasan),
-                                const SizedBox(width: 24),
+                                SizedBox(width: 340, child: ringkasan),
+                                const SizedBox(width: AppSpacing.ultra),
                                 Expanded(child: detail),
                               ],
                             )
@@ -372,7 +377,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
                                 ringkasan,
-                                const SizedBox(height: 20),
+                                const SizedBox(height: AppSpacing.xl),
                                 detail,
                               ],
                             ),

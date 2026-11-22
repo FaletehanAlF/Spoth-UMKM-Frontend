@@ -13,19 +13,17 @@ class SpothBottomNav extends StatelessWidget {
   });
 
   final int index;
-
   final List<NavItemData> items;
-
   final ValueChanged<int> onChanged;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: EdgeInsets.fromLTRB(
-        10,
-        8,
-        10,
-        10 + MediaQuery.paddingOf(context).bottom,
+        AppSpacing.sm,
+        AppSpacing.xs,
+        AppSpacing.sm,
+        AppSpacing.sm + MediaQuery.paddingOf(context).bottom,
       ),
       color: AppColors.canvas,
       child: Container(
@@ -33,15 +31,11 @@ class SpothBottomNav extends StatelessWidget {
           color: AppColors.white,
           borderRadius: BorderRadius.circular(AppRadius.xl + 2),
           border: Border.all(color: AppColors.softBorder),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.charcoal.withValues(alpha: 0.06),
-              blurRadius: 18,
-              offset: const Offset(0, 8),
-            ),
-          ],
         ),
-        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.xs,
+          vertical: AppSpacing.xs,
+        ),
         child: Row(
           children: [
             for (var i = 0; i < items.length; i++)
@@ -76,7 +70,7 @@ class _NavItem extends StatelessWidget {
       child: Tooltip(
         message: item.label,
         child: Material(
-          color: Colors.transparent,
+          color: AppColors.canvas,
           borderRadius: BorderRadius.circular(AppRadius.lg),
           child: InkWell(
             onTap: onTap,
@@ -88,9 +82,9 @@ class _NavItem extends StatelessWidget {
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 180),
                 curve: Curves.easeOut,
-                padding: const EdgeInsets.symmetric(vertical: 7),
+                padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
                 decoration: BoxDecoration(
-                  color: selected ? AppColors.lightOrange : Colors.transparent,
+                  color: selected ? AppColors.lightOrange : AppColors.canvas,
                   borderRadius: BorderRadius.circular(AppRadius.lg),
                 ),
                 child: Column(
@@ -101,14 +95,12 @@ class _NavItem extends StatelessWidget {
                       size: 22,
                       color: selected ? AppColors.primaryDeep : color,
                     ),
-                    const SizedBox(height: 3),
+                    const SizedBox(height: AppSpacing.xs),
                     Text(
                       item.shortLabel,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 9.5,
-                        height: 1.2,
+                      style: Theme.of(context).textTheme.bodySmall!.copyWith(
                         fontWeight: selected
                             ? FontWeight.w700
                             : FontWeight.w500,

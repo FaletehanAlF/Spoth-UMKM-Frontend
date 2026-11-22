@@ -26,7 +26,12 @@ class SpothSidebar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: expanded ? 236 : 78,
-      padding: const EdgeInsets.fromLTRB(12, 16, 12, 14),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.sm,
+        AppSpacing.xxl,
+        AppSpacing.sm,
+        AppSpacing.lg,
+      ),
       decoration: const BoxDecoration(
         color: AppColors.white,
         border: Border(right: BorderSide(color: AppColors.softBorder)),
@@ -53,7 +58,7 @@ class SpothSidebar extends StatelessWidget {
             child: ListView.separated(
               padding: EdgeInsets.zero,
               itemCount: items.length,
-              separatorBuilder: (_, _) => const SizedBox(height: 6),
+              separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.xs),
               itemBuilder: (context, i) => _SidebarItem(
                 item: items[i],
                 selected: index == i,
@@ -83,7 +88,7 @@ class _Brand extends StatelessWidget {
     }
 
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
         color: AppColors.lightOrange,
         borderRadius: BorderRadius.circular(AppRadius.lg),
@@ -235,7 +240,7 @@ class _SidebarFooter extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
         color: AppColors.surfaceMuted,
         borderRadius: BorderRadius.circular(AppRadius.md),
