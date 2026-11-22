@@ -161,7 +161,7 @@ class _PlaceFormScreenState extends ConsumerState<PlaceFormScreen> {
 
       if (!mounted) return;
       _namaController.text = place.namaTempat;
-      _deskripsiController.text = place.deskripsi ?? '';
+      _deskripsiController.text = place.deskripsi;
       _alamatController.text = place.alamat;
       _kotaController.text = place.kota;
       _fasilitasController.text = (place.fasilitas ?? '').trim();
@@ -703,9 +703,16 @@ class _PlaceFormScreenState extends ConsumerState<PlaceFormScreen> {
           controller: _deskripsiController,
           maxLines: 3,
           decoration: const InputDecoration(
-            labelText: 'Deskripsi (opsional)',
-            hintText: 'Contoh: Lapak makan malam dengan area parkir',
+            labelText: 'Deskripsi',
+            hintText: 'Contoh: Lapak makan malam dengan area parkir (min. 10 karakter)',
           ),
+          validator: (value) {
+            final text = value?.trim() ?? '';
+            if (text.isEmpty) return 'Deskripsi wajib diisi';
+            if (text.length < 10) return 'Deskripsi minimal 10 karakter';
+            if (text.length > 250) return 'Deskripsi maksimal 250 karakter';
+            return null;
+          },
         ),
       ],
     );

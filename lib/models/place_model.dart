@@ -4,7 +4,7 @@ class PlaceModel {
     required this.hostId,
     required this.namaTempat,
     required this.kategori,
-    this.deskripsi,
+    required this.deskripsi,
     required this.alamat,
     required this.kota,
     this.fasilitas,
@@ -48,7 +48,7 @@ class PlaceModel {
   final String hostId;
   final String namaTempat;
   final String kategori;
-  final String? deskripsi;
+  final String deskripsi;
   final String alamat;
   final String kota;
   final String? fasilitas;
@@ -86,7 +86,7 @@ class PlaceModel {
       hostId: json['host_id']?.toString() ?? '',
       namaTempat: json['nama_tempat'] as String? ?? '',
       kategori: json['kategori'] as String? ?? '',
-      deskripsi: json['deskripsi'] as String?,
+      deskripsi: json['deskripsi'] as String? ?? '',
       alamat: json['alamat'] as String? ?? '',
       kota: json['kota'] as String? ?? '',
       fasilitas: json['fasilitas'] as String?,

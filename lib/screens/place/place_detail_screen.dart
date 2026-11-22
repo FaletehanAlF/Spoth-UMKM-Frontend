@@ -714,7 +714,7 @@ List<Widget> _seksiRincian({
   required VoidCallback? onKelolaAturan,
 }) {
   final seksi = <Widget>[];
-  final deskripsi = place.deskripsi?.trim() ?? '';
+  final deskripsi = place.deskripsi.trim();
   final aturan = place.aturan?.trim() ?? '';
 
   if (deskripsi.isNotEmpty) {
