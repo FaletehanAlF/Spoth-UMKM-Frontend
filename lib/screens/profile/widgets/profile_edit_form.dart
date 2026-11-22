@@ -72,9 +72,12 @@ class ProfileEditForm extends StatelessWidget {
                 labelText: 'Nama Lengkap',
                 prefixIcon: Icon(Icons.person_outline),
               ),
-              validator: (value) => (value == null || value.trim().isEmpty)
-                  ? 'Nama wajib diisi'
-                  : null,
+              validator: (value) {
+                final text = value?.trim() ?? '';
+                if (text.isEmpty) return 'Nama wajib diisi';
+                if (text.length < 5) return 'Nama minimal 5 karakter';
+                return null;
+              },
             ),
             const SizedBox(height: AppSpacing.md),
             TextFormField(
