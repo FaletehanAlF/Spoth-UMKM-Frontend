@@ -666,7 +666,10 @@ class _PlaceFormScreenState extends ConsumerState<PlaceFormScreen> {
         const SizedBox(height: 16),
         TextFormField(
           controller: _alamatController,
-          decoration: const InputDecoration(labelText: 'Alamat'),
+          decoration: const InputDecoration(
+            labelText: 'Alamat',
+            hintText: 'Contoh: Jl. Merdeka No. 10',
+          ),
           validator: (value) => (value == null || value.trim().isEmpty)
               ? 'Alamat wajib diisi'
               : null,
@@ -675,7 +678,10 @@ class _PlaceFormScreenState extends ConsumerState<PlaceFormScreen> {
         TextFormField(
           controller: _kotaController,
           textCapitalization: TextCapitalization.words,
-          decoration: const InputDecoration(labelText: 'Kota'),
+          decoration: const InputDecoration(
+            labelText: 'Kota',
+            hintText: 'Contoh: Bandung',
+          ),
           validator: (value) => (value == null || value.trim().isEmpty)
               ? 'Kota wajib diisi'
               : null,
@@ -686,7 +692,7 @@ class _PlaceFormScreenState extends ConsumerState<PlaceFormScreen> {
           maxLines: 3,
           decoration: const InputDecoration(
             labelText: 'Deskripsi (opsional)',
-            hintText: 'Jelaskan tempat usaha Anda',
+            hintText: 'Contoh: Lapak makan malam dengan area parkir',
           ),
         ),
       ],
@@ -976,6 +982,8 @@ class _PlaceFormScreenState extends ConsumerState<PlaceFormScreen> {
       );
     }
 
+    // Web: dua kolom. Kiri untuk informasi tempat dan fasilitas,
+    // kanan untuk foto, harga, serta pengaturan ketersediaan.
     return ListView(
       padding: const EdgeInsets.all(24),
       children: [
@@ -1015,6 +1023,8 @@ class _PlaceFormScreenState extends ConsumerState<PlaceFormScreen> {
                     child: _buildPriceFields(),
                   ),
                   const SizedBox(height: 20),
+                  _buildAvailabilityFields(),
+                  const SizedBox(height: 20),
                   _FormSection(
                     title: 'Periode Ketersediaan',
                     icon: Icons.event_outlined,
@@ -1025,8 +1035,6 @@ class _PlaceFormScreenState extends ConsumerState<PlaceFormScreen> {
             ),
           ],
         ),
-        const SizedBox(height: 20),
-        _buildAvailabilityFields(),
         const SizedBox(height: 24),
       ],
     );
@@ -1104,6 +1112,8 @@ class _PlaceFormScreenState extends ConsumerState<PlaceFormScreen> {
               padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
               child: SafeArea(
                 top: false,
+                // heightFactor: 1 membuat tinggi bar mengikuti tombol,
+                // bukan setinggi layar.
                 child: Center(
                   heightFactor: 1,
                   child: ConstrainedBox(
@@ -1112,26 +1122,28 @@ class _PlaceFormScreenState extends ConsumerState<PlaceFormScreen> {
                       builder: (context, constraints) {
                         final web = constraints.maxWidth >= 900;
 
-                        return Align(
-                          alignment: web
-                              ? Alignment.centerRight
-                              : Alignment.center,
-                          child: SizedBox(
-                            width: web ? 320 : double.infinity,
-                            height: 48,
-                            child: ElevatedButton(
-                              onPressed: _submitting ? null : _submit,
-                              child: Text(
-                                _submitting
-                                    ? (_photos.any(
-                                            (photo) => photo.bytes != null,
-                                          )
-                                          ? 'Mengunggah foto...'
-                                          : 'Menyimpan...')
-                                    : 'Simpan Tempat',
+                        return Row(
+                          mainAxisAlignment: web
+                              ? MainAxisAlignment.end
+                              : MainAxisAlignment.center,
+                          children: [
+                            SizedBox(
+                              width: web ? 320 : constraints.maxWidth,
+                              height: 48,
+                              child: ElevatedButton(
+                                onPressed: _submitting ? null : _submit,
+                                child: Text(
+                                  _submitting
+                                      ? (_photos.any(
+                                              (photo) => photo.bytes != null,
+                                            )
+                                            ? 'Mengunggah foto...'
+                                            : 'Menyimpan...')
+                                      : 'Simpan Tempat',
+                                ),
                               ),
                             ),
-                          ),
+                          ],
                         );
                       },
                     ),
