@@ -415,8 +415,6 @@ class _OwnerPlaceCardState extends ConsumerState<_OwnerPlaceCard> {
                             ),
                           ),
                         ),
-                        const SizedBox(width: 8),
-                        _StatusBadge(isAktif: place.isAktif),
                       ],
                     ),
                     const SizedBox(height: 3),
@@ -487,37 +485,6 @@ class _OwnerPlaceCardState extends ConsumerState<_OwnerPlaceCard> {
               ),
             ],
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _StatusBadge extends StatelessWidget {
-  const _StatusBadge({required this.isAktif});
-
-  final bool isAktif;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: isAktif ? AppColors.sageTint : AppColors.surfaceMuted,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: isAktif
-              ? AppColors.sage.withValues(alpha: 0.25)
-              : AppColors.softBorder,
-        ),
-      ),
-      child: Text(
-        isAktif ? 'AKTIF' : 'NONAKTIF',
-        style: TextStyle(
-          fontSize: 9,
-          fontWeight: FontWeight.w700,
-          letterSpacing: 0.4,
-          color: isAktif ? AppColors.success : AppColors.secondaryText,
         ),
       ),
     );

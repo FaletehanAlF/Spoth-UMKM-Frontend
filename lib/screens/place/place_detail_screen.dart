@@ -1048,14 +1048,7 @@ class _KepalaTempat extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              _InfoBadge(label: place.kategoriLabel),
-              _StatusBadge(isAktif: place.isAktif),
-            ],
-          ),
+          _InfoBadge(label: place.kategoriLabel),
           const SizedBox(height: 12),
           Text(
             place.namaTempat,
@@ -1208,32 +1201,6 @@ class _InfoBadge extends StatelessWidget {
           fontSize: 11.5,
           fontWeight: FontWeight.w600,
           color: AppColors.charcoal,
-        ),
-      ),
-    );
-  }
-}
-
-class _StatusBadge extends StatelessWidget {
-  const _StatusBadge({required this.isAktif});
-
-  final bool isAktif;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: isAktif ? AppColors.primaryOrange : AppColors.lightOrange,
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Text(
-        isAktif ? 'AKTIF' : 'NONAKTIF',
-        style: TextStyle(
-          fontSize: 10.5,
-          fontWeight: FontWeight.w700,
-          letterSpacing: 0.4,
-          color: isAktif ? AppColors.white : AppColors.secondaryText,
         ),
       ),
     );
@@ -1591,49 +1558,29 @@ class _ActionBar extends StatelessWidget {
 
     Widget content;
     if (isOwner) {
-      content = _BarStatus(place: place);
+      content = _BarHarga(place: place);
     } else if (isTenant) {
-      if (place.isAktif) {
-        final tombol = ElevatedButton.icon(
-          onPressed: () => context.push('/booking-form?id=${place.id}'),
-          icon: const Icon(Icons.event_available, size: 18),
-          label: const Text('Sewa Tempat Ini'),
-        );
+      final tombol = ElevatedButton.icon(
+        onPressed: () => context.push('/booking-form?id=${place.id}'),
+        icon: const Icon(Icons.event_available, size: 18),
+        label: const Text('Sewa Tempat Ini'),
+      );
 
-        content = LayoutBuilder(
-          builder: (context, constraints) {
-            if (constraints.maxWidth >= 520) {
-              return Row(
-                children: [
-                  Expanded(child: _BarHarga(place: place)),
-                  const SizedBox(width: 24),
-                  SizedBox(width: 240, height: 48, child: tombol),
-                ],
-              );
-            }
+      content = LayoutBuilder(
+        builder: (context, constraints) {
+          if (constraints.maxWidth >= 520) {
+            return Row(
+              children: [
+                Expanded(child: _BarHarga(place: place)),
+                const SizedBox(width: 24),
+                SizedBox(width: 240, height: 48, child: tombol),
+              ],
+            );
+          }
 
-            return SizedBox(width: double.infinity, height: 48, child: tombol);
-          },
-        );
-      } else {
-        content = Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(vertical: 14),
-          decoration: BoxDecoration(
-            color: AppColors.lightOrange,
-            borderRadius: BorderRadius.circular(14),
-          ),
-          child: const Text(
-            'Tempat Sedang Nonaktif',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w600,
-              color: AppColors.secondaryText,
-            ),
-          ),
-        );
-      }
+          return SizedBox(width: double.infinity, height: 48, child: tombol);
+        },
+      );
     } else {
       content = Row(
         children: const [
@@ -1665,45 +1612,6 @@ class _ActionBar extends StatelessWidget {
           child: content,
         ),
       ),
-    );
-  }
-}
-
-class _BarStatus extends StatelessWidget {
-  const _BarStatus({required this.place});
-
-  final PlaceModel place;
-
-  @override
-  Widget build(BuildContext context) {
-    final aktif = place.isAktif;
-
-    return Row(
-      children: [
-        Container(
-          width: 8,
-          height: 8,
-          decoration: BoxDecoration(
-            color: aktif ? AppColors.primaryOrange : AppColors.neutralBorder,
-            shape: BoxShape.circle,
-          ),
-        ),
-        const SizedBox(width: 9),
-        Flexible(
-          child: Text(
-            aktif
-                ? 'Tempat aktif dan tampil di pencarian'
-                : 'Tempat nonaktif, tidak tampil di pencarian',
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              fontSize: 13,
-              height: 1.35,
-              color: AppColors.secondaryText,
-            ),
-          ),
-        ),
-      ],
     );
   }
 }

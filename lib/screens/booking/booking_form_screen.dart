@@ -751,8 +751,6 @@ class _AvailabilityInfo extends StatelessWidget {
         return 'Diblokir aturan ketersediaan tempat';
       case 'PERIODE_TIDAK_TERSEDIA':
         return 'Di luar periode ketersediaan tempat';
-      case 'STATUS_TIDAK_AKTIF':
-        return 'Tempat sedang tidak aktif';
       case 'MENUNGGU_PEMBAYARAN':
         return 'Sudah dipesan dan menunggu pembayaran';
       case 'LUNAS':

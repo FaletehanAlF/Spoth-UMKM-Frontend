@@ -1,4 +1,4 @@
-import 'dart:typed_data';
+﻿import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -79,7 +79,6 @@ class _PlaceFormScreenState extends ConsumerState<PlaceFormScreen> {
   String? _placeId;
   DateTime? _tanggalMulaiTersedia;
   DateTime? _tanggalSelesaiTersedia;
-  bool _statusAktif = true;
   bool _loading = false;
   bool _submitting = false;
   String? _loadError;
@@ -178,7 +177,6 @@ class _PlaceFormScreenState extends ConsumerState<PlaceFormScreen> {
         });
       }
       _tipeDurasi = place.tipeDurasi;
-      _statusAktif = place.isAktif;
       _tanggalMulaiTersedia = place.tanggalMulaiTersedia;
       _tanggalSelesaiTersedia = place.tanggalSelesaiTersedia;
       _tanggalMulaiController.text = place.tanggalMulaiTersedia == null
@@ -335,7 +333,7 @@ class _PlaceFormScreenState extends ConsumerState<PlaceFormScreen> {
     if (source == ImageSource.camera) {
       final granted = await PermissionService.ensureCameraPermission();
       if (!granted) {
-        _showSnack('Izin kamera tidak diizinkan — tidak bisa ambil foto.');
+        _showSnack('Izin kamera tidak diizinkan â€” tidak bisa ambil foto.');
         return;
       }
     }
@@ -385,6 +383,11 @@ class _PlaceFormScreenState extends ConsumerState<PlaceFormScreen> {
 
     final valid = _formKey.currentState?.validate() ?? false;
     if (!valid) return;
+
+    if (_photos.isEmpty) {
+      _showSnack('Silakan masukkan minimal 1 foto.');
+      return;
+    }
 
     final sedangMembuat = !_isEditing;
 
@@ -493,7 +496,6 @@ class _PlaceFormScreenState extends ConsumerState<PlaceFormScreen> {
           'harga_promo': ?hargaPromo
         else
           'harga_promo': hargaPromo,
-        if (!sedangMembuat) 'status': _statusAktif ? 'AKTIF' : 'NONAKTIF',
       };
 
       final service = ref.read(placeServiceProvider);
@@ -514,7 +516,6 @@ class _PlaceFormScreenState extends ConsumerState<PlaceFormScreen> {
         if (created.id.isNotEmpty) {
           setState(() {
             _placeId = created.id;
-            _statusAktif = created.isAktif;
             _tanggalMulaiTersedia =
                 created.tanggalMulaiTersedia ?? tanggalMulai;
             _tanggalSelesaiTersedia =
@@ -652,7 +653,9 @@ class _PlaceFormScreenState extends ConsumerState<PlaceFormScreen> {
                     validator: (value) {
                       final text = value?.trim() ?? '';
                       if (text.isEmpty) return 'Nama kategori lain wajib diisi';
-                      if (text.length < 3) return 'Nama kategori minimal 3 karakter';
+                      if (text.length < 5) {
+                        return 'Nama kategori minimal 5 karakter';
+                      }
                       return null;
                     },
                   ),
@@ -679,7 +682,7 @@ class _PlaceFormScreenState extends ConsumerState<PlaceFormScreen> {
           validator: (value) {
             final text = value?.trim() ?? '';
             if (text.isEmpty) return 'Alamat wajib diisi';
-            if (text.length < 5) return 'Alamat minimal 5 karakter';
+            if (text.length < 10) return 'Alamat minimal 10 karakter';
             return null;
           },
         ),
@@ -694,7 +697,7 @@ class _PlaceFormScreenState extends ConsumerState<PlaceFormScreen> {
           validator: (value) {
             final text = value?.trim() ?? '';
             if (text.isEmpty) return 'Kota wajib diisi';
-            if (text.length < 3) return 'Kota minimal 3 karakter';
+            if (text.length < 4) return 'Kota minimal 4 karakter';
             return null;
           },
         ),
@@ -734,10 +737,15 @@ class _PlaceFormScreenState extends ConsumerState<PlaceFormScreen> {
           const SizedBox(height: 4),
         ],
         const Text(
-          'Maks. 6 foto. Format JPG, JPEG, PNG, WEBP, maks 5 MB per foto.',
+          'Maks. 6 foto. Minimal 1 foto. Format JPG, JPEG, PNG, WEBP, maks 5 MB per foto.',
           style: TextStyle(fontSize: 12, color: AppColors.secondaryText),
         ),
         const SizedBox(height: 8),
+        if (_photos.isEmpty)
+          const Text(
+            'Silakan masukkan minimal 1 foto.',
+            style: TextStyle(fontSize: 12, color: AppColors.danger),
+          ),
         LayoutBuilder(
           builder: (context, constraints) {
             final kolom = constraints.maxWidth >= 720
@@ -955,27 +963,6 @@ class _PlaceFormScreenState extends ConsumerState<PlaceFormScreen> {
           placeId: _placeId,
           periodeSelesai: _tanggalSelesaiTersedia,
         ),
-        if (_isEditing) ...[
-          const SizedBox(height: 16),
-          SwitchListTile(
-            contentPadding: EdgeInsets.zero,
-            activeThumbColor: AppColors.primaryOrange,
-            title: const Text(
-              'Tempat Aktif',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: AppColors.darkText,
-              ),
-            ),
-            subtitle: const Text(
-              'Tempat nonaktif tidak tampil kepada penyewa',
-              style: TextStyle(fontSize: 12, color: AppColors.secondaryText),
-            ),
-            value: _statusAktif,
-            onChanged: (value) => setState(() => _statusAktif = value),
-          ),
-        ],
       ],
     );
   }
