@@ -1,4 +1,4 @@
-import 'dart:typed_data';
+﻿import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -79,7 +79,6 @@ class _PlaceFormScreenState extends ConsumerState<PlaceFormScreen> {
   String? _placeId;
   DateTime? _tanggalMulaiTersedia;
   DateTime? _tanggalSelesaiTersedia;
-  bool _statusAktif = true;
   bool _loading = false;
   bool _submitting = false;
   String? _loadError;
@@ -161,7 +160,7 @@ class _PlaceFormScreenState extends ConsumerState<PlaceFormScreen> {
 
       if (!mounted) return;
       _namaController.text = place.namaTempat;
-      _deskripsiController.text = place.deskripsi ?? '';
+      _deskripsiController.text = place.deskripsi;
       _alamatController.text = place.alamat;
       _kotaController.text = place.kota;
       _fasilitasController.text = (place.fasilitas ?? '').trim();
@@ -178,7 +177,6 @@ class _PlaceFormScreenState extends ConsumerState<PlaceFormScreen> {
         });
       }
       _tipeDurasi = place.tipeDurasi;
-      _statusAktif = place.isAktif;
       _tanggalMulaiTersedia = place.tanggalMulaiTersedia;
       _tanggalSelesaiTersedia = place.tanggalSelesaiTersedia;
       _tanggalMulaiController.text = place.tanggalMulaiTersedia == null
@@ -335,7 +333,7 @@ class _PlaceFormScreenState extends ConsumerState<PlaceFormScreen> {
     if (source == ImageSource.camera) {
       final granted = await PermissionService.ensureCameraPermission();
       if (!granted) {
-        _showSnack('Izin kamera tidak diizinkan — tidak bisa ambil foto.');
+        _showSnack('Izin kamera tidak diizinkan â€” tidak bisa ambil foto.');
         return;
       }
     }
@@ -385,6 +383,11 @@ class _PlaceFormScreenState extends ConsumerState<PlaceFormScreen> {
 
     final valid = _formKey.currentState?.validate() ?? false;
     if (!valid) return;
+
+    if (_photos.isEmpty) {
+      _showSnack('Silakan masukkan minimal 1 foto.');
+      return;
+    }
 
     final sedangMembuat = !_isEditing;
 
@@ -493,7 +496,6 @@ class _PlaceFormScreenState extends ConsumerState<PlaceFormScreen> {
           'harga_promo': ?hargaPromo
         else
           'harga_promo': hargaPromo,
-        if (!sedangMembuat) 'status': _statusAktif ? 'AKTIF' : 'NONAKTIF',
       };
 
       final service = ref.read(placeServiceProvider);
@@ -514,7 +516,6 @@ class _PlaceFormScreenState extends ConsumerState<PlaceFormScreen> {
         if (created.id.isNotEmpty) {
           setState(() {
             _placeId = created.id;
-            _statusAktif = created.isAktif;
             _tanggalMulaiTersedia =
                 created.tanggalMulaiTersedia ?? tanggalMulai;
             _tanggalSelesaiTersedia =
@@ -558,6 +559,491 @@ class _PlaceFormScreenState extends ConsumerState<PlaceFormScreen> {
     } finally {
       if (mounted) setState(() => _submitting = false);
     }
+  }
+
+  Widget _buildInfoFields() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        TextFormField(
+          controller: _namaController,
+          textCapitalization: TextCapitalization.words,
+          decoration: const InputDecoration(
+            labelText: 'Nama Tempat',
+            hintText: 'Contoh: Lapak Kuliner Pasar Baru',
+          ),
+          validator: (value) {
+            final text = value?.trim() ?? '';
+            if (text.isEmpty) return 'Nama tempat wajib diisi';
+            if (text.length < 5) return 'Nama tempat minimal 5 karakter';
+            return null;
+          },
+        ),
+        const SizedBox(height: 16),
+        const Text(
+          'Kategori',
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: AppColors.darkText,
+          ),
+        ),
+        const SizedBox(height: 8),
+        if (_categoriesLoading)
+          const _CategoryPickerSkeleton()
+        else if (_categoriesError != null)
+          _CategoryPickerError(onRetry: _loadCategories)
+        else ...[
+          CategoryPicker(
+            categories: _categories,
+            selected: _kategori,
+            enabled: !_submitting,
+            onChanged: (value) => setState(() => _kategori = value),
+          ),
+          if (_isKategoriCustom) ...[
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.lightOrange,
+                borderRadius: BorderRadius.circular(AppRadius.md),
+                border: Border.all(color: AppColors.softBorder),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        width: 30,
+                        height: 30,
+                        decoration: const BoxDecoration(
+                          color: AppColors.white,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.edit_outlined,
+                          size: 16,
+                          color: AppColors.primaryDeep,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      const Expanded(
+                        child: Text(
+                          'Kategori baru',
+                          style: TextStyle(
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.charcoal,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  TextFormField(
+                    controller: _kategoriLainController,
+                    textCapitalization: TextCapitalization.words,
+                    decoration: const InputDecoration(
+                      labelText: 'Nama Kategori Lain',
+                      hintText: 'Contoh: Warung Minuman',
+                      prefixIcon: Icon(Icons.category_outlined),
+                    ),
+                    enabled: !_submitting,
+                    validator: (value) {
+                      final text = value?.trim() ?? '';
+                      if (text.isEmpty) return 'Nama kategori lain wajib diisi';
+                      if (text.length < 5) {
+                        return 'Nama kategori minimal 5 karakter';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 6),
+                  const Text(
+                    'Nama ini akan dipakai sebagai kategori tempatmu.',
+                    style: TextStyle(
+                      fontSize: 10.5,
+                      color: AppColors.secondaryText,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+        const SizedBox(height: 16),
+        TextFormField(
+          controller: _alamatController,
+          decoration: const InputDecoration(
+            labelText: 'Alamat',
+            hintText: 'Contoh: Jl. Merdeka No. 10',
+          ),
+          validator: (value) {
+            final text = value?.trim() ?? '';
+            if (text.isEmpty) return 'Alamat wajib diisi';
+            if (text.length < 10) return 'Alamat minimal 10 karakter';
+            return null;
+          },
+        ),
+        const SizedBox(height: 16),
+        TextFormField(
+          controller: _kotaController,
+          textCapitalization: TextCapitalization.words,
+          decoration: const InputDecoration(
+            labelText: 'Kota',
+            hintText: 'Contoh: Bandung',
+          ),
+          validator: (value) {
+            final text = value?.trim() ?? '';
+            if (text.isEmpty) return 'Kota wajib diisi';
+            if (text.length < 4) return 'Kota minimal 4 karakter';
+            return null;
+          },
+        ),
+        const SizedBox(height: 16),
+        TextFormField(
+          controller: _deskripsiController,
+          maxLines: 3,
+          decoration: const InputDecoration(
+            labelText: 'Deskripsi',
+            hintText: 'Contoh: Lapak makan malam dengan area parkir (min. 10 karakter)',
+          ),
+          validator: (value) {
+            final text = value?.trim() ?? '';
+            if (text.isEmpty) return 'Deskripsi wajib diisi';
+            if (text.length < 10) return 'Deskripsi minimal 10 karakter';
+            if (text.length > 250) return 'Deskripsi maksimal 250 karakter';
+            return null;
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPhotoFields({bool withTitle = true}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (withTitle) ...[
+          const Text(
+            'Foto Tempat',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: AppColors.darkText,
+            ),
+          ),
+          const SizedBox(height: 4),
+        ],
+        const Text(
+          'Maks. 6 foto. Minimal 1 foto. Format JPG, JPEG, PNG, WEBP, maks 5 MB per foto.',
+          style: TextStyle(fontSize: 12, color: AppColors.secondaryText),
+        ),
+        const SizedBox(height: 8),
+        if (_photos.isEmpty)
+          const Text(
+            'Silakan masukkan minimal 1 foto.',
+            style: TextStyle(fontSize: 12, color: AppColors.danger),
+          ),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final kolom = constraints.maxWidth >= 720
+                ? 5
+                : constraints.maxWidth >= 480
+                ? 4
+                : 3;
+
+            return GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: kolom,
+                mainAxisSpacing: 8,
+                crossAxisSpacing: 8,
+                childAspectRatio: 1,
+              ),
+              itemCount: _photos.length + (_photos.length < _maxPhotos ? 1 : 0),
+              itemBuilder: (context, index) {
+                if (index < _photos.length) {
+                  return _PhotoThumb(
+                    photo: _photos[index],
+                    onRemove: () => _removePhoto(index),
+                  );
+                }
+
+                return _AddPhotoTile(onTap: _showPickSheet);
+              },
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDetailFields() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        TextFormField(
+          controller: _fasilitasController,
+          decoration: const InputDecoration(
+            labelText: 'Fasilitas (opsional)',
+            hintText: 'Pisahkan dengan koma, mis: Listrik, Kipas',
+          ),
+        ),
+        const SizedBox(height: 16),
+        TextFormField(
+          controller: _aturanController,
+          maxLines: 3,
+          decoration: const InputDecoration(
+            labelText: 'Aturan (opsional)',
+            hintText: 'Mis: Tutup pukul 21.00',
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPriceFields() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: TextFormField(
+                controller: _hargaNormalController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'Harga Normal (Rp)',
+                  hintText: '250000',
+                ),
+                validator: (value) => (value == null || value.trim().isEmpty)
+                    ? 'Harga normal wajib diisi'
+                    : null,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: TextFormField(
+                controller: _hargaPromoController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'Harga Promo (Rp)',
+                  hintText: 'Kosong = tanpa promo',
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        const Text(
+          'Tipe Durasi',
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: AppColors.darkText,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            for (final durasi in PlaceModel.durasiValues)
+              ChoiceChip(
+                label: Text(PlaceModel.durasiLabels[durasi] ?? durasi),
+                selected: _tipeDurasi == durasi,
+                selectedColor: AppColors.primaryOrange,
+                labelStyle: TextStyle(
+                  color: _tipeDurasi == durasi
+                      ? AppColors.white
+                      : AppColors.secondaryText,
+                  fontWeight: FontWeight.w600,
+                ),
+                showCheckmark: false,
+                onSelected: (_) => setState(() => _tipeDurasi = durasi),
+              ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPeriodFields({bool withTitle = true}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (withTitle) ...[
+          const Text(
+            'Periode Ketersediaan',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: AppColors.darkText,
+            ),
+          ),
+          const SizedBox(height: 4),
+        ],
+        Text(
+          _isEditing
+              ? 'Tempat hanya dapat disewa dalam rentang tanggal ini. '
+                    'Kosongkan kedua tanggal bila periode tidak dibatasi.'
+              : 'Tempat hanya dapat disewa dalam rentang tanggal ini. '
+                    'Kedua tanggal wajib diisi.',
+          style: const TextStyle(
+            fontSize: 12,
+            height: 1.45,
+            color: AppColors.secondaryText,
+          ),
+        ),
+        const SizedBox(height: 10),
+        TextFormField(
+          controller: _tanggalMulaiController,
+          readOnly: true,
+          decoration: const InputDecoration(
+            labelText: 'Tanggal Mulai Tersedia',
+            hintText: 'Pilih tanggal mulai',
+            prefixIcon: Icon(Icons.calendar_today_outlined),
+          ),
+          onTap: () => _pilihTanggalKetersediaan(mulai: true),
+          validator: (_) {
+            final mulaiKosong = _tanggalMulaiTersedia == null;
+            final selesaiTerisi = _tanggalSelesaiTersedia != null;
+
+            if (!_isEditing && mulaiKosong) {
+              return 'Tanggal mulai tersedia wajib diisi';
+            }
+            if (mulaiKosong && selesaiTerisi) {
+              return 'Lengkapi kedua tanggal atau kosongkan keduanya';
+            }
+            return null;
+          },
+        ),
+        const SizedBox(height: 12),
+        TextFormField(
+          controller: _tanggalSelesaiController,
+          readOnly: true,
+          decoration: const InputDecoration(
+            labelText: 'Tanggal Selesai Tersedia',
+            hintText: 'Pilih tanggal selesai',
+            prefixIcon: Icon(Icons.event_available_outlined),
+            helperText: 'Tidak boleh lebih awal dari tanggal mulai.',
+          ),
+          onTap: () => _pilihTanggalKetersediaan(mulai: false),
+          validator: (_) {
+            final selesaiKosong = _tanggalSelesaiTersedia == null;
+            final mulaiTerisi = _tanggalMulaiTersedia != null;
+
+            if (!_isEditing && selesaiKosong) {
+              return 'Tanggal selesai tersedia wajib diisi';
+            }
+            if (selesaiKosong && mulaiTerisi) {
+              return 'Lengkapi kedua tanggal atau kosongkan keduanya';
+            }
+            if (mulaiTerisi &&
+                !selesaiKosong &&
+                _tanggalSelesaiTersedia!.isBefore(_tanggalMulaiTersedia!)) {
+              return 'Tidak boleh sebelum tanggal mulai';
+            }
+            return null;
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildAvailabilityFields() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        AvailabilityRuleSection(
+          placeId: _placeId,
+          periodeSelesai: _tanggalSelesaiTersedia,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFormContent({required bool duaKolom}) {
+    if (!duaKolom) {
+      return ListView(
+        padding: const EdgeInsets.all(20),
+        children: [
+          _buildInfoFields(),
+          const SizedBox(height: 16),
+          _buildPhotoFields(),
+          const SizedBox(height: 16),
+          _buildDetailFields(),
+          const SizedBox(height: 16),
+          _buildPriceFields(),
+          const SizedBox(height: 20),
+          _buildPeriodFields(),
+          const SizedBox(height: 20),
+          _buildAvailabilityFields(),
+          const SizedBox(height: 24),
+        ],
+      );
+    }
+
+    // Web: dua kolom. Kiri untuk informasi tempat dan fasilitas,
+    // kanan untuk foto, harga, serta pengaturan ketersediaan.
+    return ListView(
+      padding: const EdgeInsets.all(24),
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Column(
+                children: [
+                  _FormSection(
+                    title: 'Informasi Tempat',
+                    icon: Icons.storefront_outlined,
+                    child: _buildInfoFields(),
+                  ),
+                  const SizedBox(height: 20),
+                  _FormSection(
+                    title: 'Fasilitas & Aturan',
+                    icon: Icons.rule_outlined,
+                    child: _buildDetailFields(),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 20),
+            Expanded(
+              child: Column(
+                children: [
+                  _FormSection(
+                    title: 'Foto Tempat',
+                    icon: Icons.photo_library_outlined,
+                    child: _buildPhotoFields(withTitle: false),
+                  ),
+                  const SizedBox(height: 20),
+                  _FormSection(
+                    title: 'Harga & Durasi',
+                    icon: Icons.payments_outlined,
+                    child: _buildPriceFields(),
+                  ),
+                  const SizedBox(height: 20),
+                  _buildAvailabilityFields(),
+                  const SizedBox(height: 20),
+                  _FormSection(
+                    title: 'Periode Ketersediaan',
+                    icon: Icons.event_outlined,
+                    child: _buildPeriodFields(withTitle: false),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 24),
+      ],
+    );
   }
 
   @override
@@ -605,392 +1091,23 @@ class _PlaceFormScreenState extends ConsumerState<PlaceFormScreen> {
                 onAction: _loadExisting,
               ),
             )
-          : Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 640),
-                child: Form(
-                  key: _formKey,
-                  child: ListView(
-                    padding: const EdgeInsets.all(20),
-                    children: [
-                      TextFormField(
-                        controller: _namaController,
-                        textCapitalization: TextCapitalization.words,
-                        decoration: const InputDecoration(
-                          labelText: 'Nama Tempat',
-                          hintText: 'Contoh: Lapak Kuliner Pasar Baru',
-                        ),
-                        validator: (value) =>
-                            (value == null || value.trim().isEmpty)
-                            ? 'Nama tempat wajib diisi'
-                            : null,
-                      ),
-                      const SizedBox(height: 16),
-                      const Text(
-                        'Kategori',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.darkText,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      if (_categoriesLoading)
-                        const _CategoryPickerSkeleton()
-                      else if (_categoriesError != null)
-                        _CategoryPickerError(onRetry: _loadCategories)
-                      else ...[
-                        CategoryPicker(
-                          categories: _categories,
-                          selected: _kategori,
-                          enabled: !_submitting,
-                          onChanged: (value) =>
-                              setState(() => _kategori = value),
-                        ),
-                        if (_isKategoriCustom) ...[
-                          const SizedBox(height: 10),
-                          Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: AppColors.lightOrange,
-                              borderRadius: BorderRadius.circular(AppRadius.md),
-                              border: Border.all(color: AppColors.softBorder),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    Container(
-                                      width: 30,
-                                      height: 30,
-                                      decoration: const BoxDecoration(
-                                        color: AppColors.white,
-                                        shape: BoxShape.circle,
-                                      ),
-                                      child: const Icon(
-                                        Icons.edit_outlined,
-                                        size: 16,
-                                        color: AppColors.primaryDeep,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 10),
-                                    const Expanded(
-                                      child: Text(
-                                        'Kategori baru',
-                                        style: TextStyle(
-                                          fontSize: 12.5,
-                                          fontWeight: FontWeight.w700,
-                                          color: AppColors.charcoal,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 10),
-                                TextFormField(
-                                  controller: _kategoriLainController,
-                                  textCapitalization: TextCapitalization.words,
-                                  decoration: const InputDecoration(
-                                    labelText: 'Nama Kategori Lain',
-                                    hintText: 'Contoh: Warung Minuman',
-                                    prefixIcon: Icon(Icons.category_outlined),
-                                  ),
-                                  enabled: !_submitting,
-                                  validator: (value) =>
-                                      value == null || value.trim().isEmpty
-                                      ? 'Nama kategori lain wajib diisi'
-                                      : null,
-                                ),
-                                const SizedBox(height: 6),
-                                const Text(
-                                  'Nama ini akan dipakai sebagai kategori tempatmu.',
-                                  style: TextStyle(
-                                    fontSize: 10.5,
-                                    color: AppColors.secondaryText,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ],
-                      const SizedBox(height: 16),
-                      TextFormField(
-                        controller: _alamatController,
-                        decoration: const InputDecoration(labelText: 'Alamat'),
-                        validator: (value) =>
-                            (value == null || value.trim().isEmpty)
-                            ? 'Alamat wajib diisi'
-                            : null,
-                      ),
-                      const SizedBox(height: 16),
-                      TextFormField(
-                        controller: _kotaController,
-                        textCapitalization: TextCapitalization.words,
-                        decoration: const InputDecoration(labelText: 'Kota'),
-                        validator: (value) =>
-                            (value == null || value.trim().isEmpty)
-                            ? 'Kota wajib diisi'
-                            : null,
-                      ),
-                      const SizedBox(height: 16),
-                      TextFormField(
-                        controller: _deskripsiController,
-                        maxLines: 3,
-                        decoration: const InputDecoration(
-                          labelText: 'Deskripsi (opsional)',
-                          hintText: 'Jelaskan tempat usaha Anda',
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      const Text(
-                        'Foto Tempat',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.darkText,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      const Text(
-                        'Maks. 6 foto. Format JPG, JPEG, PNG, WEBP, maks 5 MB per foto.',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: AppColors.secondaryText,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      LayoutBuilder(
-                        builder: (context, constraints) {
-                          final kolom = constraints.maxWidth >= 720
-                              ? 5
-                              : constraints.maxWidth >= 480
-                              ? 4
-                              : 3;
+          : LayoutBuilder(
+              builder: (context, constraints) {
+                final duaKolom = constraints.maxWidth >= 900;
 
-                          return GridView.builder(
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            gridDelegate:
-                                SliverGridDelegateWithFixedCrossAxisCount(
-                                  crossAxisCount: kolom,
-                                  mainAxisSpacing: 8,
-                                  crossAxisSpacing: 8,
-                                  childAspectRatio: 1,
-                                ),
-                            itemCount:
-                                _photos.length +
-                                (_photos.length < _maxPhotos ? 1 : 0),
-                            itemBuilder: (context, index) {
-                              if (index < _photos.length) {
-                                return _PhotoThumb(
-                                  photo: _photos[index],
-                                  onRemove: () => _removePhoto(index),
-                                );
-                              }
-
-                              return _AddPhotoTile(onTap: _showPickSheet);
-                            },
-                          );
-                        },
-                      ),
-                      const SizedBox(height: 16),
-                      TextFormField(
-                        controller: _fasilitasController,
-                        decoration: const InputDecoration(
-                          labelText: 'Fasilitas (opsional)',
-                          hintText: 'Pisahkan dengan koma, mis: Listrik, Kipas',
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      TextFormField(
-                        controller: _aturanController,
-                        maxLines: 3,
-                        decoration: const InputDecoration(
-                          labelText: 'Aturan (opsional)',
-                          hintText: 'Mis: Tutup pukul 21.00',
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(
-                            child: TextFormField(
-                              controller: _hargaNormalController,
-                              keyboardType: TextInputType.number,
-                              decoration: const InputDecoration(
-                                labelText: 'Harga Normal (Rp)',
-                                hintText: '250000',
-                              ),
-                              validator: (value) =>
-                                  (value == null || value.trim().isEmpty)
-                                  ? 'Harga normal wajib diisi'
-                                  : null,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: TextFormField(
-                              controller: _hargaPromoController,
-                              keyboardType: TextInputType.number,
-                              decoration: const InputDecoration(
-                                labelText: 'Harga Promo (Rp)',
-                                hintText: 'Kosong = tanpa promo',
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      const Text(
-                        'Tipe Durasi',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.darkText,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: [
-                          for (final durasi in PlaceModel.durasiValues)
-                            ChoiceChip(
-                              label: Text(
-                                PlaceModel.durasiLabels[durasi] ?? durasi,
-                              ),
-                              selected: _tipeDurasi == durasi,
-                              selectedColor: AppColors.primaryOrange,
-                              labelStyle: TextStyle(
-                                color: _tipeDurasi == durasi
-                                    ? AppColors.white
-                                    : AppColors.secondaryText,
-                                fontWeight: FontWeight.w600,
-                              ),
-                              showCheckmark: false,
-                              onSelected: (_) =>
-                                  setState(() => _tipeDurasi = durasi),
-                            ),
-                        ],
-                      ),
-                      const SizedBox(height: 20),
-                      const Text(
-                        'Periode Ketersediaan',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.darkText,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        _isEditing
-                            ? 'Tempat hanya dapat disewa dalam rentang tanggal '
-                                  'ini. Kosongkan kedua tanggal bila periode '
-                                  'tidak dibatasi.'
-                            : 'Tempat hanya dapat disewa dalam rentang tanggal '
-                                  'ini. Kedua tanggal wajib diisi.',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          height: 1.45,
-                          color: AppColors.secondaryText,
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      TextFormField(
-                        controller: _tanggalMulaiController,
-                        readOnly: true,
-                        decoration: const InputDecoration(
-                          labelText: 'Tanggal Mulai Tersedia',
-                          hintText: 'Pilih tanggal mulai',
-                          prefixIcon: Icon(Icons.calendar_today_outlined),
-                        ),
-                        onTap: () => _pilihTanggalKetersediaan(mulai: true),
-                        validator: (_) {
-                          final mulaiKosong = _tanggalMulaiTersedia == null;
-                          final selesaiTerisi = _tanggalSelesaiTersedia != null;
-
-                          if (!_isEditing && mulaiKosong) {
-                            return 'Tanggal mulai tersedia wajib diisi';
-                          }
-                          if (mulaiKosong && selesaiTerisi) {
-                            return 'Lengkapi kedua tanggal atau kosongkan '
-                                'keduanya';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 12),
-                      TextFormField(
-                        controller: _tanggalSelesaiController,
-                        readOnly: true,
-                        decoration: const InputDecoration(
-                          labelText: 'Tanggal Selesai Tersedia',
-                          hintText: 'Pilih tanggal selesai',
-                          prefixIcon: Icon(Icons.event_available_outlined),
-                          helperText:
-                              'Tidak boleh lebih awal dari tanggal mulai.',
-                        ),
-                        onTap: () => _pilihTanggalKetersediaan(mulai: false),
-                        validator: (_) {
-                          final selesaiKosong = _tanggalSelesaiTersedia == null;
-                          final mulaiTerisi = _tanggalMulaiTersedia != null;
-
-                          if (!_isEditing && selesaiKosong) {
-                            return 'Tanggal selesai tersedia wajib diisi';
-                          }
-                          if (selesaiKosong && mulaiTerisi) {
-                            return 'Lengkapi kedua tanggal atau kosongkan '
-                                'keduanya';
-                          }
-                          if (mulaiTerisi &&
-                              !selesaiKosong &&
-                              _tanggalSelesaiTersedia!.isBefore(
-                                _tanggalMulaiTersedia!,
-                              )) {
-                            return 'Tidak boleh sebelum tanggal mulai';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 20),
-                      AvailabilityRuleSection(
-                        placeId: _placeId,
-                        periodeSelesai: _tanggalSelesaiTersedia,
-                      ),
-                      if (_isEditing) ...[
-                        const SizedBox(height: 16),
-                        SwitchListTile(
-                          contentPadding: EdgeInsets.zero,
-                          activeThumbColor: AppColors.primaryOrange,
-                          title: const Text(
-                            'Tempat Aktif',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.darkText,
-                            ),
-                          ),
-                          subtitle: const Text(
-                            'Tempat nonaktif tidak tampil kepada penyewa',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: AppColors.secondaryText,
-                            ),
-                          ),
-                          value: _statusAktif,
-                          onChanged: (value) =>
-                              setState(() => _statusAktif = value),
-                        ),
-                      ],
-                      const SizedBox(height: 24),
-                    ],
+                return Center(
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      maxWidth: duaKolom ? AppWidth.page : AppWidth.form,
+                    ),
+                    child: Form(
+                      key: _formKey,
+                      autovalidateMode: AutovalidateMode.onUserInteraction,
+                      child: _buildFormContent(duaKolom: duaKolom),
+                    ),
                   ),
-                ),
-              ),
+                );
+              },
             ),
       bottomNavigationBar: _loading || _loadError != null
           ? null
@@ -1002,23 +1119,40 @@ class _PlaceFormScreenState extends ConsumerState<PlaceFormScreen> {
               padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
               child: SafeArea(
                 top: false,
+                // heightFactor: 1 membuat tinggi bar mengikuti tombol,
+                // bukan setinggi layar.
                 child: Center(
                   heightFactor: 1,
                   child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 640),
-                    child: SizedBox(
-                      width: double.infinity,
-                      height: 48,
-                      child: ElevatedButton(
-                        onPressed: _submitting ? null : _submit,
-                        child: Text(
-                          _submitting
-                              ? (_photos.any((photo) => photo.bytes != null)
-                                    ? 'Mengunggah foto...'
-                                    : 'Menyimpan...')
-                              : 'Simpan Tempat',
-                        ),
-                      ),
+                    constraints: const BoxConstraints(maxWidth: AppWidth.page),
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        final web = constraints.maxWidth >= 900;
+
+                        return Row(
+                          mainAxisAlignment: web
+                              ? MainAxisAlignment.end
+                              : MainAxisAlignment.center,
+                          children: [
+                            SizedBox(
+                              width: web ? 320 : constraints.maxWidth,
+                              height: 48,
+                              child: ElevatedButton(
+                                onPressed: _submitting ? null : _submit,
+                                child: Text(
+                                  _submitting
+                                      ? (_photos.any(
+                                              (photo) => photo.bytes != null,
+                                            )
+                                            ? 'Mengunggah foto...'
+                                            : 'Menyimpan...')
+                                      : 'Simpan Tempat',
+                                ),
+                              ),
+                            ),
+                          ],
+                        );
+                      },
                     ),
                   ),
                 ),
@@ -1186,6 +1320,59 @@ class _CategoryPickerError extends StatelessWidget {
             ),
           ),
           TextButton(onPressed: onRetry, child: const Text('Coba Lagi')),
+        ],
+      ),
+    );
+  }
+}
+
+class _FormSection extends StatelessWidget {
+  const _FormSection({
+    required this.title,
+    required this.icon,
+    required this.child,
+  });
+
+  final String title;
+  final IconData icon;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+        border: Border.all(color: AppColors.softBorder),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 32,
+                height: 32,
+                decoration: const BoxDecoration(
+                  color: AppColors.lightOrange,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, size: 17, color: AppColors.primaryDeep),
+              ),
+              const SizedBox(width: 10),
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.charcoal,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          child,
         ],
       ),
     );

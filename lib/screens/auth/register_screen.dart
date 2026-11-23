@@ -36,6 +36,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   String? _validateNama(String? value) {
     final text = value?.trim() ?? '';
     if (text.isEmpty) return 'Nama wajib diisi';
+    if (text.length < 5) return 'Nama minimal 5 karakter';
     if (text.length > 100) return 'Nama maksimal 100 karakter';
     return null;
   }
@@ -120,7 +121,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 AuthField(
                   label: 'Nama Lengkap',
                   controller: _namaController,
-                  hintText: 'Nama sesuai identitas',
+                  hintText: 'Contoh: Budi Santoso',
                   textInputAction: TextInputAction.next,
                   validator: _validateNama,
                   enabled: !isLoading,

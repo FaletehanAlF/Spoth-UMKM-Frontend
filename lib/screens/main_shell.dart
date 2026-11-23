@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/theme/app_colors.dart';
+import '../core/theme/app_layout.dart';
 import '../providers/auth_provider.dart';
 import '../providers/nav_provider.dart';
 import '../widgets/bottom_nav_pill.dart';
@@ -44,7 +45,7 @@ class MainShell extends ConsumerWidget {
     );
 
     final width = MediaQuery.sizeOf(context).width;
-    final showSidebar = width >= 900;
+    final showSidebar = width >= AppWidth.sidebar;
 
     if (showSidebar) {
       return Scaffold(
@@ -54,7 +55,7 @@ class MainShell extends ConsumerWidget {
             SpothSidebar(
               index: index,
               items: items,
-              expanded: width >= 1400,
+              expanded: width >= AppWidth.sidebarExpanded,
               onChanged: (value) =>
                   ref.read(mainNavIndexProvider.notifier).setTab(tabs[value]),
             ),

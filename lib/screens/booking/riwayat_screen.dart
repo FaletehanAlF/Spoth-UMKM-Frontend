@@ -153,7 +153,9 @@ class _RiwayatScreenState extends ConsumerState<RiwayatScreen> {
                       ),
                       const SizedBox(height: 16),
                       Text(
-                        isHost ? 'Belum Ada Pesanan Masuk' : 'Belum Ada Riwayat',
+                        isHost
+                            ? 'Belum Ada Penyewaan Masuk'
+                            : 'Belum Ada Riwayat',
                         textAlign: TextAlign.center,
                         style: const TextStyle(
                           fontSize: 16,
@@ -164,7 +166,7 @@ class _RiwayatScreenState extends ConsumerState<RiwayatScreen> {
                       const SizedBox(height: 6),
                       Text(
                         isHost
-                            ? 'Pesanan dari penyewa akan tampil di sini setelah lunas.'
+                            ? 'Penyewaan dari penyewa akan tampil di sini setelah lunas.'
                             : 'Penyewaan yang sudah lunas akan tampil di sini.',
                         textAlign: TextAlign.center,
                         style: const TextStyle(
@@ -175,14 +177,31 @@ class _RiwayatScreenState extends ConsumerState<RiwayatScreen> {
                       ),
                       const SizedBox(height: 18),
                       ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 10,
+                          ),
+                          minimumSize: const Size(0, 40),
+                          visualDensity: VisualDensity.compact,
+                          textStyle: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                         onPressed: () {
                           ref
                               .read(mainNavIndexProvider.notifier)
-                              .setTab(isHost ? MainTab.booking : MainTab.tempat);
+                              .setTab(
+                                isHost ? MainTab.booking : MainTab.tempat,
+                              );
                           context.go('/home');
                         },
                         child: Text(
-                          isHost ? 'Lihat Pesanan Masuk' : 'Cari Tempat',
+                          isHost ? 'Lihat Penyewaan Masuk' : 'Cari Tempat',
+                          maxLines: 1,
+                          softWrap: false,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                     ],

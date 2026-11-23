@@ -74,11 +74,10 @@ class PlaceService {
   Future<List<PlaceModel>> getMyPlaces({
     required String token,
     String? keyword,
-    String? status,
     int limit = 50,
   }) async {
     final body = await _apiService.get(
-      '/places/mine${_query({'keyword': keyword, 'status': status, 'page': '1', 'limit': '$limit'})}',
+      '/places/mine${_query({'keyword': keyword, 'page': '1', 'limit': '$limit'})}',
       token: token,
     );
 

@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 abstract final class AppFonts {
   const AppFonts._();
 
-  static const String fontFamily = 'Montserrat';
+  static const String? fontFamily = null;
 
   static TextStyle heading({
     double weight = 600,

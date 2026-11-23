@@ -9,6 +9,25 @@ String formatRupiah(num value) {
   return 'Rp $berpemisah';
 }
 
+/// Format singkat untuk label grafik, misalnya 1.250.000 menjadi "1,3 jt".
+String formatRupiahSingkat(num value) {
+  if (value >= 1000000000) {
+    return '${_angkaSingkat(value / 1000000000)} M';
+  }
+  if (value >= 1000000) {
+    return '${_angkaSingkat(value / 1000000)} jt';
+  }
+  if (value >= 1000) {
+    return '${_angkaSingkat(value / 1000)} rb';
+  }
+  return value.round().toString();
+}
+
+String _angkaSingkat(double value) {
+  final teks = value.toStringAsFixed(1).replaceAll('.', ',');
+  return teks.endsWith(',0') ? teks.substring(0, teks.length - 2) : teks;
+}
+
 String? namaDepan(String? nama) {
   final bersih = nama?.trim() ?? '';
   if (bersih.isEmpty) return null;

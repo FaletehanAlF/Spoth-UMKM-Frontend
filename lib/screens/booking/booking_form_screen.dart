@@ -588,9 +588,12 @@ class _BookingFormScreenState extends ConsumerState<BookingFormScreen> {
           controller: _jenisUsahaController,
           textCapitalization: TextCapitalization.words,
           decoration: _inputDecoration('Jenis Usaha', 'Contoh: Warung Makan'),
-          validator: (value) => (value == null || value.trim().isEmpty)
-              ? 'Jenis usaha wajib diisi'
-              : null,
+          validator: (value) {
+            final text = value?.trim() ?? '';
+            if (text.isEmpty) return 'Jenis usaha wajib diisi';
+            if (text.length < 3) return 'Jenis usaha minimal 3 karakter';
+            return null;
+          },
         ),
         const SizedBox(height: 24),
         SizedBox(
@@ -748,8 +751,6 @@ class _AvailabilityInfo extends StatelessWidget {
         return 'Diblokir aturan ketersediaan tempat';
       case 'PERIODE_TIDAK_TERSEDIA':
         return 'Di luar periode ketersediaan tempat';
-      case 'STATUS_TIDAK_AKTIF':
-        return 'Tempat sedang tidak aktif';
       case 'MENUNGGU_PEMBAYARAN':
         return 'Sudah dipesan dan menunggu pembayaran';
       case 'LUNAS':

@@ -1,8 +1,7 @@
-import 'dart:async';
 import 'dart:convert';
 
+import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:http/http.dart' as http;
 
 import '../config/app_config.dart';
 
@@ -27,70 +26,39 @@ class ApiException implements Exception {
   String toString() => 'ApiException($statusCode): $message';
 }
 
+/// Interface HTTP tunggal untuk layanan API.
+///
+/// Semua request ditangkap menjadi [ApiException] supaya call site
+/// mudah dimengerti: timeout -> 408, koneksi gagal -> 0.
 class ApiService {
-  ApiService({http.Client? client, this.timeout = const Duration(seconds: 15)})
-    : _client = client ?? http.Client();
+  ApiService({Dio? dio, this.timeout = const Duration(seconds: 15)})
+    : _dio = dio ?? Dio();
 
-  final http.Client _client;
-
+  final Dio _dio;
   final Duration timeout;
 
-  Uri _uri(String path) => Uri.parse('${AppConfig.baseUrl}$path');
+  /// Buat URI lengkap dari path API.
+  Uri uri(String path) => Uri.parse('${AppConfig.baseUrl}$path');
 
-  Map<String, String> _headers({String? token}) {
-    return {
-      'Content-Type': 'application/json',
-      'Accept': 'application/json',
-      if (token != null) 'Authorization': 'Bearer $token',
-    };
-  }
+  Map<String, String> headers({String? token}) => {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json',
+    if (token != null) 'Authorization': 'Bearer $token',
+  };
 
-  Map<String, dynamic> _handleResponse(http.Response response) {
-    Map<String, dynamic> body = <String, dynamic>{};
-
-    if (response.body.isNotEmpty) {
-      try {
-        body = jsonDecode(response.body) as Map<String, dynamic>;
-      } catch (_) {}
-    }
-
-    if (response.statusCode >= 400) {
-      throw ApiException(
-        statusCode: response.statusCode,
-        message:
-            (body['message'] as String?) ?? 'Terjadi kesalahan pada server',
-        errors: body['errors'] as List<dynamic>?,
-      );
-    }
-
-    return body;
-  }
-
-  /// Pembungkus semua request HTTP (pola dari dokumentasi guru:
-  /// try-catch `TimeoutException` + `ClientException`).
+  /// Mulai satu request lewat [request].
   ///
-  /// `http.ClientException` dipakai (bukan `SocketException`) supaya kode
-  /// tetap bisa di-compile ke Flutter Web — `dart:io` tidak tersedia di web.
-  Future<Map<String, dynamic>> _send(
-    Future<http.Response> Function() request,
+  /// Return value: body response berbentuk map JSON.
+  Future<Map<String, dynamic>> send(
+    Future<Response<dynamic>> Function() request,
   ) async {
     try {
       final response = await request().timeout(timeout);
-      return _handleResponse(response);
+      return _parseBody(response);
     } on ApiException {
       rethrow;
-    } on TimeoutException {
-      throw const ApiException(
-        statusCode: 408,
-        message:
-            'Permintaan melebihi batas waktu. Periksa koneksi internet Anda.',
-      );
-    } on http.ClientException {
-      throw const ApiException(
-        statusCode: 0,
-        message:
-            'Tidak dapat terhubung ke server. Periksa koneksi internet Anda.',
-      );
+    } on DioException catch (error) {
+      throw _toApiException(error);
     } catch (error) {
       throw ApiException(
         statusCode: 0,
@@ -100,8 +68,8 @@ class ApiService {
   }
 
   Future<Map<String, dynamic>> get(String path, {String? token}) {
-    return _send(
-      () => _client.get(_uri(path), headers: _headers(token: token)),
+    return send(
+      () => _dio.getUri(uri(path), options: _options(token)),
     );
   }
 
@@ -110,11 +78,11 @@ class ApiService {
     Map<String, dynamic> body, {
     String? token,
   }) {
-    return _send(
-      () => _client.post(
-        _uri(path),
-        headers: _headers(token: token),
-        body: jsonEncode(body),
+    return send(
+      () => _dio.postUri(
+        uri(path),
+        options: _options(token),
+        data: jsonEncode(body),
       ),
     );
   }
@@ -124,21 +92,67 @@ class ApiService {
     Map<String, dynamic> body, {
     String? token,
   }) {
-    return _send(
-      () => _client.patch(
-        _uri(path),
-        headers: _headers(token: token),
-        body: jsonEncode(body),
+    return send(
+      () => _dio.patchUri(
+        uri(path),
+        options: _options(token),
+        data: jsonEncode(body),
       ),
     );
   }
 
   Future<Map<String, dynamic>> delete(String path, {String? token}) {
-    return _send(
-      () => _client.delete(_uri(path), headers: _headers(token: token)),
+    return send(() => _dio.deleteUri(uri(path), options: _options(token)));
+  }
+
+  Options _options(String? token) => Options(headers: headers(token: token));
+
+  Map<String, dynamic> _parseBody(Response<dynamic> response) {
+    return _asMap(response.data);
+  }
+
+  ApiException _toApiException(DioException error) {
+    if (error.response != null) {
+      final statusCode = error.response!.statusCode ?? 0;
+      final body = _asMap(error.response!.data);
+      return ApiException(
+        statusCode: statusCode,
+        message:
+            (body['message'] as String?) ??
+            error.message ??
+            'Terjadi kesalahan pada server',
+        errors: body['errors'] as List<dynamic>?,
+      );
+    }
+
+    if (error.type == DioExceptionType.connectionTimeout ||
+        error.type == DioExceptionType.sendTimeout ||
+        error.type == DioExceptionType.receiveTimeout ||
+        error.type == DioExceptionType.transformTimeout) {
+      return const ApiException(
+        statusCode: 408,
+        message:
+            'Permintaan melebihi batas waktu. Periksa koneksi internet Anda.',
+      );
+    }
+
+    return const ApiException(
+      statusCode: 0,
+      message: 'Tidak dapat terhubung ke server. Periksa koneksi internet Anda.',
     );
   }
 
-  /// Menutup koneksi HTTP saat provider di-dispose (hindari kebocoran).
-  void close() => _client.close();
+  static Map<String, dynamic> _asMap(dynamic value) {
+    if (value is Map<String, dynamic>) {
+      return value;
+    }
+    try {
+      final decoded = jsonDecode(value.toString());
+      return decoded is Map<String, dynamic> ? decoded : {};
+    } catch (_) {
+      return {};
+    }
+  }
+
+  void close({bool force = true}) => _dio.close(force: force);
 }

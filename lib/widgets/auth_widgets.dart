@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'dart:math' as math;
-
 import 'package:flutter/services.dart';
 
 import '../core/theme/app_colors.dart';
@@ -49,11 +47,13 @@ class AuthScaffold extends StatelessWidget {
               children: [
                 Expanded(
                   flex: 11,
-                  child: _AuthBrandPanel(
-                    availableHeight: constraints.maxHeight,
+                  child: ClipPath(
+                    clipper: const _AuthWaveClipper(),
+                    child: _AuthBrandPanel(
+                      availableHeight: constraints.maxHeight,
+                    ),
                   ),
                 ),
-                const SizedBox(width: 16, child: _WavyDivider()),
                 Expanded(
                   flex: 10,
                   child: Container(
@@ -92,71 +92,79 @@ class _AuthBrandPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     final tampilkanKartu = availableHeight >= 660;
 
-    return Container(
-      decoration: const BoxDecoration(color: AppColors.primaryDeep),
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(56, 44, 48, 36),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const AuthBrand(logoSize: 38, textColor: AppColors.white),
-            const SizedBox(height: 56),
-            Text(
-              'Ruang kecil,\nusaha besar.',
-              style: AppFonts.heading(
-                fontSize: 46,
-                weight: 700,
-                height: 1.04,
-                letterSpacing: -1.6,
-                color: AppColors.white,
-              ),
-            ),
-            const SizedBox(height: 18),
-            ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 420),
-              child: const Text(
-                'SPOTH UMKM mempertemukan pemilik lapak, teras, dan booth '
-                'dengan orang-orang yang siap memulai usahanya.',
-                style: TextStyle(
-                  fontSize: 15,
-                  height: 1.6,
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        Image.asset('assets/referensi/login-register.jpg', fit: BoxFit.cover),
+        // Lapisan gelap tipis agar teks putih dan logo tetap terbaca.
+        Container(color: Colors.black.withValues(alpha: 0.45)),
+        SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(56, 44, 96, 36),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const AuthBrand(logoSize: 38, textColor: AppColors.white),
+              const SizedBox(height: 56),
+              Text(
+                'Ruang kecil,\nusaha besar.',
+                style: AppFonts.heading(
+                  fontSize: 46,
+                  weight: 700,
+                  height: 1.04,
+                  letterSpacing: -1.6,
                   color: AppColors.white,
                 ),
               ),
-            ),
-            const SizedBox(height: 26),
-            const Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                _BrandTag(
-                  icon: Icons.storefront_outlined,
-                  label: 'Lapak usaha',
+              const SizedBox(height: 18),
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 420),
+                child: const Text(
+                  'SPOTH UMKM mempertemukan pemilik lapak, teras, dan booth '
+                  'dengan orang-orang yang siap memulai usahanya.',
+                  style: TextStyle(
+                    fontSize: 15,
+                    height: 1.6,
+                    color: AppColors.white,
+                  ),
                 ),
-                _BrandTag(icon: Icons.deck_outlined, label: 'Teras komersial'),
-                _BrandTag(
-                  icon: Icons.confirmation_number_outlined,
-                  label: 'Booth event',
-                ),
-              ],
-            ),
-            if (tampilkanKartu) ...[
-              const SizedBox(height: 36),
-              const _AuthPlacePreview(),
-            ],
-            const SizedBox(height: 36),
-            Text(
-              '“Tumbuh bersama UMKM Indonesia”',
-              style: TextStyle(
-                fontSize: 12,
-                fontStyle: FontStyle.italic,
-                fontWeight: FontWeight.w600,
-                color: AppColors.white,
               ),
-            ),
-          ],
+              const SizedBox(height: 26),
+              const Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  _BrandTag(
+                    icon: Icons.storefront_outlined,
+                    label: 'Lapak usaha',
+                  ),
+                  _BrandTag(
+                    icon: Icons.deck_outlined,
+                    label: 'Teras komersial',
+                  ),
+                  _BrandTag(
+                    icon: Icons.confirmation_number_outlined,
+                    label: 'Booth event',
+                  ),
+                ],
+              ),
+              if (tampilkanKartu) ...[
+                const SizedBox(height: 36),
+                const _AuthPlacePreview(),
+              ],
+              const SizedBox(height: 36),
+              Text(
+                '“Tumbuh bersama UMKM Indonesia”',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontStyle: FontStyle.italic,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.white,
+                ),
+              ),
+            ],
+          ),
         ),
-      ),
+      ],
     );
   }
 }
@@ -245,7 +253,7 @@ class _AuthPlacePreview extends StatelessWidget {
                 ),
                 SizedBox(height: 3),
                 Text(
-                  'Bandung · 2 menit dari pasar',
+                  'Bandung Â· 2 menit dari pasar',
                   style: TextStyle(
                     fontSize: 11.5,
                     color: AppColors.secondaryText,
@@ -270,7 +278,11 @@ class _AuthPlacePreview extends StatelessWidget {
 }
 
 class AuthBrand extends StatelessWidget {
-  const AuthBrand({super.key, this.logoSize = 42, this.textColor = AppColors.charcoal});
+  const AuthBrand({
+    super.key,
+    this.logoSize = 42,
+    this.textColor = AppColors.charcoal,
+  });
 
   final double logoSize;
   final Color textColor;
@@ -395,7 +407,7 @@ class AuthField extends StatelessWidget {
         Text(
           label,
           style: const TextStyle(
-            fontSize: 12.5,
+            fontSize: 13.5,
             fontWeight: FontWeight.w600,
             color: AppColors.charcoal,
           ),
@@ -423,7 +435,7 @@ class AuthField extends StatelessWidget {
             fillColor: AppColors.surfaceMuted,
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 16,
-              vertical: 15,
+              vertical: 16,
             ),
             border: _border(const BorderSide(color: AppColors.neutralBorder)),
             enabledBorder: _border(
@@ -473,7 +485,7 @@ class AuthRoleOption extends StatelessWidget {
         onTap: onTap,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 150),
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
           decoration: BoxDecoration(
             color: selected ? AppColors.lightOrange : AppColors.white,
             borderRadius: BorderRadius.circular(AppRadius.md),
@@ -488,7 +500,7 @@ class AuthRoleOption extends StatelessWidget {
                 selected
                     ? Icons.radio_button_checked
                     : Icons.radio_button_unchecked,
-                size: 20,
+                size: 22,
                 color: selected
                     ? AppColors.primaryDeep
                     : AppColors.secondaryText,
@@ -512,7 +524,7 @@ class AuthRoleOption extends StatelessWidget {
                     Text(
                       description,
                       style: const TextStyle(
-                        fontSize: 12.5,
+                        fontSize: 13,
                         height: 1.4,
                         color: AppColors.secondaryText,
                       ),
@@ -543,10 +555,10 @@ class AuthPasswordToggle extends StatelessWidget {
     return IconButton(
       style: IconButton.styleFrom(overlayColor: Colors.transparent),
       padding: EdgeInsets.zero,
-      constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+      constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
       icon: Icon(
         hidden ? Icons.visibility_outlined : Icons.visibility_off_outlined,
-        size: 20,
+        size: 22,
         color: AppColors.secondaryText,
       ),
       tooltip: hidden ? 'Tampilkan password' : 'Sembunyikan password',
@@ -580,6 +592,8 @@ class AuthTextLink extends StatelessWidget {
           padding: const EdgeInsets.symmetric(vertical: 10),
           child: Text(
             label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: TextStyle(
               fontSize: fontSize,
               fontWeight: FontWeight.w700,
@@ -628,39 +642,6 @@ class AuthFooterLink extends StatelessWidget {
   }
 }
 
-class AuthBackLink extends StatelessWidget {
-  const AuthBackLink({super.key, required this.label, required this.onTap});
-
-  final String label;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: onTap,
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.arrow_back, size: 18, color: AppColors.primaryInk),
-            const SizedBox(width: 6),
-            Text(
-              label,
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: AppColors.primaryInk,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 class AuthMessage extends StatelessWidget {
   const AuthMessage({super.key, required this.text});
 
@@ -685,7 +666,7 @@ class AuthMessage extends StatelessWidget {
               text,
               style: const TextStyle(
                 color: AppColors.danger,
-                fontSize: 12.5,
+                fontSize: 13,
                 height: 1.45,
               ),
             ),
@@ -696,42 +677,27 @@ class AuthMessage extends StatelessWidget {
   }
 }
 
-class _WavyDivider extends StatelessWidget {
-  const _WavyDivider();
+class _AuthWaveClipper extends CustomClipper<Path> {
+  const _AuthWaveClipper();
 
   @override
-  Widget build(BuildContext context) {
-    return CustomPaint(
-      size: const Size(16, double.infinity),
-      painter: _WavePainter(),
-    );
-  }
-}
-
-class _WavePainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
+  Path getClip(Size size) {
     final path = Path();
-    final centerX = size.width / 2;
-    path.moveTo(centerX, 0);
-
-    for (
-      var y = 0.0;
-      y < size.height;
-      y += 4
-    ) {
-      final t = (y / size.height) * 2 * math.pi * 2;
-      final x = centerX + math.sin(t) * 4;
-      path.lineTo(x, y);
-    }
-
-    final paint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.6
-      ..color = AppColors.primaryOrange;
-    canvas.drawPath(path, paint);
+    path.moveTo(0, 0);
+    path.lineTo(size.width, 0);
+    path.cubicTo(
+      size.width * 0.86,
+      size.height * 0.28,
+      size.width * 0.86,
+      size.height * 0.72,
+      size.width,
+      size.height,
+    );
+    path.lineTo(0, size.height);
+    path.close();
+    return path;
   }
 
   @override
-  bool shouldRepaint(covariant _WavePainter oldDelegate) => false;
+  bool shouldReclip(covariant _AuthWaveClipper oldClipper) => false;
 }
