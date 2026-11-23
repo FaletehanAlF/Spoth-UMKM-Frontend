@@ -1,4 +1,4 @@
-class BookingModel {
+﻿class BookingModel {
   const BookingModel({
     required this.id,
     this.kodeBooking,
@@ -13,7 +13,7 @@ class BookingModel {
     required this.status,
     this.createdAt,
     this.namaTempat,
-    this.kota,
+    this.kecamatan,
     this.namaTenant,
     this.namaHost,
     this.foto = const [],
@@ -32,7 +32,7 @@ class BookingModel {
   final String status;
   final DateTime? createdAt;
   final String? namaTempat;
-  final String? kota;
+  final String? kecamatan;
   final String? namaTenant;
   final String? namaHost;
   final List<String> foto;
@@ -67,7 +67,7 @@ class BookingModel {
       status: json['status'] as String? ?? '',
       createdAt: DateTime.tryParse(json['created_at'] as String? ?? ''),
       namaTempat: json['nama_tempat'] as String?,
-      kota: json['kota'] as String?,
+      kecamatan: json['kecamatan'] as String?,
       namaTenant: json['nama_tenant'] as String?,
       namaHost: json['nama_host'] as String?,
       foto:
@@ -97,8 +97,6 @@ class PricePreviewModel {
     required this.tipeDurasi,
     required this.jumlahDurasi,
     required this.hargaSatuan,
-    required this.hargaNormal,
-    required this.hargaPromo,
     required this.totalHarga,
     required this.komisiPlatform,
     required this.pendapatanHost,
@@ -112,8 +110,6 @@ class PricePreviewModel {
   final String tipeDurasi;
   final int jumlahDurasi;
   final double hargaSatuan;
-  final double hargaNormal;
-  final double? hargaPromo;
   final double totalHarga;
   final double komisiPlatform;
   final double pendapatanHost;
@@ -122,8 +118,6 @@ class PricePreviewModel {
 
   factory PricePreviewModel.fromJson(Map<String, dynamic> json) {
     double toDouble(dynamic value) => value is num ? value.toDouble() : 0;
-
-    final hargaPromo = json['harga_promo'];
 
     return PricePreviewModel(
       namaTempat: json['nama_tempat'] as String? ?? '',
@@ -134,8 +128,6 @@ class PricePreviewModel {
           ? (json['jumlah_durasi'] as num).toInt()
           : 0,
       hargaSatuan: toDouble(json['harga_satuan']),
-      hargaNormal: toDouble(json['harga_normal']),
-      hargaPromo: hargaPromo == null ? null : toDouble(hargaPromo),
       totalHarga: toDouble(json['total_harga']),
       komisiPlatform: toDouble(json['komisi_platform']),
       pendapatanHost: toDouble(json['pendapatan_host']),
@@ -144,3 +136,5 @@ class PricePreviewModel {
     );
   }
 }
+
+

@@ -5,9 +5,10 @@ class AppConfig {
 
   static const String appName = 'SPOTH UMKM';
 
-  static const String lanHost = '10.2.10.84';
+  static const String lanHost = '192.168.1.7';
 
-  static const int port = 3000;
+  // Samakan dengan PORT di file .env backend (saat ini 3003).
+  static const int port = 3003;
 
   static String get baseUrl {
     if (kIsWeb) {

@@ -253,7 +253,7 @@ class _AuthPlacePreview extends StatelessWidget {
                 ),
                 SizedBox(height: 3),
                 Text(
-                  'Bandung Â· 2 menit dari pasar',
+                  'Bandung - 2 menit dari pasar',
                   style: TextStyle(
                     fontSize: 11.5,
                     color: AppColors.secondaryText,

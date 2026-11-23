@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
@@ -190,7 +190,7 @@ class _EPassSheetState extends ConsumerState<EPassSheet> {
                       label: 'Alamat',
                       nilai:
                           '${_hasil?.epass.alamat ?? '-'}, '
-                          '${_hasil?.epass.kota ?? '-'}',
+                          '${_hasil?.epass.kecamatan ?? '-'}',
                     ),
                     _BarisInfo(
                       label: 'Metode',
@@ -265,3 +265,5 @@ class _BarisInfo extends StatelessWidget {
     );
   }
 }
+
+

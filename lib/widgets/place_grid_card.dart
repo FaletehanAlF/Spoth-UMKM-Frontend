@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../core/theme/app_colors.dart';
@@ -14,8 +14,6 @@ class PlaceGridCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final foto = place.foto.isNotEmpty ? place.foto.first : null;
-    final diskon = formatDiskonPersen(place.hargaNormal, place.hargaPromo);
-
     return Material(
       color: AppColors.white,
       borderRadius: BorderRadius.circular(AppRadius.lg),
@@ -61,12 +59,6 @@ class PlaceGridCard extends StatelessWidget {
                             highlight: false,
                           ),
                         ),
-                        if (diskon != null)
-                          Positioned(
-                            top: 8,
-                            right: 8,
-                            child: _PhotoBadge(label: diskon, highlight: true),
-                          ),
                       ],
                     ),
                   );
@@ -101,7 +93,7 @@ class PlaceGridCard extends StatelessWidget {
                           const SizedBox(width: 2),
                           Expanded(
                             child: Text(
-                              place.kota,
+                              place.kecamatan,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: const TextStyle(
@@ -118,7 +110,7 @@ class PlaceGridCard extends StatelessWidget {
                         children: [
                           Expanded(
                             child: Text(
-                              formatRupiah(place.hargaEfektif),
+                              formatRupiah(place.harga),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: const TextStyle(
@@ -139,17 +131,6 @@ class PlaceGridCard extends StatelessWidget {
                           ),
                         ],
                       ),
-                      if (diskon != null)
-                        Text(
-                          formatRupiah(place.hargaNormal),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontSize: 10.5,
-                            decoration: TextDecoration.lineThrough,
-                            color: AppColors.secondaryText,
-                          ),
-                        ),
                     ],
                   ),
                 ),
@@ -217,3 +198,6 @@ class PlacePhotoPlaceholder extends StatelessWidget {
     );
   }
 }
+
+
+

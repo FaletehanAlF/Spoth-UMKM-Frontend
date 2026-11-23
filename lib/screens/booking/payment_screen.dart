@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -130,7 +130,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
                 totalHarga: _booking!.totalHarga,
                 status: 'LUNAS',
                 namaTempat: _booking!.namaTempat,
-                kota: _booking!.kota,
+                kecamatan: _booking!.kecamatan,
                 namaTenant: _booking!.namaTenant,
                 namaHost: _booking!.namaHost,
                 foto: _booking!.foto,
@@ -434,7 +434,7 @@ class _RingkasanCard extends StatelessWidget {
           _BarisInfo(
             label: 'Tanggal',
             nilai:
-                '${formatDateString(booking.tanggalMulai)} – '
+                '${formatDateString(booking.tanggalMulai)} - '
                 '${formatDateString(booking.tanggalSelesai)}',
           ),
           _BarisInfo(
@@ -753,7 +753,7 @@ class _SuksesPembayaran extends StatelessWidget {
                 _BarisInfo(
                   label: 'Periode',
                   nilai:
-                      '${formatDateString(booking.tanggalMulai)} – '
+                      '${formatDateString(booking.tanggalMulai)} - '
                       '${formatDateString(booking.tanggalSelesai)}',
                 ),
                 _BarisInfo(label: 'Metode', nilai: payment?.metodeLabel ?? '-'),
@@ -790,3 +790,5 @@ class _SuksesPembayaran extends StatelessWidget {
     );
   }
 }
+
+

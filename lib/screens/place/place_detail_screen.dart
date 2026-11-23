@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -1075,7 +1075,7 @@ class _KepalaTempat extends StatelessWidget {
               const SizedBox(width: 6),
               Expanded(
                 child: Text(
-                  '${place.alamat}, ${place.kota}',
+                  '${place.alamat}, ${place.kecamatan}',
                   style: const TextStyle(
                     fontSize: 13.5,
                     height: 1.4,
@@ -1214,8 +1214,6 @@ class _PriceBlock extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final diskon = formatDiskonPersen(place.hargaNormal, place.hargaPromo);
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1227,7 +1225,7 @@ class _PriceBlock extends StatelessWidget {
                 fit: BoxFit.scaleDown,
                 alignment: Alignment.centerLeft,
                 child: Text(
-                  formatRupiah(place.hargaEfektif),
+                  formatRupiah(place.harga),
                   maxLines: 1,
                   style: AppFonts.heading(
                     fontSize: 26,
@@ -1251,37 +1249,6 @@ class _PriceBlock extends StatelessWidget {
             ),
           ],
         ),
-        if (diskon != null) ...[
-          const SizedBox(height: 4),
-          Row(
-            children: [
-              Text(
-                formatRupiah(place.hargaNormal),
-                style: const TextStyle(
-                  fontSize: 13,
-                  decoration: TextDecoration.lineThrough,
-                  color: AppColors.secondaryText,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                decoration: BoxDecoration(
-                  color: AppColors.primaryOrange,
-                  borderRadius: BorderRadius.circular(7),
-                ),
-                child: Text(
-                  diskon,
-                  style: const TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.white,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
       ],
     );
   }
@@ -1507,7 +1474,7 @@ class _BookedScheduleRow extends StatelessWidget {
           const SizedBox(width: 10),
           Expanded(
             child: Text(
-              '${formatDateString(jadwal.tanggalMulai)} – '
+              '${formatDateString(jadwal.tanggalMulai)} - '
               '${formatDateString(jadwal.tanggalSelesai)}',
               style: const TextStyle(
                 fontSize: 13,
@@ -1640,7 +1607,7 @@ class _BarHarga extends StatelessWidget {
                 fit: BoxFit.scaleDown,
                 alignment: Alignment.centerLeft,
                 child: Text(
-                  formatRupiah(place.hargaEfektif),
+                  formatRupiah(place.harga),
                   maxLines: 1,
                   style: const TextStyle(
                     fontSize: 19,
@@ -1668,3 +1635,6 @@ class _BarHarga extends StatelessWidget {
     );
   }
 }
+
+
+

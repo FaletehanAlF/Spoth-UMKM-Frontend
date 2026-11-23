@@ -1,4 +1,4 @@
-class PaymentModel {
+﻿class PaymentModel {
   const PaymentModel({
     required this.id,
     required this.bookingId,
@@ -69,7 +69,7 @@ class EPassModel {
     required this.kodeBooking,
     required this.namaTempat,
     required this.alamat,
-    required this.kota,
+    required this.kecamatan,
     required this.jenisUsaha,
     required this.tanggalMulai,
     required this.tanggalSelesai,
@@ -87,7 +87,7 @@ class EPassModel {
   final String kodeBooking;
   final String namaTempat;
   final String alamat;
-  final String kota;
+  final String kecamatan;
   final String jenisUsaha;
   final String tanggalMulai;
   final String tanggalSelesai;
@@ -106,7 +106,7 @@ class EPassModel {
       kodeBooking: json['kode_booking'] as String? ?? '',
       namaTempat: json['nama_tempat'] as String? ?? '',
       alamat: json['alamat'] as String? ?? '',
-      kota: json['kota'] as String? ?? '',
+      kecamatan: json['kecamatan'] as String? ?? '',
       jenisUsaha: json['jenis_usaha'] as String? ?? '',
       tanggalMulai: json['tanggal_mulai']?.toString() ?? '',
       tanggalSelesai: json['tanggal_selesai']?.toString() ?? '',
@@ -130,3 +130,5 @@ class EPassModel {
     );
   }
 }
+
+

@@ -9,6 +9,7 @@ import '../../core/services/api_service.dart';
 import '../../core/services/permission_service.dart';
 import '../../core/services/place_service.dart';
 import '../../core/services/upload_service.dart';
+import '../../core/constants/place_districts.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_layout.dart';
 import '../../core/utils/format.dart';
@@ -52,11 +53,10 @@ class _PlaceFormScreenState extends ConsumerState<PlaceFormScreen> {
   final _namaController = TextEditingController();
   final _deskripsiController = TextEditingController();
   final _alamatController = TextEditingController();
-  final _kotaController = TextEditingController();
+  String _kecamatan = PlaceDistricts.defaultDistrict;
   final _fasilitasController = TextEditingController();
   final _aturanController = TextEditingController();
-  final _hargaNormalController = TextEditingController();
-  final _hargaPromoController = TextEditingController();
+  final _hargaController = TextEditingController();
   final _tanggalMulaiController = TextEditingController();
   final _tanggalSelesaiController = TextEditingController();
 
@@ -132,11 +132,9 @@ class _PlaceFormScreenState extends ConsumerState<PlaceFormScreen> {
       _namaController,
       _deskripsiController,
       _alamatController,
-      _kotaController,
       _fasilitasController,
       _aturanController,
-      _hargaNormalController,
-      _hargaPromoController,
+      _hargaController,
       _tanggalMulaiController,
       _tanggalSelesaiController,
       _kategoriLainController,
@@ -162,13 +160,10 @@ class _PlaceFormScreenState extends ConsumerState<PlaceFormScreen> {
       _namaController.text = place.namaTempat;
       _deskripsiController.text = place.deskripsi;
       _alamatController.text = place.alamat;
-      _kotaController.text = place.kota;
+      _kecamatan = place.kecamatan;
       _fasilitasController.text = (place.fasilitas ?? '').trim();
       _aturanController.text = place.aturan ?? '';
-      _hargaNormalController.text = _trimNumber(place.hargaNormal);
-      _hargaPromoController.text = place.hargaPromo == null
-          ? ''
-          : _trimNumber(place.hargaPromo!);
+      _hargaController.text = _trimNumber(place.harga);
       _kategori = place.kategori;
       if (!_categories.any((item) => item.nama == place.kategori)) {
         setState(() {
@@ -333,7 +328,7 @@ class _PlaceFormScreenState extends ConsumerState<PlaceFormScreen> {
     if (source == ImageSource.camera) {
       final granted = await PermissionService.ensureCameraPermission();
       if (!granted) {
-        _showSnack('Izin kamera tidak diizinkan â€” tidak bisa ambil foto.');
+        _showSnack('Izin kamera tidak diizinkan - tidak bisa ambil foto.');
         return;
       }
     }
@@ -391,23 +386,9 @@ class _PlaceFormScreenState extends ConsumerState<PlaceFormScreen> {
 
     final sedangMembuat = !_isEditing;
 
-    final hargaNormal = _parseHarga(_hargaNormalController.text);
-    if (hargaNormal == null || hargaNormal <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Harga normal tidak valid.')),
-      );
-      return;
-    }
-
-    final hargaPromo = _parseHarga(_hargaPromoController.text);
-    if (hargaPromo != null && hargaPromo > hargaNormal) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Harga promo tidak boleh lebih besar dari harga normal.',
-          ),
-        ),
-      );
+    final harga = _parseHarga(_hargaController.text);
+    if (harga == null || harga <= 0) {
+      _showSnack('Harga tidak valid.');
       return;
     }
 
@@ -479,8 +460,8 @@ class _PlaceFormScreenState extends ConsumerState<PlaceFormScreen> {
         'nama_tempat': _namaController.text.trim(),
         'kategori': kategoriForSubmit,
         'alamat': _alamatController.text.trim(),
-        'kota': _kotaController.text.trim(),
-        'harga_normal': hargaNormal,
+        'kecamatan': _kecamatan,
+        'harga': harga,
         'tipe_durasi': _tipeDurasi,
         'deskripsi': _deskripsiController.text.trim(),
         'fasilitas': _fasilitasController.text.trim(),
@@ -492,10 +473,6 @@ class _PlaceFormScreenState extends ConsumerState<PlaceFormScreen> {
         'tanggal_selesai_tersedia': tanggalSelesai == null
             ? null
             : formatTanggalApi(tanggalSelesai),
-        if (sedangMembuat)
-          'harga_promo': ?hargaPromo
-        else
-          'harga_promo': hargaPromo,
       };
 
       final service = ref.read(placeServiceProvider);
@@ -687,21 +664,18 @@ class _PlaceFormScreenState extends ConsumerState<PlaceFormScreen> {
           },
         ),
         const SizedBox(height: 16),
-        TextFormField(
-          controller: _kotaController,
-          textCapitalization: TextCapitalization.words,
-          decoration: const InputDecoration(
-            labelText: 'Kota',
-            hintText: 'Contoh: Bandung',
-          ),
-          validator: (value) {
-            final text = value?.trim() ?? '';
-            if (text.isEmpty) return 'Kota wajib diisi';
-            if (text.length < 4) return 'Kota minimal 4 karakter';
-            return null;
-          },
-        ),
-        const SizedBox(height: 16),
+        DropdownButtonFormField<String>(
+                        initialValue: _kecamatan,
+                        decoration: const InputDecoration(labelText: 'Kecamatan'),
+                        items: [
+                          for (final item in PlaceDistricts.depok)
+                            DropdownMenuItem(value: item, child: Text(item)),
+                        ],
+                        onChanged: _submitting
+                            ? null
+                            : (value) => setState(() => _kecamatan = value!),
+                      ),
+                      const SizedBox(height: 16),
         TextFormField(
           controller: _deskripsiController,
           maxLines: 3,
@@ -814,26 +788,15 @@ class _PlaceFormScreenState extends ConsumerState<PlaceFormScreen> {
           children: [
             Expanded(
               child: TextFormField(
-                controller: _hargaNormalController,
+                controller: _hargaController,
                 keyboardType: TextInputType.number,
                 decoration: const InputDecoration(
-                  labelText: 'Harga Normal (Rp)',
-                  hintText: '250000',
+                  labelText: 'Harga (Rp)',
+                  hintText: 'Contoh: 250000',
                 ),
                 validator: (value) => (value == null || value.trim().isEmpty)
-                    ? 'Harga normal wajib diisi'
+                    ? 'Harga wajib diisi'
                     : null,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: TextFormField(
-                controller: _hargaPromoController,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: 'Harga Promo (Rp)',
-                  hintText: 'Kosong = tanpa promo',
-                ),
               ),
             ),
           ],
@@ -1378,3 +1341,6 @@ class _FormSection extends StatelessWidget {
     );
   }
 }
+
+
+

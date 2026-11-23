@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_colors.dart';
@@ -207,7 +207,7 @@ class _SearchShortcut extends StatelessWidget {
               SizedBox(width: 10),
               Expanded(
                 child: Text(
-                  'Cari tempat, kota, atau lokasi...',
+                  'Cari tempat, kecamatan, atau lokasi...',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
@@ -443,3 +443,5 @@ class _PlacePreviewGrid extends ConsumerWidget {
     );
   }
 }
+
+

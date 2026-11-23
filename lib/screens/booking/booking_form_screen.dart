@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -454,7 +454,7 @@ class _BookingFormScreenState extends ConsumerState<BookingFormScreen> {
       _showSnack(error.message);
     } catch (_) {
       _showSnack(
-        'Gagal membuat pemesanan. Jadwal mungkin sudah dipesan — coba cek lagi.',
+        'Gagal membuat pemesanan. Jadwal mungkin sudah dipesan - coba cek lagi.',
       );
     } finally {
       if (mounted) setState(() => _submitting = false);
@@ -1060,14 +1060,14 @@ class _TempatCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  '${place.kategoriLabel} • ${place.durasiLabel}',
+                  '${place.kategoriLabel} - ${place.durasiLabel}',
                   style: const TextStyle(
                     fontSize: 12.5,
                     color: AppColors.secondaryText,
                   ),
                 ),
                 if (place.alamat.trim().isNotEmpty ||
-                    place.kota.trim().isNotEmpty) ...[
+                    place.kecamatan.trim().isNotEmpty) ...[
                   const SizedBox(height: 8),
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -1080,7 +1080,7 @@ class _TempatCard extends StatelessWidget {
                       const SizedBox(width: 6),
                       Expanded(
                         child: Text(
-                          '${place.alamat}, ${place.kota}',
+                          '${place.alamat}, ${place.kecamatan}',
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
@@ -1102,7 +1102,7 @@ class _TempatCard extends StatelessWidget {
                         fit: BoxFit.scaleDown,
                         alignment: Alignment.centerLeft,
                         child: Text(
-                          formatRupiah(place.hargaEfektif),
+                          formatRupiah(place.harga),
                           maxLines: 1,
                           style: const TextStyle(
                             fontSize: 18,
@@ -1168,9 +1168,6 @@ class _PreviewCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final promo = preview.hargaPromo;
-    final adaPromo = promo != null && promo > 0 && promo < preview.hargaNormal;
-
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
@@ -1217,20 +1214,14 @@ class _PreviewCard extends StatelessWidget {
           _Row(
             label: 'Tanggal',
             value:
-                '${formatDateString(preview.tanggalMulai)} – '
+                '${formatDateString(preview.tanggalMulai)} - '
                 '${formatDateString(preview.tanggalSelesai)}',
           ),
           _Row(
             label: 'Lama Sewa',
             value:
-                '${preview.jumlahDurasi} × ${preview.tipeDurasi.toLowerCase()}',
+                '${preview.jumlahDurasi} x ${preview.tipeDurasi.toLowerCase()}',
           ),
-          if (adaPromo)
-            _Row(
-              label: 'Harga Normal',
-              value: formatRupiah(preview.hargaNormal),
-              coret: true,
-            ),
           _Row(
             label: 'Harga Sewa',
             value:
@@ -1273,13 +1264,11 @@ class _Row extends StatelessWidget {
     required this.label,
     required this.value,
     this.bold = false,
-    this.coret = false,
   });
 
   final String label;
   final String value;
   final bool bold;
-  final bool coret;
 
   @override
   Widget build(BuildContext context) {
@@ -1308,7 +1297,6 @@ class _Row extends StatelessWidget {
                 fontSize: bold ? 14 : 12.5,
                 fontWeight: bold ? FontWeight.w700 : FontWeight.w500,
                 color: bold ? AppColors.charcoal : AppColors.darkText,
-                decoration: coret ? TextDecoration.lineThrough : null,
               ),
             ),
           ),
@@ -1329,3 +1317,5 @@ class _Divider extends StatelessWidget {
     );
   }
 }
+
+

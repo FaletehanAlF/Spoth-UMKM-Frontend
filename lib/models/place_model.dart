@@ -1,4 +1,4 @@
-class PlaceModel {
+﻿class PlaceModel {
   const PlaceModel({
     required this.id,
     required this.hostId,
@@ -6,12 +6,10 @@ class PlaceModel {
     required this.kategori,
     required this.deskripsi,
     required this.alamat,
-    required this.kota,
+    required this.kecamatan,
     this.fasilitas,
     this.aturan,
-    required this.hargaNormal,
-    this.hargaPromo,
-    required this.hargaEfektif,
+    required this.harga,
     required this.tipeDurasi,
     this.createdAt,
     this.updatedAt,
@@ -49,12 +47,10 @@ class PlaceModel {
   final String kategori;
   final String deskripsi;
   final String alamat;
-  final String kota;
+  final String kecamatan;
   final String? fasilitas;
   final String? aturan;
-  final double hargaNormal;
-  final double? hargaPromo;
-  final double hargaEfektif;
+  final double harga;
   final String tipeDurasi;
   final DateTime? createdAt;
   final DateTime? updatedAt;
@@ -67,7 +63,6 @@ class PlaceModel {
 
   String get kategoriLabel => kategoriLabels[kategori] ?? kategori;
   String get durasiLabel => durasiLabels[tipeDurasi] ?? tipeDurasi;
-  bool get hasPromo => hargaPromo != null && hargaPromo! < hargaNormal;
   bool get hasPeriodeKetersediaan =>
       tanggalMulaiTersedia != null && tanggalSelesaiTersedia != null;
 
@@ -85,12 +80,10 @@ class PlaceModel {
       kategori: json['kategori'] as String? ?? '',
       deskripsi: json['deskripsi'] as String? ?? '',
       alamat: json['alamat'] as String? ?? '',
-      kota: json['kota'] as String? ?? '',
+      kecamatan: json['kecamatan'] as String? ?? '',
       fasilitas: json['fasilitas'] as String?,
       aturan: json['aturan'] as String?,
-      hargaNormal: _toDouble(json['harga_normal']),
-      hargaPromo: _toDoubleOrNull(json['harga_promo']),
-      hargaEfektif: _toDouble(json['harga_efektif']),
+      harga: _toDouble(json['harga']),
       tipeDurasi: json['tipe_durasi'] as String? ?? '',
       createdAt: DateTime.tryParse(json['created_at'] as String? ?? ''),
       updatedAt: DateTime.tryParse(json['updated_at'] as String? ?? ''),
@@ -125,19 +118,6 @@ class PlaceModel {
       return double.tryParse(value) ?? 0;
     }
     return 0;
-  }
-
-  static double? _toDoubleOrNull(dynamic value) {
-    if (value == null) {
-      return null;
-    }
-    if (value is num) {
-      return value.toDouble();
-    }
-    if (value is String) {
-      return double.tryParse(value);
-    }
-    return null;
   }
 }
 
@@ -252,3 +232,6 @@ class PlaceSummaryModel {
     );
   }
 }
+
+
+

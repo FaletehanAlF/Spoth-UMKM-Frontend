@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -127,7 +127,7 @@ class _PlaceCatalogState extends ConsumerState<PlaceCatalog> {
                                   color: AppColors.darkText,
                                 ),
                                 decoration: const InputDecoration(
-                                  hintText: 'Cari tempat, kota, atau lokasi...',
+                                  hintText: 'Cari tempat, kecamatan, atau lokasi...',
                                   border: InputBorder.none,
                                   enabledBorder: InputBorder.none,
                                   focusedBorder: InputBorder.none,
@@ -444,3 +444,5 @@ class _CatalogGrid extends ConsumerWidget {
     );
   }
 }
+
+

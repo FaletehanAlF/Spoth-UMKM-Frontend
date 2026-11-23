@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -153,7 +153,7 @@ class _SearchField extends StatelessWidget {
               onChanged: onChanged,
               style: const TextStyle(fontSize: 14, color: AppColors.darkText),
               decoration: const InputDecoration(
-                hintText: 'Cari nama atau kota tempat...',
+                hintText: 'Cari nama atau kecamatan tempat...',
                 border: InputBorder.none,
                 enabledBorder: InputBorder.none,
                 focusedBorder: InputBorder.none,
@@ -365,7 +365,6 @@ class _OwnerPlaceCardState extends ConsumerState<_OwnerPlaceCard> {
   @override
   Widget build(BuildContext context) {
     final foto = place.foto.isNotEmpty ? place.foto.first : null;
-    final promo = place.hasPromo ? place.hargaPromo : null;
 
     return Material(
       color: AppColors.white,
@@ -428,7 +427,7 @@ class _OwnerPlaceCardState extends ConsumerState<_OwnerPlaceCard> {
                         const SizedBox(width: 2),
                         Expanded(
                           child: Text(
-                            '${place.kategoriLabel} â€¢ ${place.kota}',
+                            '${place.kategoriLabel} - ${place.kecamatan}',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
@@ -445,7 +444,7 @@ class _OwnerPlaceCardState extends ConsumerState<_OwnerPlaceCard> {
                       children: [
                         Expanded(
                           child: Text(
-                            formatRupiah(place.hargaEfektif),
+                            formatRupiah(place.harga),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
@@ -456,15 +455,6 @@ class _OwnerPlaceCardState extends ConsumerState<_OwnerPlaceCard> {
                             ),
                           ),
                         ),
-                        if (promo != null)
-                          Text(
-                            formatRupiah(place.hargaNormal),
-                            style: const TextStyle(
-                              fontSize: 10,
-                              decoration: TextDecoration.lineThrough,
-                              color: AppColors.secondaryText,
-                            ),
-                          ),
                       ],
                     ),
                     Text(
@@ -653,3 +643,8 @@ class _KelolaAction extends StatelessWidget {
     );
   }
 }
+
+
+
+
+

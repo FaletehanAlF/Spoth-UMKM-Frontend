@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_colors.dart';
@@ -867,7 +867,7 @@ class _RecentBookingTile extends StatelessWidget {
                 ),
                 const SizedBox(height: AppSpacing.xs),
                 Text(
-                  '${booking.namaTenant ?? 'Penyewa'} · ${formatDateString(booking.tanggalMulai)}',
+                  '${booking.namaTenant ?? 'Penyewa'} - ${formatDateString(booking.tanggalMulai)}',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: Theme.of(context).textTheme.bodySmall,
@@ -1000,3 +1000,5 @@ class _KpiSkeleton extends StatelessWidget {
     );
   }
 }
+
+
