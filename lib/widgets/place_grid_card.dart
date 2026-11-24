@@ -59,6 +59,12 @@ class PlaceGridCard extends StatelessWidget {
                             highlight: false,
                           ),
                         ),
+                        if (place.sudahDiSewa)
+                          const Positioned(
+                            bottom: 8,
+                            left: 8,
+                            child: _TerisiBadge(),
+                          ),
                       ],
                     ),
                   );
@@ -164,6 +170,30 @@ class _PhotoBadge extends StatelessWidget {
           fontWeight: FontWeight.w700,
           letterSpacing: 0.1,
           color: highlight ? AppColors.white : AppColors.charcoal,
+        ),
+      ),
+    );
+  }
+}
+
+class _TerisiBadge extends StatelessWidget {
+  const _TerisiBadge();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: AppColors.charcoal,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: const Text(
+        'Sedang disewa',
+        style: TextStyle(
+          fontSize: 9.5,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.1,
+          color: AppColors.white,
         ),
       ),
     );

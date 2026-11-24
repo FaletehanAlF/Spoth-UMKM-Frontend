@@ -26,14 +26,11 @@ class AppColors {
   static const Color canvasDeep = Color(0xFFFFFFFF);
 
   // --- Aksen teras (oranye hangat) ------------------------------------------
-  /// Aksen utama brand — ikon & aksi aktif.
   static const Color primaryOrange = Color(0xFFFB923C);
 
-  /// Merah oranye untuk tombol & pilihan aktif agar teks putih tetap nyaman.
-  static const Color primaryDeep = Color(0xFFF97316);
+  static const Color primaryDeep = Color(0xFFC2410C);
 
-  /// Aksen ink gelap untuk teks link agar tajam di atas krem.
-  static const Color primaryInk = Color(0xFFEA580C);
+  static const Color primaryInk = Color(0xFFA93F0B);
 
   // --- Teks -----------------------------------------------------------------
   static const Color darkText = Color(0xFF332D26);

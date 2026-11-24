@@ -101,7 +101,7 @@ class _BookingFormScreenState extends ConsumerState<BookingFormScreen> {
       builder: (context, child) => Theme(
         data: Theme.of(context).copyWith(
           colorScheme: Theme.of(context).colorScheme
-              .copyWith(primary: AppColors.primaryOrange),
+              .copyWith(primary: AppColors.primaryInk),
         ),
         child: child!,
       ),
@@ -563,7 +563,7 @@ class _BookingFormScreenState extends ConsumerState<BookingFormScreen> {
                 fillColor: AppColors.lightOrange,
                 prefixIcon: const Icon(
                   Icons.event_available_outlined,
-                  color: AppColors.primaryOrange,
+                  color: AppColors.primaryInk,
                 ),
                 helperText: _ringkasanDurasi,
                 helperMaxLines: 2,
@@ -747,8 +747,6 @@ class _AvailabilityInfo extends StatelessWidget {
 
   String _alasanKonflik(BookedRange konflik) {
     switch (konflik.status) {
-      case 'ATURAN_KETERSEDIAAN':
-        return 'Diblokir aturan ketersediaan tempat';
       case 'PERIODE_TIDAK_TERSEDIA':
         return 'Di luar periode ketersediaan tempat';
       case 'MENUNGGU_PEMBAYARAN':
@@ -853,7 +851,7 @@ class _AvailabilityInfo extends StatelessWidget {
               Icon(
                 tersedia ? Icons.check_circle_outline : Icons.event_busy,
                 size: 18,
-                color: tersedia ? AppColors.primaryOrange : errorColor,
+                color: tersedia ? AppColors.primaryInk : errorColor,
               ),
               const SizedBox(width: 8),
               Expanded(
@@ -933,7 +931,7 @@ class _SectionHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Icon(icon, size: 18, color: AppColors.primaryOrange),
+        Icon(icon, size: 18, color: AppColors.primaryInk),
         const SizedBox(width: 8),
         Text(
           title,
@@ -1148,7 +1146,7 @@ class _TempatPhotoPlaceholder extends StatelessWidget {
           Icon(
             Icons.storefront_outlined,
             size: 34,
-            color: AppColors.primaryOrange,
+            color: AppColors.primaryInk,
           ),
           SizedBox(height: 6),
           Text(
@@ -1191,7 +1189,7 @@ class _PreviewCard extends StatelessWidget {
                     : Icons.info_outline,
                 size: 18,
                 color: preview.tersedia
-                    ? AppColors.primaryOrange
+                    ? AppColors.primaryInk
                     : AppColors.secondaryText,
               ),
               const SizedBox(width: 8),
@@ -1230,23 +1228,23 @@ class _PreviewCard extends StatelessWidget {
           ),
           const _Divider(),
           _Row(
+            label: 'Biaya Admin',
+            value: formatRupiah(preview.adminFee),
+          ),
+          _Row(
             label: 'Total',
             value: formatRupiah(preview.totalHarga),
             bold: true,
-          ),
-          _Row(
-            label: 'Komisi Platform',
-            value: formatRupiah(preview.komisiPlatform),
           ),
           if (!preview.tersedia) ...[
             const SizedBox(height: 10),
             Text(
               preview.jumlahKonflik > 0
                   ? 'Ada ${preview.jumlahKonflik} konflik jadwal pada rentang '
-                        'ini. Periksa periode, aturan ketersediaan, atau '
-                        'jadwal yang sudah dipesan.'
+                        'ini. Periksa periode ketersediaan atau jadwal yang '
+                        'sudah dipesan.'
                   : 'Jadwal pada rentang ini tidak tersedia. Periksa periode '
-                        'atau aturan ketersediaan tempat.',
+                        'ketersediaan tempat.',
               style: const TextStyle(
                 fontSize: 12,
                 color: AppColors.secondaryText,

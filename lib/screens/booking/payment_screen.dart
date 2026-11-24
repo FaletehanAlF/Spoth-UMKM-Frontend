@@ -128,6 +128,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
                 jumlahDurasi: _booking!.jumlahDurasi,
                 hargaSatuan: _booking!.hargaSatuan,
                 totalHarga: _booking!.totalHarga,
+                adminFee: _booking!.adminFee,
                 status: 'LUNAS',
                 namaTempat: _booking!.namaTempat,
                 kecamatan: _booking!.kecamatan,
@@ -327,7 +328,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
                                     style: const TextStyle(
                                       fontSize: 18,
                                       fontWeight: FontWeight.w800,
-                                      color: AppColors.primaryOrange,
+                                      color: AppColors.primaryInk,
                                     ),
                                   ),
                                 ),
@@ -445,6 +446,10 @@ class _RingkasanCard extends StatelessWidget {
             label: 'Harga Satuan',
             nilai: formatRupiah(booking.hargaSatuan),
           ),
+          _BarisInfo(
+            label: 'Biaya Admin',
+            nilai: formatRupiah(booking.adminFee),
+          ),
           const SizedBox(height: 10),
           const Divider(color: AppColors.softBorder, height: 1),
           const SizedBox(height: 10),
@@ -464,7 +469,7 @@ class _RingkasanCard extends StatelessWidget {
                 style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w800,
-                  color: AppColors.primaryOrange,
+                  color: AppColors.primaryInk,
                 ),
               ),
             ],
@@ -757,6 +762,10 @@ class _SuksesPembayaran extends StatelessWidget {
                       '${formatDateString(booking.tanggalSelesai)}',
                 ),
                 _BarisInfo(label: 'Metode', nilai: payment?.metodeLabel ?? '-'),
+                _BarisInfo(
+                  label: 'Biaya Admin',
+                  nilai: formatRupiah(booking.adminFee),
+                ),
                 _BarisInfo(
                   label: 'Total Bayar',
                   nilai: formatRupiah(booking.totalHarga),

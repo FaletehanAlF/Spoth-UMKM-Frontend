@@ -28,6 +28,32 @@ String _angkaSingkat(double value) {
   return teks.endsWith(',0') ? teks.substring(0, teks.length - 2) : teks;
 }
 
+/// Nama bulan lengkap dari kode bulan "YYYY-MM", misalnya "2026-11".
+String formatRupiahBulan(String bulan) {
+  final bagian = bulan.split('-');
+  if (bagian.length != 2) return bulan;
+
+  final nomor = int.tryParse(bagian[1]);
+  if (nomor == null || nomor < 1 || nomor > 12) return bulan;
+
+  const nama = [
+    'Januari',
+    'Februari',
+    'Maret',
+    'April',
+    'Mei',
+    'Juni',
+    'Juli',
+    'Agustus',
+    'September',
+    'Oktober',
+    'November',
+    'Desember',
+  ];
+
+  return '${nama[nomor - 1]} ${bagian[0]}';
+}
+
 String? namaDepan(String? nama) {
   final bersih = nama?.trim() ?? '';
   if (bersih.isEmpty) return null;

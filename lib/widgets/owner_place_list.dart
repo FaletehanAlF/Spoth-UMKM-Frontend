@@ -368,9 +368,9 @@ class _OwnerPlaceCardState extends ConsumerState<_OwnerPlaceCard> {
 
     return Material(
       color: AppColors.white,
-      borderRadius: BorderRadius.circular(18),
+      borderRadius: BorderRadius.circular(AppRadius.lg),
       child: InkWell(
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
         onTap: () => context.push('/place-detail?id=${place.id}'),
         child: Container(
           decoration: BoxDecoration(
@@ -439,39 +439,71 @@ class _OwnerPlaceCardState extends ConsumerState<_OwnerPlaceCard> {
                       ],
                     ),
                     const SizedBox(height: 6),
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Expanded(
-                          child: Text(
-                            formatRupiah(place.harga),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              fontSize: 14.5,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: -0.1,
-                              color: AppColors.charcoal,
-                            ),
-                          ),
-                        ),
-                      ],
+                    Text(
+                      formatRupiah(place.harga),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 14.5,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: -0.1,
+                        color: AppColors.charcoal,
+                      ),
                     ),
                     Text(
                       'per ${place.durasiLabel.toLowerCase()}',
                       style: const TextStyle(
-                        fontSize: 10,
+                        fontSize: 11.5,
                         color: AppColors.secondaryText,
                       ),
                     ),
+                    if (place.sudahDiSewa) ...[
+                      const SizedBox(height: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.danger.withValues(alpha: 0.08),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: AppColors.danger.withValues(alpha: 0.25),
+                          ),
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.lock_clock,
+                              size: 12,
+                              color: AppColors.danger,
+                            ),
+                            SizedBox(width: 4),
+                            Text(
+                              'Tempat sudah di sewa',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.danger,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
               IconButton(
                 onPressed: _acting ? null : _showKelolaSheet,
                 icon: const Icon(Icons.more_vert),
-                tooltip: 'Kelola Tempat',
-                color: AppColors.secondaryText,
+                tooltip: place.sudahDiSewa
+                    ? 'Tempat sudah di sewa'
+                    : 'Kelola Tempat',
+                color: place.sudahDiSewa
+                    ? AppColors.danger
+                    : AppColors.secondaryText,
               ),
             ],
           ),
@@ -562,7 +594,7 @@ class _KelolaSheet extends StatelessWidget {
               icon: Icons.delete_outline,
               label: 'Hapus Tempat',
               keterangan: 'Tempat yang dihapus tidak dapat dikembalikan',
-              warna: Theme.of(context).colorScheme.error,
+              warna: AppColors.danger,
               onTap: () => Navigator.of(context).pop(_AksiKelola.hapus),
             ),
             const SizedBox(height: 6),

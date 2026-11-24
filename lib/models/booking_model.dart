@@ -10,6 +10,7 @@
     required this.jumlahDurasi,
     required this.hargaSatuan,
     required this.totalHarga,
+    this.adminFee = 0,
     required this.status,
     this.createdAt,
     this.namaTempat,
@@ -17,6 +18,8 @@
     this.namaTenant,
     this.namaHost,
     this.foto = const [],
+    this.statusLabel,
+    this.epassTersedia = false,
   });
 
   final String id;
@@ -29,6 +32,7 @@
   final int jumlahDurasi;
   final double hargaSatuan;
   final double totalHarga;
+  final double adminFee;
   final String status;
   final DateTime? createdAt;
   final String? namaTempat;
@@ -36,19 +40,33 @@
   final String? namaTenant;
   final String? namaHost;
   final List<String> foto;
+  /// Label status siap tampil dari server (contoh: "Berhasil Disewa").
+  /// Jika server tidak mengirimnya, fallback ke label lokal.
+  final String? statusLabel;
+  /// True bila E-Pass sudah bisa dibuka (pemesanan lunas).
+  final bool epassTersedia;
 
-  String get statusLabel {
+  String get displayStatusLabel {
+    if (statusLabel != null && statusLabel!.trim().isNotEmpty) {
+      return statusLabel!;
+    }
+    return statusLabelLokal;
+  }
+
+  String get statusLabelLokal {
     switch (status) {
       case 'MENUNGGU_PEMBAYARAN':
         return 'Menunggu Bayar';
       case 'LUNAS':
-        return 'Lunas';
+        return 'Berhasil Disewa';
       case 'DIBATALKAN':
         return 'Dibatalkan';
       default:
         return status;
     }
   }
+
+  String? get firstFoto => foto.isNotEmpty ? foto.first : null;
 
   factory BookingModel.fromJson(Map<String, dynamic> json) {
     return BookingModel(
@@ -64,6 +82,7 @@
           : 0,
       hargaSatuan: _toDouble(json['harga_satuan']),
       totalHarga: _toDouble(json['total_harga']),
+      adminFee: _toDouble(json['admin_fee']),
       status: json['status'] as String? ?? '',
       createdAt: DateTime.tryParse(json['created_at'] as String? ?? ''),
       namaTempat: json['nama_tempat'] as String?,
@@ -75,6 +94,10 @@
               ?.map((item) => item.toString())
               .toList() ??
           const [],
+      statusLabel: json['status_label'] as String?,
+      epassTersedia: json['epass_tersedia'] as bool? ??
+          (json['status'] == 'LUNAS' &&
+              (json['kode_booking'] as String?) != null),
     );
   }
 
@@ -98,6 +121,7 @@ class PricePreviewModel {
     required this.jumlahDurasi,
     required this.hargaSatuan,
     required this.totalHarga,
+    this.adminFee = 0,
     required this.komisiPlatform,
     required this.pendapatanHost,
     required this.tersedia,
@@ -111,6 +135,7 @@ class PricePreviewModel {
   final int jumlahDurasi;
   final double hargaSatuan;
   final double totalHarga;
+  final double adminFee;
   final double komisiPlatform;
   final double pendapatanHost;
   final bool tersedia;
@@ -129,6 +154,7 @@ class PricePreviewModel {
           : 0,
       hargaSatuan: toDouble(json['harga_satuan']),
       totalHarga: toDouble(json['total_harga']),
+      adminFee: toDouble(json['admin_fee']),
       komisiPlatform: toDouble(json['komisi_platform']),
       pendapatanHost: toDouble(json['pendapatan_host']),
       tersedia: json['tersedia'] as bool? ?? false,

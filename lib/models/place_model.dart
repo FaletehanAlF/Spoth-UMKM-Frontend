@@ -7,8 +7,6 @@
     required this.deskripsi,
     required this.alamat,
     required this.kecamatan,
-    this.fasilitas,
-    this.aturan,
     required this.harga,
     required this.tipeDurasi,
     this.createdAt,
@@ -18,6 +16,7 @@
     this.foto = const [],
     this.namaHost,
     this.jumlahFoto = 0,
+    this.sudahDiSewa = false,
     this.jadwalTerpakai = const [],
   });
 
@@ -48,8 +47,6 @@
   final String deskripsi;
   final String alamat;
   final String kecamatan;
-  final String? fasilitas;
-  final String? aturan;
   final double harga;
   final String tipeDurasi;
   final DateTime? createdAt;
@@ -59,18 +56,13 @@
   final List<String> foto;
   final String? namaHost;
   final int jumlahFoto;
+  final bool sudahDiSewa;
   final List<BookedRange> jadwalTerpakai;
 
   String get kategoriLabel => kategoriLabels[kategori] ?? kategori;
   String get durasiLabel => durasiLabels[tipeDurasi] ?? tipeDurasi;
   bool get hasPeriodeKetersediaan =>
       tanggalMulaiTersedia != null && tanggalSelesaiTersedia != null;
-
-  List<String> get fasilitasList => (fasilitas ?? '')
-      .split(',')
-      .map((item) => item.trim())
-      .where((item) => item.isNotEmpty)
-      .toList();
 
   factory PlaceModel.fromJson(Map<String, dynamic> json) {
     return PlaceModel(
@@ -81,8 +73,6 @@
       deskripsi: json['deskripsi'] as String? ?? '',
       alamat: json['alamat'] as String? ?? '',
       kecamatan: json['kecamatan'] as String? ?? '',
-      fasilitas: json['fasilitas'] as String?,
-      aturan: json['aturan'] as String?,
       harga: _toDouble(json['harga']),
       tipeDurasi: json['tipe_durasi'] as String? ?? '',
       createdAt: DateTime.tryParse(json['created_at'] as String? ?? ''),
@@ -96,6 +86,7 @@
           const [],
       namaHost: json['nama_host'] as String?,
       jumlahFoto: (json['jumlah_foto'] as num?)?.toInt() ?? 0,
+      sudahDiSewa: json['sudah_di_sewa'] as bool? ?? false,
       jadwalTerpakai: (json['jadwal_terpakai'] as List<dynamic>? ?? const [])
           .whereType<Map<String, dynamic>>()
           .map(BookedRange.fromJson)

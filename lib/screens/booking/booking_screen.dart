@@ -10,6 +10,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/booking_provider.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/empty_state.dart';
+import '../../widgets/place_grid_card.dart';
 import '../../widgets/shimmer_loading.dart';
 import '../../widgets/spoth_app_bar.dart';
 
@@ -143,7 +144,10 @@ class _BookingCard extends ConsumerWidget {
  : (booking.namaTempat ?? 'Tempat');
  final bisaBayar = !isHost && booking.status == 'MENUNGGU_PEMBAYARAN';
 
- return Container(
+ return InkWell(
+ onTap: () => context.push('/place-detail?id=${booking.placeId}'),
+ borderRadius: BorderRadius.circular(18),
+ child: Container(
  padding: const EdgeInsets.all(16),
  decoration: BoxDecoration(
  color: AppColors.white,
@@ -154,9 +158,28 @@ class _BookingCard extends ConsumerWidget {
  crossAxisAlignment: CrossAxisAlignment.start,
  children: [
  Row(
+ crossAxisAlignment: CrossAxisAlignment.start,
  children: [
+ ClipRRect(
+ borderRadius: BorderRadius.circular(12),
+ child: SizedBox(
+ width: 56,
+ height: 56,
+ child: booking.firstFoto != null
+ ? Image.network(
+ booking.firstFoto!,
+ fit: BoxFit.cover,
+ errorBuilder: (_, _, _) => const PlacePhotoPlaceholder(),
+ )
+ : const PlacePhotoPlaceholder(),
+ ),
+ ),
+ const SizedBox(width: 12),
  Expanded(
- child: Text(
+ child: Column(
+ crossAxisAlignment: CrossAxisAlignment.start,
+ children: [
+ Text(
  pihakLain,
  maxLines: 1,
  overflow: TextOverflow.ellipsis,
@@ -167,20 +190,24 @@ class _BookingCard extends ConsumerWidget {
  color: AppColors.charcoal,
  ),
  ),
- ),
- const SizedBox(width: 8),
- _StatusBadge(status: booking.status),
- ],
- ),
- const SizedBox(height: 6),
+ const SizedBox(height: 2),
  Text(
-            'Kode: ${booking.kodeBooking ?? '-'} - ${booking.jenisUsaha}',
+ 'Kode: ${booking.kodeBooking ?? '-'} - ${booking.jenisUsaha}',
+ maxLines: 1,
+ overflow: TextOverflow.ellipsis,
  style: const TextStyle(
  fontSize: 11.5,
  color: AppColors.secondaryText,
  ),
  ),
- const SizedBox(height: 5),
+ ],
+ ),
+ ),
+ const SizedBox(width: 8),
+ _StatusBadge(status: booking.status),
+ ],
+ ),
+ const SizedBox(height: 8),
  Row(
  children: [
  const Icon(
@@ -234,6 +261,7 @@ class _BookingCard extends ConsumerWidget {
  ],
  ],
  ),
+ ),
  );
  }
 }
@@ -265,7 +293,7 @@ class _StatusBadge extends StatelessWidget {
  Widget build(BuildContext context) {
  final label = switch (status) {
  'MENUNGGU_PEMBAYARAN' => 'Menunggu Bayar',
- 'LUNAS' => 'Lunas',
+ 'LUNAS' => 'Berhasil Disewa',
  'DIBATALKAN' => 'Dibatalkan',
  _ => status,
  };
@@ -275,7 +303,7 @@ class _StatusBadge extends StatelessWidget {
  return Container(
  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
  decoration: BoxDecoration(
- color: aktif ? AppColors.primaryOrange : AppColors.lightOrange,
+ color: aktif ? AppColors.primaryDeep : AppColors.lightOrange,
  borderRadius: BorderRadius.circular(12),
  ),
  child: Text(
