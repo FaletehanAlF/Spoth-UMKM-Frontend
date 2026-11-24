@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -128,9 +128,10 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
                 jumlahDurasi: _booking!.jumlahDurasi,
                 hargaSatuan: _booking!.hargaSatuan,
                 totalHarga: _booking!.totalHarga,
+                adminFee: _booking!.adminFee,
                 status: 'LUNAS',
                 namaTempat: _booking!.namaTempat,
-                kota: _booking!.kota,
+                kecamatan: _booking!.kecamatan,
                 namaTenant: _booking!.namaTenant,
                 namaHost: _booking!.namaHost,
                 foto: _booking!.foto,
@@ -327,7 +328,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
                                     style: const TextStyle(
                                       fontSize: 18,
                                       fontWeight: FontWeight.w800,
-                                      color: AppColors.primaryOrange,
+                                      color: AppColors.primaryInk,
                                     ),
                                   ),
                                 ),
@@ -434,7 +435,7 @@ class _RingkasanCard extends StatelessWidget {
           _BarisInfo(
             label: 'Tanggal',
             nilai:
-                '${formatDateString(booking.tanggalMulai)} – '
+                '${formatDateString(booking.tanggalMulai)} - '
                 '${formatDateString(booking.tanggalSelesai)}',
           ),
           _BarisInfo(
@@ -444,6 +445,10 @@ class _RingkasanCard extends StatelessWidget {
           _BarisInfo(
             label: 'Harga Satuan',
             nilai: formatRupiah(booking.hargaSatuan),
+          ),
+          _BarisInfo(
+            label: 'Biaya Admin',
+            nilai: formatRupiah(booking.adminFee),
           ),
           const SizedBox(height: 10),
           const Divider(color: AppColors.softBorder, height: 1),
@@ -464,7 +469,7 @@ class _RingkasanCard extends StatelessWidget {
                 style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w800,
-                  color: AppColors.primaryOrange,
+                  color: AppColors.primaryInk,
                 ),
               ),
             ],
@@ -753,10 +758,14 @@ class _SuksesPembayaran extends StatelessWidget {
                 _BarisInfo(
                   label: 'Periode',
                   nilai:
-                      '${formatDateString(booking.tanggalMulai)} – '
+                      '${formatDateString(booking.tanggalMulai)} - '
                       '${formatDateString(booking.tanggalSelesai)}',
                 ),
                 _BarisInfo(label: 'Metode', nilai: payment?.metodeLabel ?? '-'),
+                _BarisInfo(
+                  label: 'Biaya Admin',
+                  nilai: formatRupiah(booking.adminFee),
+                ),
                 _BarisInfo(
                   label: 'Total Bayar',
                   nilai: formatRupiah(booking.totalHarga),
@@ -790,3 +799,5 @@ class _SuksesPembayaran extends StatelessWidget {
     );
   }
 }
+
+

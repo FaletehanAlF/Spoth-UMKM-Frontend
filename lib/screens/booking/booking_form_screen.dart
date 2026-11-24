@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -101,7 +101,7 @@ class _BookingFormScreenState extends ConsumerState<BookingFormScreen> {
       builder: (context, child) => Theme(
         data: Theme.of(context).copyWith(
           colorScheme: Theme.of(context).colorScheme
-              .copyWith(primary: AppColors.primaryOrange),
+              .copyWith(primary: AppColors.primaryInk),
         ),
         child: child!,
       ),
@@ -454,7 +454,7 @@ class _BookingFormScreenState extends ConsumerState<BookingFormScreen> {
       _showSnack(error.message);
     } catch (_) {
       _showSnack(
-        'Gagal membuat pemesanan. Jadwal mungkin sudah dipesan — coba cek lagi.',
+        'Gagal membuat pemesanan. Jadwal mungkin sudah dipesan - coba cek lagi.',
       );
     } finally {
       if (mounted) setState(() => _submitting = false);
@@ -563,7 +563,7 @@ class _BookingFormScreenState extends ConsumerState<BookingFormScreen> {
                 fillColor: AppColors.lightOrange,
                 prefixIcon: const Icon(
                   Icons.event_available_outlined,
-                  color: AppColors.primaryOrange,
+                  color: AppColors.primaryInk,
                 ),
                 helperText: _ringkasanDurasi,
                 helperMaxLines: 2,
@@ -747,8 +747,6 @@ class _AvailabilityInfo extends StatelessWidget {
 
   String _alasanKonflik(BookedRange konflik) {
     switch (konflik.status) {
-      case 'ATURAN_KETERSEDIAAN':
-        return 'Diblokir aturan ketersediaan tempat';
       case 'PERIODE_TIDAK_TERSEDIA':
         return 'Di luar periode ketersediaan tempat';
       case 'MENUNGGU_PEMBAYARAN':
@@ -853,7 +851,7 @@ class _AvailabilityInfo extends StatelessWidget {
               Icon(
                 tersedia ? Icons.check_circle_outline : Icons.event_busy,
                 size: 18,
-                color: tersedia ? AppColors.primaryOrange : errorColor,
+                color: tersedia ? AppColors.primaryInk : errorColor,
               ),
               const SizedBox(width: 8),
               Expanded(
@@ -933,7 +931,7 @@ class _SectionHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Icon(icon, size: 18, color: AppColors.primaryOrange),
+        Icon(icon, size: 18, color: AppColors.primaryInk),
         const SizedBox(width: 8),
         Text(
           title,
@@ -1060,14 +1058,14 @@ class _TempatCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  '${place.kategoriLabel} • ${place.durasiLabel}',
+                  '${place.kategoriLabel} - ${place.durasiLabel}',
                   style: const TextStyle(
                     fontSize: 12.5,
                     color: AppColors.secondaryText,
                   ),
                 ),
                 if (place.alamat.trim().isNotEmpty ||
-                    place.kota.trim().isNotEmpty) ...[
+                    place.kecamatan.trim().isNotEmpty) ...[
                   const SizedBox(height: 8),
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -1080,7 +1078,7 @@ class _TempatCard extends StatelessWidget {
                       const SizedBox(width: 6),
                       Expanded(
                         child: Text(
-                          '${place.alamat}, ${place.kota}',
+                          '${place.alamat}, ${place.kecamatan}',
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
@@ -1102,7 +1100,7 @@ class _TempatCard extends StatelessWidget {
                         fit: BoxFit.scaleDown,
                         alignment: Alignment.centerLeft,
                         child: Text(
-                          formatRupiah(place.hargaEfektif),
+                          formatRupiah(place.harga),
                           maxLines: 1,
                           style: const TextStyle(
                             fontSize: 18,
@@ -1148,7 +1146,7 @@ class _TempatPhotoPlaceholder extends StatelessWidget {
           Icon(
             Icons.storefront_outlined,
             size: 34,
-            color: AppColors.primaryOrange,
+            color: AppColors.primaryInk,
           ),
           SizedBox(height: 6),
           Text(
@@ -1168,9 +1166,6 @@ class _PreviewCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final promo = preview.hargaPromo;
-    final adaPromo = promo != null && promo > 0 && promo < preview.hargaNormal;
-
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
@@ -1194,7 +1189,7 @@ class _PreviewCard extends StatelessWidget {
                     : Icons.info_outline,
                 size: 18,
                 color: preview.tersedia
-                    ? AppColors.primaryOrange
+                    ? AppColors.primaryInk
                     : AppColors.secondaryText,
               ),
               const SizedBox(width: 8),
@@ -1217,20 +1212,14 @@ class _PreviewCard extends StatelessWidget {
           _Row(
             label: 'Tanggal',
             value:
-                '${formatDateString(preview.tanggalMulai)} – '
+                '${formatDateString(preview.tanggalMulai)} - '
                 '${formatDateString(preview.tanggalSelesai)}',
           ),
           _Row(
             label: 'Lama Sewa',
             value:
-                '${preview.jumlahDurasi} × ${preview.tipeDurasi.toLowerCase()}',
+                '${preview.jumlahDurasi} x ${preview.tipeDurasi.toLowerCase()}',
           ),
-          if (adaPromo)
-            _Row(
-              label: 'Harga Normal',
-              value: formatRupiah(preview.hargaNormal),
-              coret: true,
-            ),
           _Row(
             label: 'Harga Sewa',
             value:
@@ -1239,23 +1228,23 @@ class _PreviewCard extends StatelessWidget {
           ),
           const _Divider(),
           _Row(
+            label: 'Biaya Admin',
+            value: formatRupiah(preview.adminFee),
+          ),
+          _Row(
             label: 'Total',
             value: formatRupiah(preview.totalHarga),
             bold: true,
-          ),
-          _Row(
-            label: 'Komisi Platform',
-            value: formatRupiah(preview.komisiPlatform),
           ),
           if (!preview.tersedia) ...[
             const SizedBox(height: 10),
             Text(
               preview.jumlahKonflik > 0
                   ? 'Ada ${preview.jumlahKonflik} konflik jadwal pada rentang '
-                        'ini. Periksa periode, aturan ketersediaan, atau '
-                        'jadwal yang sudah dipesan.'
+                        'ini. Periksa periode ketersediaan atau jadwal yang '
+                        'sudah dipesan.'
                   : 'Jadwal pada rentang ini tidak tersedia. Periksa periode '
-                        'atau aturan ketersediaan tempat.',
+                        'ketersediaan tempat.',
               style: const TextStyle(
                 fontSize: 12,
                 color: AppColors.secondaryText,
@@ -1273,13 +1262,11 @@ class _Row extends StatelessWidget {
     required this.label,
     required this.value,
     this.bold = false,
-    this.coret = false,
   });
 
   final String label;
   final String value;
   final bool bold;
-  final bool coret;
 
   @override
   Widget build(BuildContext context) {
@@ -1308,7 +1295,6 @@ class _Row extends StatelessWidget {
                 fontSize: bold ? 14 : 12.5,
                 fontWeight: bold ? FontWeight.w700 : FontWeight.w500,
                 color: bold ? AppColors.charcoal : AppColors.darkText,
-                decoration: coret ? TextDecoration.lineThrough : null,
               ),
             ),
           ),
@@ -1329,3 +1315,5 @@ class _Divider extends StatelessWidget {
     );
   }
 }
+
+

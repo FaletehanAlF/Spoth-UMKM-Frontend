@@ -35,51 +35,42 @@ class CategoryPicker extends StatelessWidget {
         if (unik.add(item.nama)) item.nama,
     ];
 
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(AppSpacing.md),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceMuted,
-        borderRadius: BorderRadius.circular(AppRadius.md),
-        border: Border.all(color: AppColors.softBorder),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Wrap(
-            spacing: AppSpacing.sm,
-            runSpacing: AppSpacing.sm,
-            children: [
-              for (final nama in namaKategori)
-                _CategoryChip(
-                  label: categoryLabel(nama),
-                  icon: categoryIcon(nama),
-                  selected: selected == nama,
-                  enabled: enabled,
-                  onTap: () => onChanged(nama),
-                ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Wrap(
+          spacing: AppSpacing.sm,
+          runSpacing: AppSpacing.sm,
+          children: [
+            for (final nama in namaKategori)
               _CategoryChip(
-                label: customValue,
-                icon: Icons.edit_outlined,
-                selected: selected == customValue,
+                label: categoryLabel(nama),
+                icon: categoryIcon(nama),
+                selected: selected == nama,
                 enabled: enabled,
-                onTap: () => onChanged(customValue),
+                onTap: () => onChanged(nama),
               ),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          Text(
-            selected == customValue
-                ? 'Tulis nama kategori sendiri di kolom bawah.'
-                : 'Pilih kategori yang paling sesuai dengan tempatmu.',
-            style: const TextStyle(
-              fontSize: 11.5,
-              height: 1.4,
-              color: AppColors.secondaryText,
+            _CategoryChip(
+              label: customValue,
+              icon: Icons.edit_outlined,
+              selected: selected == customValue,
+              enabled: enabled,
+              onTap: () => onChanged(customValue),
             ),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        Text(
+          selected == customValue
+              ? 'Tulis nama kategori sendiri di kolom bawah.'
+              : 'Pilih kategori yang paling sesuai dengan tempatmu.',
+          style: const TextStyle(
+            fontSize: 12,
+            height: 1.4,
+            color: AppColors.secondaryText,
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
@@ -114,7 +105,7 @@ class _CategoryChip extends StatelessWidget {
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 160),
             curve: Curves.easeOut,
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
             decoration: BoxDecoration(
               color: background,
               borderRadius: BorderRadius.circular(AppRadius.pill),

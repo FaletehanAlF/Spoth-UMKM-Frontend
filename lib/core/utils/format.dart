@@ -28,27 +28,37 @@ String _angkaSingkat(double value) {
   return teks.endsWith(',0') ? teks.substring(0, teks.length - 2) : teks;
 }
 
+/// Nama bulan lengkap dari kode bulan "YYYY-MM", misalnya "2026-11".
+String formatRupiahBulan(String bulan) {
+  final bagian = bulan.split('-');
+  if (bagian.length != 2) return bulan;
+
+  final nomor = int.tryParse(bagian[1]);
+  if (nomor == null || nomor < 1 || nomor > 12) return bulan;
+
+  const nama = [
+    'Januari',
+    'Februari',
+    'Maret',
+    'April',
+    'Mei',
+    'Juni',
+    'Juli',
+    'Agustus',
+    'September',
+    'Oktober',
+    'November',
+    'Desember',
+  ];
+
+  return '${nama[nomor - 1]} ${bagian[0]}';
+}
+
 String? namaDepan(String? nama) {
   final bersih = nama?.trim() ?? '';
   if (bersih.isEmpty) return null;
 
   return bersih.split(RegExp(r'\s+')).first;
-}
-
-String? formatDiskonPersen(double hargaNormal, double? hargaPromo) {
-  if (hargaPromo == null ||
-      hargaPromo <= 0 ||
-      hargaNormal <= 0 ||
-      hargaPromo >= hargaNormal) {
-    return null;
-  }
-
-  final persen = (100 - (hargaPromo / hargaNormal * 100)).round();
-  if (persen <= 0 || persen > 100) {
-    return null;
-  }
-
-  return '-$persen%';
 }
 
 String formatDateString(String? tanggal) {

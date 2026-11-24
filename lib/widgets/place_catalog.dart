@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -28,6 +28,7 @@ class _PlaceCatalogState extends ConsumerState<PlaceCatalog> {
   @override
   void initState() {
     super.initState();
+    _searchController.text = ref.read(tenantSearchProvider).keyword;
     _loadCategories();
   }
 
@@ -127,7 +128,7 @@ class _PlaceCatalogState extends ConsumerState<PlaceCatalog> {
                                   color: AppColors.darkText,
                                 ),
                                 decoration: const InputDecoration(
-                                  hintText: 'Cari tempat, kota, atau lokasi...',
+                                  hintText: 'Cari tempat, kecamatan, atau lokasi...',
                                   border: InputBorder.none,
                                   enabledBorder: InputBorder.none,
                                   focusedBorder: InputBorder.none,
@@ -167,7 +168,7 @@ class _PlaceCatalogState extends ConsumerState<PlaceCatalog> {
                           child: const Icon(
                             Icons.tune,
                             size: 20,
-                            color: AppColors.primaryDeep,
+                            color: AppColors.primaryInk,
                           ),
                         ),
                       ),
@@ -398,43 +399,14 @@ class _CatalogGrid extends ConsumerWidget {
       ),
       data: (items) {
         if (items.isEmpty) {
-          return SizedBox(
-            height: MediaQuery.sizeOf(context).height * 0.5,
-            child: Center(
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(
-                      Icons.storefront,
-                      size: 40,
-                      color: AppColors.primaryDeep,
-                    ),
-                    const SizedBox(height: 12),
-                    const Text(
-                      'Tempat tidak ditemukan',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.charcoal,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    const Text(
-                      'Coba ubah kata kunci atau kategori pencarian. '
-                      'Mungkin ada ruang lain yang lebih cocok.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 12.5,
-                        height: 1.45,
-                        color: AppColors.secondaryText,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+          return const Padding(
+            padding: EdgeInsets.symmetric(vertical: 48),
+            child: EmptyState(
+              icon: Icons.search_off,
+              title: 'Tempat tidak ditemukan',
+              message:
+                  'Coba kata kunci lain atau hapus filter kategori. '
+                  'Mungkin ada ruang lain yang lebih cocok.',
             ),
           );
         }
@@ -444,3 +416,5 @@ class _CatalogGrid extends ConsumerWidget {
     );
   }
 }
+
+

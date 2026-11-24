@@ -1,4 +1,4 @@
-class PaymentModel {
+﻿class PaymentModel {
   const PaymentModel({
     required this.id,
     required this.bookingId,
@@ -8,6 +8,7 @@ class PaymentModel {
     this.paidAt,
     this.kodeBooking,
     this.totalHarga = 0,
+    this.adminFee = 0,
     this.komisiPlatform = 0,
     this.pendapatanHost = 0,
     this.namaTempat,
@@ -21,6 +22,7 @@ class PaymentModel {
   final DateTime? paidAt;
   final String? kodeBooking;
   final double totalHarga;
+  final double adminFee;
   final double komisiPlatform;
   final double pendapatanHost;
   final String? namaTempat;
@@ -35,6 +37,7 @@ class PaymentModel {
       paidAt: DateTime.tryParse(json['paid_at'] as String? ?? ''),
       kodeBooking: json['kode_booking'] as String?,
       totalHarga: _toDouble(json['total_harga']),
+      adminFee: _toDouble(json['admin_fee']),
       komisiPlatform: _toDouble(json['komisi_platform']),
       pendapatanHost: _toDouble(json['pendapatan_host']),
       namaTempat: json['nama_tempat'] as String?,
@@ -69,13 +72,14 @@ class EPassModel {
     required this.kodeBooking,
     required this.namaTempat,
     required this.alamat,
-    required this.kota,
+    required this.kecamatan,
     required this.jenisUsaha,
     required this.tanggalMulai,
     required this.tanggalSelesai,
     required this.jumlahDurasi,
     required this.tipeDurasi,
     required this.totalHarga,
+    this.adminFee = 0,
     required this.status,
     this.foto = const [],
     this.namaTenant,
@@ -87,13 +91,14 @@ class EPassModel {
   final String kodeBooking;
   final String namaTempat;
   final String alamat;
-  final String kota;
+  final String kecamatan;
   final String jenisUsaha;
   final String tanggalMulai;
   final String tanggalSelesai;
   final int jumlahDurasi;
   final String tipeDurasi;
   final double totalHarga;
+  final double adminFee;
   final String status;
   final List<String> foto;
   final String? namaTenant;
@@ -106,7 +111,7 @@ class EPassModel {
       kodeBooking: json['kode_booking'] as String? ?? '',
       namaTempat: json['nama_tempat'] as String? ?? '',
       alamat: json['alamat'] as String? ?? '',
-      kota: json['kota'] as String? ?? '',
+      kecamatan: json['kecamatan'] as String? ?? '',
       jenisUsaha: json['jenis_usaha'] as String? ?? '',
       tanggalMulai: json['tanggal_mulai']?.toString() ?? '',
       tanggalSelesai: json['tanggal_selesai']?.toString() ?? '',
@@ -115,6 +120,7 @@ class EPassModel {
           : 0,
       tipeDurasi: json['tipe_durasi'] as String? ?? '',
       totalHarga: PaymentModel._toDouble(json['total_harga']),
+      adminFee: PaymentModel._toDouble(json['admin_fee']),
       status: json['status'] as String? ?? '',
       foto:
           (json['foto'] as List<dynamic>?)
@@ -130,3 +136,5 @@ class EPassModel {
     );
   }
 }
+
+

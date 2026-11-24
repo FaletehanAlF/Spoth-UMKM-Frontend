@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../core/theme/app_colors.dart';
@@ -14,8 +14,6 @@ class PlaceGridCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final foto = place.foto.isNotEmpty ? place.foto.first : null;
-    final diskon = formatDiskonPersen(place.hargaNormal, place.hargaPromo);
-
     return Material(
       color: AppColors.white,
       borderRadius: BorderRadius.circular(AppRadius.lg),
@@ -61,11 +59,11 @@ class PlaceGridCard extends StatelessWidget {
                             highlight: false,
                           ),
                         ),
-                        if (diskon != null)
-                          Positioned(
-                            top: 8,
-                            right: 8,
-                            child: _PhotoBadge(label: diskon, highlight: true),
+                        if (place.sudahDiSewa)
+                          const Positioned(
+                            bottom: 8,
+                            left: 8,
+                            child: _TerisiBadge(),
                           ),
                       ],
                     ),
@@ -101,7 +99,7 @@ class PlaceGridCard extends StatelessWidget {
                           const SizedBox(width: 2),
                           Expanded(
                             child: Text(
-                              place.kota,
+                              place.kecamatan,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: const TextStyle(
@@ -118,7 +116,7 @@ class PlaceGridCard extends StatelessWidget {
                         children: [
                           Expanded(
                             child: Text(
-                              formatRupiah(place.hargaEfektif),
+                              formatRupiah(place.harga),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: const TextStyle(
@@ -139,17 +137,6 @@ class PlaceGridCard extends StatelessWidget {
                           ),
                         ],
                       ),
-                      if (diskon != null)
-                        Text(
-                          formatRupiah(place.hargaNormal),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontSize: 10.5,
-                            decoration: TextDecoration.lineThrough,
-                            color: AppColors.secondaryText,
-                          ),
-                        ),
                     ],
                   ),
                 ),
@@ -189,6 +176,30 @@ class _PhotoBadge extends StatelessWidget {
   }
 }
 
+class _TerisiBadge extends StatelessWidget {
+  const _TerisiBadge();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: AppColors.charcoal,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: const Text(
+        'Sedang disewa',
+        style: TextStyle(
+          fontSize: 9.5,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.1,
+          color: AppColors.white,
+        ),
+      ),
+    );
+  }
+}
+
 class PlacePhotoPlaceholder extends StatelessWidget {
   const PlacePhotoPlaceholder({super.key, this.caption});
 
@@ -217,3 +228,6 @@ class PlacePhotoPlaceholder extends StatelessWidget {
     );
   }
 }
+
+
+

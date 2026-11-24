@@ -1,4 +1,4 @@
-class BookingModel {
+﻿class BookingModel {
   const BookingModel({
     required this.id,
     this.kodeBooking,
@@ -10,13 +10,16 @@ class BookingModel {
     required this.jumlahDurasi,
     required this.hargaSatuan,
     required this.totalHarga,
+    this.adminFee = 0,
     required this.status,
     this.createdAt,
     this.namaTempat,
-    this.kota,
+    this.kecamatan,
     this.namaTenant,
     this.namaHost,
     this.foto = const [],
+    this.statusLabel,
+    this.epassTersedia = false,
   });
 
   final String id;
@@ -29,26 +32,41 @@ class BookingModel {
   final int jumlahDurasi;
   final double hargaSatuan;
   final double totalHarga;
+  final double adminFee;
   final String status;
   final DateTime? createdAt;
   final String? namaTempat;
-  final String? kota;
+  final String? kecamatan;
   final String? namaTenant;
   final String? namaHost;
   final List<String> foto;
+  /// Label status siap tampil dari server (contoh: "Berhasil Disewa").
+  /// Jika server tidak mengirimnya, fallback ke label lokal.
+  final String? statusLabel;
+  /// True bila E-Pass sudah bisa dibuka (pemesanan lunas).
+  final bool epassTersedia;
 
-  String get statusLabel {
+  String get displayStatusLabel {
+    if (statusLabel != null && statusLabel!.trim().isNotEmpty) {
+      return statusLabel!;
+    }
+    return statusLabelLokal;
+  }
+
+  String get statusLabelLokal {
     switch (status) {
       case 'MENUNGGU_PEMBAYARAN':
         return 'Menunggu Bayar';
       case 'LUNAS':
-        return 'Lunas';
+        return 'Berhasil Disewa';
       case 'DIBATALKAN':
         return 'Dibatalkan';
       default:
         return status;
     }
   }
+
+  String? get firstFoto => foto.isNotEmpty ? foto.first : null;
 
   factory BookingModel.fromJson(Map<String, dynamic> json) {
     return BookingModel(
@@ -64,10 +82,11 @@ class BookingModel {
           : 0,
       hargaSatuan: _toDouble(json['harga_satuan']),
       totalHarga: _toDouble(json['total_harga']),
+      adminFee: _toDouble(json['admin_fee']),
       status: json['status'] as String? ?? '',
       createdAt: DateTime.tryParse(json['created_at'] as String? ?? ''),
       namaTempat: json['nama_tempat'] as String?,
-      kota: json['kota'] as String?,
+      kecamatan: json['kecamatan'] as String?,
       namaTenant: json['nama_tenant'] as String?,
       namaHost: json['nama_host'] as String?,
       foto:
@@ -75,6 +94,10 @@ class BookingModel {
               ?.map((item) => item.toString())
               .toList() ??
           const [],
+      statusLabel: json['status_label'] as String?,
+      epassTersedia: json['epass_tersedia'] as bool? ??
+          (json['status'] == 'LUNAS' &&
+              (json['kode_booking'] as String?) != null),
     );
   }
 
@@ -97,9 +120,8 @@ class PricePreviewModel {
     required this.tipeDurasi,
     required this.jumlahDurasi,
     required this.hargaSatuan,
-    required this.hargaNormal,
-    required this.hargaPromo,
     required this.totalHarga,
+    this.adminFee = 0,
     required this.komisiPlatform,
     required this.pendapatanHost,
     required this.tersedia,
@@ -112,9 +134,8 @@ class PricePreviewModel {
   final String tipeDurasi;
   final int jumlahDurasi;
   final double hargaSatuan;
-  final double hargaNormal;
-  final double? hargaPromo;
   final double totalHarga;
+  final double adminFee;
   final double komisiPlatform;
   final double pendapatanHost;
   final bool tersedia;
@@ -122,8 +143,6 @@ class PricePreviewModel {
 
   factory PricePreviewModel.fromJson(Map<String, dynamic> json) {
     double toDouble(dynamic value) => value is num ? value.toDouble() : 0;
-
-    final hargaPromo = json['harga_promo'];
 
     return PricePreviewModel(
       namaTempat: json['nama_tempat'] as String? ?? '',
@@ -134,9 +153,8 @@ class PricePreviewModel {
           ? (json['jumlah_durasi'] as num).toInt()
           : 0,
       hargaSatuan: toDouble(json['harga_satuan']),
-      hargaNormal: toDouble(json['harga_normal']),
-      hargaPromo: hargaPromo == null ? null : toDouble(hargaPromo),
       totalHarga: toDouble(json['total_harga']),
+      adminFee: toDouble(json['admin_fee']),
       komisiPlatform: toDouble(json['komisi_platform']),
       pendapatanHost: toDouble(json['pendapatan_host']),
       tersedia: json['tersedia'] as bool? ?? false,
@@ -144,3 +162,5 @@ class PricePreviewModel {
     );
   }
 }
+
+

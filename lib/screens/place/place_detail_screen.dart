@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -6,16 +6,24 @@ import '../../core/services/place_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_fonts.dart';
 import '../../core/utils/format.dart';
-import '../../models/availability_model.dart';
 import '../../models/place_model.dart';
 import '../../models/user_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/nav_provider.dart';
-import '../../widgets/availability_rule_card.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/shimmer_loading.dart';
 import '../../widgets/spoth_app_bar.dart';
 import '../../widgets/spoth_sidebar_scaffold.dart';
+
+String _lokasiLengkap(PlaceModel place) {
+  final alamat = place.alamat.trim();
+  final kecamatan = place.kecamatan.trim();
+
+  if (kecamatan.isEmpty) return alamat;
+  if (alamat.toLowerCase().contains(kecamatan.toLowerCase())) return alamat;
+
+  return '$alamat, $kecamatan';
+}
 
 class PlaceDetailScreen extends ConsumerStatefulWidget {
   const PlaceDetailScreen({super.key, required this.placeId});
@@ -28,11 +36,8 @@ class PlaceDetailScreen extends ConsumerStatefulWidget {
 
 class _PlaceDetailScreenState extends ConsumerState<PlaceDetailScreen> {
   PlaceModel? _place;
-  List<AvailabilityRuleModel> _rules = const [];
   bool _loading = true;
-  bool _loadingRules = false;
   String? _error;
-  String? _rulesError;
   int _fotoIndex = 0;
 
   @override
@@ -45,7 +50,6 @@ class _PlaceDetailScreenState extends ConsumerState<PlaceDetailScreen> {
     setState(() {
       _loading = true;
       _error = null;
-      _rulesError = null;
     });
 
     try {
@@ -59,53 +63,11 @@ class _PlaceDetailScreenState extends ConsumerState<PlaceDetailScreen> {
         _place = place;
         _fotoIndex = 0;
       });
-      await _loadRules();
     } catch (_) {
       if (!mounted) return;
       setState(() => _error = 'Gagal memuat detail tempat');
     } finally {
       if (mounted) setState(() => _loading = false);
-    }
-  }
-
-  Future<void> _loadRules() async {
-    final user = ref.read(authNotifierProvider.select((s) => s.user));
-    final place = _place;
-    final isOwner =
-        user?.role == UserModel.roleHost &&
-        place != null &&
-        user!.id == place.hostId;
-
-    // Aturan ketersediaan hanya boleh dibaca oleh pemilik tempat. Hindari
-    // panggilan yang pasti ditolak (403) untuk penyewa/tamu.
-    if (!isOwner) {
-      if (!mounted) return;
-      setState(() {
-        _rules = const [];
-        _loadingRules = false;
-        _rulesError = null;
-      });
-      return;
-    }
-
-    setState(() {
-      _loadingRules = true;
-      _rulesError = null;
-    });
-
-    try {
-      final token = ref.read(authNotifierProvider.select((s) => s.token));
-      final rules = await ref
-          .read(placeServiceProvider)
-          .getAvailabilityRules(placeId: widget.placeId, token: token);
-
-      if (!mounted) return;
-      setState(() => _rules = rules);
-    } catch (_) {
-      if (!mounted) return;
-      setState(() => _rulesError = 'Gagal memuat aturan ketersediaan tempat.');
-    } finally {
-      if (mounted) setState(() => _loadingRules = false);
     }
   }
 
@@ -121,19 +83,12 @@ class _PlaceDetailScreenState extends ConsumerState<PlaceDetailScreen> {
         _place = place;
         _fotoIndex = 0;
       });
-      await _loadRules();
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Gagal memperbarui detail tempat.')),
       );
     }
-  }
-
-  Future<void> _openKelolaAturan() async {
-    await context.push('/place-form?id=${widget.placeId}');
-    if (!mounted) return;
-    await _refresh();
   }
 
   @override
@@ -184,11 +139,6 @@ class _PlaceDetailScreenState extends ConsumerState<PlaceDetailScreen> {
                     onFotoChanged: (index) =>
                         setState(() => _fotoIndex = index),
                     onRefresh: _refresh,
-                    rules: _rules,
-                    loadingRules: _loadingRules,
-                    rulesError: _rulesError,
-                    onRetryRules: _loadRules,
-                    onKelolaAturan: isOwner ? _openKelolaAturan : null,
                   ),
                 ),
                 _ActionBar(place: place, isOwner: isOwner, isTenant: isTenant),
@@ -206,22 +156,12 @@ class _DetailScrollView extends StatelessWidget {
     required this.fotoIndex,
     required this.onFotoChanged,
     required this.onRefresh,
-    required this.rules,
-    required this.loadingRules,
-    required this.rulesError,
-    required this.onRetryRules,
-    required this.onKelolaAturan,
   });
 
   final PlaceModel place;
   final int fotoIndex;
   final ValueChanged<int> onFotoChanged;
   final Future<void> Function() onRefresh;
-  final List<AvailabilityRuleModel> rules;
-  final bool loadingRules;
-  final String? rulesError;
-  final VoidCallback onRetryRules;
-  final VoidCallback? onKelolaAturan;
 
   @override
   Widget build(BuildContext context) {
@@ -253,14 +193,7 @@ class _DetailScrollView extends StatelessWidget {
             onFotoChanged: onFotoChanged,
           );
 
-          final seksi = _seksiRincian(
-            place: place,
-            rules: rules,
-            loadingRules: loadingRules,
-            rulesError: rulesError,
-            onRetryRules: onRetryRules,
-            onKelolaAturan: onKelolaAturan,
-          );
+          final seksi = _seksiRincian(place: place);
           final daftarSeksi = [
             for (var i = 0; i < seksi.length; i++) ...[
               if (i > 0) const SizedBox(height: 14),
@@ -420,7 +353,7 @@ class _HeroPhoto extends StatelessWidget {
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.black.withValues(alpha: 0.55),
+                    color: AppColors.charcoal.withValues(alpha: 0.55),
                     borderRadius: BorderRadius.circular(9),
                   ),
                   child: Text(
@@ -442,7 +375,7 @@ class _HeroPhoto extends StatelessWidget {
   Future<void> _bukaFoto(BuildContext context, List<String> fotos, int mulai) {
     return showDialog<void>(
       context: context,
-      barrierColor: Colors.black.withValues(alpha: 0.9),
+      barrierColor: AppColors.charcoal.withValues(alpha: 0.9),
       builder: (_) => _PhotoViewer(fotos: fotos, initialIndex: mulai),
     );
   }
@@ -518,7 +451,7 @@ class _GalleryButton extends StatelessWidget {
     return Tooltip(
       message: tooltip,
       child: Material(
-        color: Colors.black.withValues(alpha: 0.45),
+        color: AppColors.charcoal.withValues(alpha: 0.45),
         shape: const CircleBorder(),
         child: InkWell(
           customBorder: const CircleBorder(),
@@ -560,7 +493,7 @@ class _PhotoViewerState extends State<_PhotoViewer> {
 
     return SizedBox.expand(
       child: ColoredBox(
-        color: Colors.black,
+        color: AppColors.charcoal,
         child: Stack(
           children: [
             Positioned.fill(
@@ -676,7 +609,7 @@ class _GalleryCue extends StatelessWidget {
         width: 32,
         height: 32,
         decoration: BoxDecoration(
-          color: Colors.black.withValues(alpha: 0.45),
+          color: AppColors.charcoal.withValues(alpha: 0.45),
           shape: BoxShape.circle,
         ),
         child: Icon(icon, size: 20, color: AppColors.white),
@@ -705,17 +638,9 @@ class _HeroPlaceholder extends StatelessWidget {
   }
 }
 
-List<Widget> _seksiRincian({
-  required PlaceModel place,
-  required List<AvailabilityRuleModel> rules,
-  required bool loadingRules,
-  required String? rulesError,
-  required VoidCallback onRetryRules,
-  required VoidCallback? onKelolaAturan,
-}) {
+List<Widget> _seksiRincian({required PlaceModel place}) {
   final seksi = <Widget>[];
   final deskripsi = place.deskripsi.trim();
-  final aturan = place.aturan?.trim() ?? '';
 
   if (deskripsi.isNotEmpty) {
     seksi.add(
@@ -734,40 +659,6 @@ List<Widget> _seksiRincian({
     );
   }
 
-  if (place.fasilitasList.isNotEmpty) {
-    seksi.add(
-      _DetailSectionCard(
-        icon: Icons.widgets_outlined,
-        title: 'Fasilitas',
-        child: Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            for (final fasilitas in place.fasilitasList)
-              _FasilitasChip(label: fasilitas),
-          ],
-        ),
-      ),
-    );
-  }
-
-  if (aturan.isNotEmpty) {
-    seksi.add(
-      _DetailSectionCard(
-        icon: Icons.rule_outlined,
-        title: 'Aturan',
-        child: Text(
-          aturan,
-          style: const TextStyle(
-            fontSize: 14,
-            height: 1.65,
-            color: AppColors.secondaryText,
-          ),
-        ),
-      ),
-    );
-  }
-
   seksi.add(
     _DetailSectionCard(
       icon: Icons.date_range_outlined,
@@ -775,24 +666,6 @@ List<Widget> _seksiRincian({
       child: _PeriodeKetersediaan(place: place),
     ),
   );
-
-  // Aturan ketersediaan adalah data internal pemilik tempat. Backend
-  // membatasi endpoint ini ke HOST pemilik, jadi hanya tampil untuk pemilik.
-  if (onKelolaAturan != null) {
-    seksi.add(
-      _DetailSectionCard(
-        icon: Icons.event_available_outlined,
-        title: 'Aturan Ketersediaan',
-        child: _AturanKetersediaan(
-          rules: rules,
-          loading: loadingRules,
-          error: rulesError,
-          onRetry: onRetryRules,
-          onKelola: onKelolaAturan,
-        ),
-      ),
-    );
-  }
 
   seksi.add(
     _DetailSectionCard(
@@ -872,115 +745,6 @@ class _PeriodeKetersediaan extends StatelessWidget {
   }
 }
 
-class _AturanKetersediaan extends StatelessWidget {
-  const _AturanKetersediaan({
-    required this.rules,
-    required this.loading,
-    required this.error,
-    required this.onRetry,
-    required this.onKelola,
-  });
-
-  final List<AvailabilityRuleModel> rules;
-  final bool loading;
-  final String? error;
-  final VoidCallback onRetry;
-  final VoidCallback? onKelola;
-
-  @override
-  Widget build(BuildContext context) {
-    final jumlahMemblokir = rules.where((rule) => rule.memblokir).length;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (loading)
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 8),
-            child: Row(
-              children: [
-                SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                ),
-                SizedBox(width: 10),
-                Text(
-                  'Memuat aturan ketersediaan...',
-                  style: TextStyle(
-                    fontSize: 12.5,
-                    color: AppColors.secondaryText,
-                  ),
-                ),
-              ],
-            ),
-          )
-        else if (error != null)
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Icon(
-                Icons.wifi_off,
-                size: 18,
-                color: AppColors.secondaryText,
-              ),
-              const SizedBox(width: 9),
-              Expanded(
-                child: Text(
-                  error!,
-                  style: const TextStyle(
-                    fontSize: 12.5,
-                    height: 1.45,
-                    color: AppColors.secondaryText,
-                  ),
-                ),
-              ),
-              TextButton(onPressed: onRetry, child: const Text('Coba Lagi')),
-            ],
-          )
-        else if (rules.isEmpty)
-          const Text(
-            'Belum ada aturan khusus. Ketersediaan mengikuti periode di atas '
-            'dan jadwal yang sudah dipesan.',
-            style: TextStyle(
-              fontSize: 13,
-              height: 1.5,
-              color: AppColors.secondaryText,
-            ),
-          )
-        else ...[
-          if (jumlahMemblokir > 0) ...[
-            Text(
-              '$jumlahMemblokir aturan membatasi tanggal yang dapat dipesan.',
-              style: const TextStyle(
-                fontSize: 12,
-                height: 1.45,
-                color: AppColors.secondaryText,
-              ),
-            ),
-            const SizedBox(height: 9),
-          ],
-          for (var i = 0; i < rules.length; i++) ...[
-            if (i > 0) const SizedBox(height: 8),
-            AvailabilityRuleCard(rule: rules[i]),
-          ],
-        ],
-        if (onKelola != null) ...[
-          const SizedBox(height: 8),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: TextButton.icon(
-              onPressed: onKelola,
-              icon: const Icon(Icons.tune, size: 17),
-              label: const Text('Kelola Aturan Ketersediaan'),
-            ),
-          ),
-        ],
-      ],
-    );
-  }
-}
-
 class _DetailSectionCard extends StatelessWidget {
   const _DetailSectionCard({
     required this.icon,
@@ -994,38 +758,29 @@ class _DetailSectionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: AppColors.softBorder),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(icon, size: 16, color: AppColors.primaryOrange),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 13.5,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.2,
-                    color: AppColors.charcoal,
-                  ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(icon, size: 16, color: AppColors.primaryDeep),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 14.5,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: -0.1,
+                  color: AppColors.charcoal,
                 ),
               ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          child,
-        ],
-      ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        child,
+      ],
     );
   }
 }
@@ -1075,7 +830,7 @@ class _KepalaTempat extends StatelessWidget {
               const SizedBox(width: 6),
               Expanded(
                 child: Text(
-                  '${place.alamat}, ${place.kota}',
+                  _lokasiLengkap(place),
                   style: const TextStyle(
                     fontSize: 13.5,
                     height: 1.4,
@@ -1214,8 +969,6 @@ class _PriceBlock extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final diskon = formatDiskonPersen(place.hargaNormal, place.hargaPromo);
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1227,7 +980,7 @@ class _PriceBlock extends StatelessWidget {
                 fit: BoxFit.scaleDown,
                 alignment: Alignment.centerLeft,
                 child: Text(
-                  formatRupiah(place.hargaEfektif),
+                  formatRupiah(place.harga),
                   maxLines: 1,
                   style: AppFonts.heading(
                     fontSize: 26,
@@ -1251,37 +1004,6 @@ class _PriceBlock extends StatelessWidget {
             ),
           ],
         ),
-        if (diskon != null) ...[
-          const SizedBox(height: 4),
-          Row(
-            children: [
-              Text(
-                formatRupiah(place.hargaNormal),
-                style: const TextStyle(
-                  fontSize: 13,
-                  decoration: TextDecoration.lineThrough,
-                  color: AppColors.secondaryText,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                decoration: BoxDecoration(
-                  color: AppColors.primaryOrange,
-                  borderRadius: BorderRadius.circular(7),
-                ),
-                child: Text(
-                  diskon,
-                  style: const TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.white,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
       ],
     );
   }
@@ -1446,42 +1168,6 @@ class _HostCard extends StatelessWidget {
   }
 }
 
-class _FasilitasChip extends StatelessWidget {
-  const _FasilitasChip({required this.label});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: AppColors.lightOrange,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(
-            Icons.check_circle_outline,
-            size: 15,
-            color: AppColors.primaryOrange,
-          ),
-          const SizedBox(width: 6),
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 12.5,
-              fontWeight: FontWeight.w500,
-              color: AppColors.charcoal,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _BookedScheduleRow extends StatelessWidget {
   const _BookedScheduleRow({required this.jadwal});
 
@@ -1507,7 +1193,7 @@ class _BookedScheduleRow extends StatelessWidget {
           const SizedBox(width: 10),
           Expanded(
             child: Text(
-              '${formatDateString(jadwal.tanggalMulai)} – '
+              '${formatDateString(jadwal.tanggalMulai)} - '
               '${formatDateString(jadwal.tanggalSelesai)}',
               style: const TextStyle(
                 fontSize: 13,
@@ -1640,7 +1326,7 @@ class _BarHarga extends StatelessWidget {
                 fit: BoxFit.scaleDown,
                 alignment: Alignment.centerLeft,
                 child: Text(
-                  formatRupiah(place.hargaEfektif),
+                  formatRupiah(place.harga),
                   maxLines: 1,
                   style: const TextStyle(
                     fontSize: 19,
@@ -1668,3 +1354,6 @@ class _BarHarga extends StatelessWidget {
     );
   }
 }
+
+
+

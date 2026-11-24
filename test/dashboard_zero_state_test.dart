@@ -122,7 +122,7 @@ void main() {
     );
 
     expect(tester.takeException(), isNull);
-    expect(find.text('Pendapatan Nov'), findsOneWidget);
+    expect(find.text('Pendapatan bulan November 2026'), findsOneWidget);
     expect(find.text('Sama dengan bulan lalu'), findsOneWidget);
   });
 

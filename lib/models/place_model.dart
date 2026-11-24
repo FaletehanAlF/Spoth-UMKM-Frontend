@@ -1,4 +1,4 @@
-class PlaceModel {
+﻿class PlaceModel {
   const PlaceModel({
     required this.id,
     required this.hostId,
@@ -6,12 +6,8 @@ class PlaceModel {
     required this.kategori,
     required this.deskripsi,
     required this.alamat,
-    required this.kota,
-    this.fasilitas,
-    this.aturan,
-    required this.hargaNormal,
-    this.hargaPromo,
-    required this.hargaEfektif,
+    required this.kecamatan,
+    required this.harga,
     required this.tipeDurasi,
     this.createdAt,
     this.updatedAt,
@@ -20,6 +16,7 @@ class PlaceModel {
     this.foto = const [],
     this.namaHost,
     this.jumlahFoto = 0,
+    this.sudahDiSewa = false,
     this.jadwalTerpakai = const [],
   });
 
@@ -49,12 +46,8 @@ class PlaceModel {
   final String kategori;
   final String deskripsi;
   final String alamat;
-  final String kota;
-  final String? fasilitas;
-  final String? aturan;
-  final double hargaNormal;
-  final double? hargaPromo;
-  final double hargaEfektif;
+  final String kecamatan;
+  final double harga;
   final String tipeDurasi;
   final DateTime? createdAt;
   final DateTime? updatedAt;
@@ -63,19 +56,13 @@ class PlaceModel {
   final List<String> foto;
   final String? namaHost;
   final int jumlahFoto;
+  final bool sudahDiSewa;
   final List<BookedRange> jadwalTerpakai;
 
   String get kategoriLabel => kategoriLabels[kategori] ?? kategori;
   String get durasiLabel => durasiLabels[tipeDurasi] ?? tipeDurasi;
-  bool get hasPromo => hargaPromo != null && hargaPromo! < hargaNormal;
   bool get hasPeriodeKetersediaan =>
       tanggalMulaiTersedia != null && tanggalSelesaiTersedia != null;
-
-  List<String> get fasilitasList => (fasilitas ?? '')
-      .split(',')
-      .map((item) => item.trim())
-      .where((item) => item.isNotEmpty)
-      .toList();
 
   factory PlaceModel.fromJson(Map<String, dynamic> json) {
     return PlaceModel(
@@ -85,12 +72,8 @@ class PlaceModel {
       kategori: json['kategori'] as String? ?? '',
       deskripsi: json['deskripsi'] as String? ?? '',
       alamat: json['alamat'] as String? ?? '',
-      kota: json['kota'] as String? ?? '',
-      fasilitas: json['fasilitas'] as String?,
-      aturan: json['aturan'] as String?,
-      hargaNormal: _toDouble(json['harga_normal']),
-      hargaPromo: _toDoubleOrNull(json['harga_promo']),
-      hargaEfektif: _toDouble(json['harga_efektif']),
+      kecamatan: json['kecamatan'] as String? ?? '',
+      harga: _toDouble(json['harga']),
       tipeDurasi: json['tipe_durasi'] as String? ?? '',
       createdAt: DateTime.tryParse(json['created_at'] as String? ?? ''),
       updatedAt: DateTime.tryParse(json['updated_at'] as String? ?? ''),
@@ -103,6 +86,7 @@ class PlaceModel {
           const [],
       namaHost: json['nama_host'] as String?,
       jumlahFoto: (json['jumlah_foto'] as num?)?.toInt() ?? 0,
+      sudahDiSewa: json['sudah_di_sewa'] as bool? ?? false,
       jadwalTerpakai: (json['jadwal_terpakai'] as List<dynamic>? ?? const [])
           .whereType<Map<String, dynamic>>()
           .map(BookedRange.fromJson)
@@ -125,19 +109,6 @@ class PlaceModel {
       return double.tryParse(value) ?? 0;
     }
     return 0;
-  }
-
-  static double? _toDoubleOrNull(dynamic value) {
-    if (value == null) {
-      return null;
-    }
-    if (value is num) {
-      return value.toDouble();
-    }
-    if (value is String) {
-      return double.tryParse(value);
-    }
-    return null;
   }
 }
 
@@ -252,3 +223,6 @@ class PlaceSummaryModel {
     );
   }
 }
+
+
+

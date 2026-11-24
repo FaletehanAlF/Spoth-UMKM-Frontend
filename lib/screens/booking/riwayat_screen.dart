@@ -13,6 +13,7 @@ import '../../providers/nav_provider.dart';
 import '../../providers/riwayat_provider.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/epass_sheet.dart';
+import '../../widgets/place_grid_card.dart';
 import '../../widgets/shimmer_loading.dart';
 import '../../widgets/spoth_app_bar.dart';
 import '../../widgets/spoth_sidebar_scaffold.dart';
@@ -106,13 +107,24 @@ class _RiwayatScreenState extends ConsumerState<RiwayatScreen> {
       backgroundColor: AppColors.canvas,
       appBar: SpothAppBar(
         title: Text(isHost ? 'Riwayat Penyewaan' : 'Riwayat Saya'),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded),
+          tooltip: 'Kembali',
+          onPressed: () {
+            if (Navigator.of(context).canPop()) {
+              Navigator.of(context).pop();
+            } else {
+              context.go('/home');
+            }
+          },
+        ),
         actions: const [],
       ),
       body: _loading
           ? dibatasi(
               const SingleChildScrollView(
                 padding: EdgeInsets.all(20),
-                child: BookingListSkeleton(count: 4),
+                child: RiwayatListSkeleton(count: 4),
               ),
             )
           : _error != null
@@ -166,7 +178,8 @@ class _RiwayatScreenState extends ConsumerState<RiwayatScreen> {
                       const SizedBox(height: 6),
                       Text(
                         isHost
-                            ? 'Penyewaan dari penyewa akan tampil di sini setelah lunas.'
+                            ? 'Penyewaan dari penyewa akan tampil di sini '
+                                  'setelah lunas.'
                             : 'Penyewaan yang sudah lunas akan tampil di sini.',
                         textAlign: TextAlign.center,
                         style: const TextStyle(
@@ -182,7 +195,7 @@ class _RiwayatScreenState extends ConsumerState<RiwayatScreen> {
                             horizontal: 16,
                             vertical: 10,
                           ),
-                          minimumSize: const Size(0, 40),
+                          minimumSize: const Size(0, 44),
                           visualDensity: VisualDensity.compact,
                           textStyle: const TextStyle(
                             fontSize: 13,
@@ -247,128 +260,182 @@ class _RiwayatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final pihakLain = isHost
-        ? (booking.namaTenant ?? 'Penyewa')
-        : (booking.namaTempat ?? 'Tempat');
+    final judul = isHost
+        ? (booking.namaTempat ?? 'Tempat')
+        : (booking.namaTempat ?? 'Tempat usaha');
+    final penyewa = booking.namaTenant ?? 'Penyewa';
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.white,
-        borderRadius: BorderRadius.circular(AppRadius.lg),
-        border: Border.all(color: AppColors.softBorder),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  pihakLain,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 15.5,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: -0.15,
-                    color: AppColors.charcoal,
+    return InkWell(
+      onTap: () => context.push('/place-detail?id=${booking.placeId}'),
+      borderRadius: BorderRadius.circular(AppRadius.lg),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppColors.white,
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+          border: Border.all(color: AppColors.softBorder),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: SizedBox(
+                    width: 72,
+                    height: 72,
+                    child: booking.firstFoto != null
+                        ? Image.network(
+                            booking.firstFoto!,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, _, _) =>
+                                const PlacePhotoPlaceholder(),
+                          )
+                        : const PlacePhotoPlaceholder(),
                   ),
                 ),
-              ),
-              const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: AppColors.sageTint,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Text(
-                  'Lunas',
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.2,
-                    color: AppColors.success,
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        judul,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 15.5,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: -0.15,
+                          color: AppColors.charcoal,
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      if (isHost)
+                        Text(
+                          'Penyewa: $penyewa',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: AppColors.secondaryText,
+                          ),
+                        ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Kode: ${booking.kodeBooking ?? '-'}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 11.5,
+                          color: AppColors.secondaryText,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ),
-            ],
-          ),
-          if (isHost) ...[
-            const SizedBox(height: 2),
-            Text(
-              booking.namaTempat ?? 'Tempat',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                fontSize: 12,
-                color: AppColors.secondaryText,
-              ),
+                const SizedBox(width: 8),
+                _StatusBadge(label: booking.displayStatusLabel),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                const Icon(
+                  Icons.calendar_month_outlined,
+                  size: 15,
+                  color: AppColors.secondaryText,
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    '${formatDateString(booking.tanggalMulai)} – '
+                    '${formatDateString(booking.tanggalSelesai)} '
+                    '(${booking.jumlahDurasi} satuan)',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      height: 1.4,
+                      color: AppColors.secondaryText,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        formatRupiah(booking.totalHarga),
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: -0.2,
+                          color: AppColors.charcoal,
+                        ),
+                      ),
+                      if (booking.adminFee > 0)
+                        Text(
+                          'Termasuk biaya admin '
+                          '${formatRupiah(booking.adminFee)}',
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: AppColors.secondaryText,
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+                if (booking.epassTersedia)
+                  OutlinedButton.icon(
+                    onPressed: onLihatEPass,
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.primaryInk,
+                      side: const BorderSide(color: AppColors.neutralBorder),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(AppRadius.sm),
+                      ),
+                      minimumSize: const Size(0, 40),
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                    ),
+                    icon: const Icon(Icons.qr_code_2, size: 16),
+                    label: const Text('E-Pass'),
+                  ),
+              ],
             ),
           ],
-          const SizedBox(height: 6),
-          Text(
-            'Kode: ${booking.kodeBooking ?? '-'} • ${booking.jenisUsaha}',
-            style: const TextStyle(
-              fontSize: 11.5,
-              color: AppColors.secondaryText,
-            ),
-          ),
-          const SizedBox(height: 5),
-          Row(
-            children: [
-              const Icon(
-                Icons.calendar_month,
-                size: 15,
-                color: AppColors.secondaryText,
-              ),
-              const SizedBox(width: 6),
-              Expanded(
-                child: Text(
-                  '${formatDateString(booking.tanggalMulai)} – '
-                  '${formatDateString(booking.tanggalSelesai)} '
-                  '(${booking.jumlahDurasi} satuan durasi)',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    height: 1.4,
-                    color: AppColors.secondaryText,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  formatRupiah(booking.totalHarga),
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: -0.2,
-                    color: AppColors.charcoal,
-                  ),
-                ),
-              ),
-              OutlinedButton.icon(
-                onPressed: onLihatEPass,
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColors.primaryInk,
-                  side: const BorderSide(color: AppColors.neutralBorder),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppRadius.sm),
-                  ),
-                  visualDensity: VisualDensity.compact,
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                ),
-                icon: const Icon(Icons.qr_code_2, size: 16),
-                label: const Text('E-Pass'),
-              ),
-            ],
-          ),
-        ],
+        ),
+      ),
+    );
+  }
+}
+
+class _StatusBadge extends StatelessWidget {
+  const _StatusBadge({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: AppColors.sageTint,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text(
+        label,
+        style: const TextStyle(
+          fontSize: 10,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.2,
+          color: AppColors.success,
+        ),
       ),
     );
   }

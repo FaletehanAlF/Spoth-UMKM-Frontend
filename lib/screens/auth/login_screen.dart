@@ -161,7 +161,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           ? null
                           : (value) =>
                                 setState(() => _rememberMe = value ?? true),
-                      activeColor: AppColors.primaryOrange,
+                      activeColor: AppColors.primaryDeep,
                       visualDensity: VisualDensity.compact,
                       materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       overlayColor: const WidgetStatePropertyAll<Color?>(
