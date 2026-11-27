@@ -114,18 +114,6 @@ class NotificationsNotifier extends AsyncNotifier<NotificationsPage> {
     }
   }
 
-  Future<void> markRead(String id) async {
-    final token = ref.read(authNotifierProvider.select((state) => state.token));
-
-    if (token == null) {
-      return;
-    }
-
-    await ref.read(notificationServiceProvider).markRead(token: token, id: id);
-    await refresh();
-    await ref.read(notificationSummaryProvider.notifier).refresh();
-  }
-
   Future<void> markAllRead() async {
     final token = ref.read(authNotifierProvider.select((state) => state.token));
 
@@ -134,7 +122,6 @@ class NotificationsNotifier extends AsyncNotifier<NotificationsPage> {
     }
 
     await ref.read(notificationServiceProvider).markAllRead(token: token);
-    await refresh();
     await ref.read(notificationSummaryProvider.notifier).refresh();
   }
 

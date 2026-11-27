@@ -27,11 +27,7 @@ class DashboardScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: AppColors.canvas,
-      appBar: const SpothAppBar(
-        title: Text('Kelola Tempat'),
-        showRiwayat: true,
-        showNotification: true,
-      ),
+      appBar: const SpothAppBar(showRiwayat: true, showNotification: true),
       body: RefreshIndicator(
         color: AppColors.primaryDeep,
         onRefresh: muatUlang,

@@ -201,7 +201,7 @@ class _SheetIsi extends StatelessWidget {
                 ),
                 _BarisInfo(
                   label: 'Durasi',
-                  nilai: '${epass.jumlahDurasi} ${epass.tipeDurasi}',
+                  nilai: labelDurasi(epass.tipeDurasi, epass.jumlahDurasi),
                 ),
                 _BarisInfo(
                   label: 'Lokasi',
@@ -447,6 +447,11 @@ String _metodeLabel(String? metode) {
     'TRANSFER' => 'Transfer Bank',
     'QRIS' => 'QRIS',
     'TUNAI' => 'Tunai',
+    'MIDTRANS' => 'Midtrans',
+    'BANK_TRANSFER' => 'Transfer Bank',
+    'ECHANNEL' => 'Mandiri Bill',
+    'CREDIT_CARD' => 'Kartu Kredit',
+    'CSTORE' => 'Gerai Retail',
     _ => metode ?? '-',
   };
 }

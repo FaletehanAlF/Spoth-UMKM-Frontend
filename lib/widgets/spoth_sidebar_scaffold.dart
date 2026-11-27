@@ -40,7 +40,8 @@ class SpothSidebarScaffold extends ConsumerWidget {
         SpothSidebar(
           index: index,
           items: [for (final tab in tabs) kNavItems[tab]!],
-          expanded: width >= 1400,
+          expanded: ref.watch(sidebarExpandedProvider),
+          onToggle: () => ref.read(sidebarExpandedProvider.notifier).toggle(),
           onChanged: (i) {
             ref.read(mainNavIndexProvider.notifier).setTab(tabs[i]);
             if (Navigator.of(context).canPop()) {

@@ -12,6 +12,9 @@ class SpothSidebar extends StatelessWidget {
     required this.items,
     required this.onChanged,
     required this.expanded,
+    required this.onToggle,
+    this.badgeIndex = -1,
+    this.badgeCount = 0,
   });
 
   final int index;
@@ -22,9 +25,17 @@ class SpothSidebar extends StatelessWidget {
 
   final bool expanded;
 
+  final VoidCallback onToggle;
+
+  final int badgeIndex;
+
+  final int badgeCount;
+
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 180),
+      curve: Curves.easeOut,
       width: expanded ? 236 : 78,
       padding: const EdgeInsets.fromLTRB(
         AppSpacing.sm,
@@ -39,7 +50,7 @@ class SpothSidebar extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _Brand(expanded: expanded),
+          _Brand(expanded: expanded, onToggle: onToggle),
           const SizedBox(height: 22),
           if (expanded)
             const Padding(
@@ -63,11 +74,11 @@ class SpothSidebar extends StatelessWidget {
                 item: items[i],
                 selected: index == i,
                 expanded: expanded,
+                badgeCount: i == badgeIndex ? badgeCount : 0,
                 onTap: () => onChanged(i),
               ),
             ),
           ),
-          if (expanded) ...[const SizedBox(height: 12), const _SidebarFooter()],
         ],
       ),
     );
@@ -75,22 +86,54 @@ class SpothSidebar extends StatelessWidget {
 }
 
 class _Brand extends StatelessWidget {
-  const _Brand({required this.expanded});
+  const _Brand({required this.expanded, required this.onToggle});
 
   final bool expanded;
+  final VoidCallback onToggle;
+
+  Widget _tombolLipat() {
+    return Tooltip(
+      message: expanded ? 'Kecilkan menu' : 'Buka nama menu',
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(AppRadius.sm),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(AppRadius.sm),
+          onTap: onToggle,
+          child: SizedBox(
+            width: 32,
+            height: 32,
+            child: Icon(
+              expanded ? Icons.chevron_left : Icons.chevron_right,
+              size: 20,
+              color: AppColors.primaryDeep,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     if (!expanded) {
-      return const Center(
-        child: SizedBox(width: 52, height: 52, child: _Logo(size: 46)),
+      return Column(
+        children: [
+          const Center(
+            child: SizedBox(width: 52, height: 52, child: _Logo(size: 46)),
+          ),
+          const SizedBox(height: 10),
+          Container(height: 1, color: AppColors.softBorder),
+          const SizedBox(height: 10),
+          _tombolLipat(),
+        ],
       );
     }
 
     return Container(
       padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
-        color: AppColors.lightOrange,
+        color: AppColors.white,
         borderRadius: BorderRadius.circular(AppRadius.lg),
       ),
       child: Row(
@@ -98,33 +141,20 @@ class _Brand extends StatelessWidget {
           const _Logo(size: 38),
           const SizedBox(width: 10),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'SPOTH UMKM',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: AppFonts.heading(
-                    fontSize: 14,
-                    weight: 700,
-                    letterSpacing: 0.1,
-                    color: AppColors.charcoal,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                const Text(
-                  'Ruang usaha UMKM',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 10.5,
-                    color: AppColors.secondaryText,
-                  ),
-                ),
-              ],
+            child: Text(
+              'SPOTH UMKM',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: AppFonts.heading(
+                fontSize: 14,
+                weight: 700,
+                letterSpacing: 0.1,
+                color: AppColors.charcoal,
+              ),
             ),
           ),
+          const SizedBox(width: 8),
+          _tombolLipat(),
         ],
       ),
     );
@@ -157,17 +187,19 @@ class _SidebarItem extends StatelessWidget {
     required this.item,
     required this.selected,
     required this.expanded,
+    required this.badgeCount,
     required this.onTap,
   });
 
   final NavItemData item;
   final bool selected;
   final bool expanded;
+  final int badgeCount;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final color = selected ? AppColors.primaryInk : AppColors.secondaryText;
+    final color = selected ? AppColors.white : AppColors.secondaryText;
 
     final child = AnimatedContainer(
       duration: const Duration(milliseconds: 160),
@@ -177,7 +209,7 @@ class _SidebarItem extends StatelessWidget {
         vertical: 12,
       ),
       decoration: BoxDecoration(
-        color: selected ? AppColors.lightOrange : Colors.transparent,
+        color: selected ? AppColors.primaryOrange : Colors.transparent,
         borderRadius: BorderRadius.circular(AppRadius.md),
       ),
       child: Row(
@@ -185,10 +217,16 @@ class _SidebarItem extends StatelessWidget {
             ? MainAxisAlignment.start
             : MainAxisAlignment.center,
         children: [
-          Icon(
-            selected ? item.activeIcon : item.icon,
-            size: 22,
-            color: selected ? AppColors.primaryDeep : color,
+          Badge.count(
+            count: badgeCount,
+            isLabelVisible: badgeCount > 0,
+            backgroundColor: AppColors.primaryOrange,
+            textColor: AppColors.white,
+            child: Icon(
+              selected ? item.activeIcon : item.icon,
+              size: 22,
+              color: color,
+            ),
           ),
           if (expanded) ...[
             const SizedBox(width: 12),
@@ -204,15 +242,6 @@ class _SidebarItem extends StatelessWidget {
                 ),
               ),
             ),
-            if (selected)
-              Container(
-                width: 6,
-                height: 6,
-                decoration: const BoxDecoration(
-                  color: AppColors.primaryOrange,
-                  shape: BoxShape.circle,
-                ),
-              ),
           ],
         ],
       ),
@@ -233,36 +262,3 @@ class _SidebarItem extends StatelessWidget {
   }
 }
 
-class _SidebarFooter extends StatelessWidget {
-  const _SidebarFooter();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceMuted,
-        borderRadius: BorderRadius.circular(AppRadius.md),
-        border: Border.all(color: AppColors.softBorder),
-      ),
-      child: const Row(
-        children: [
-          Icon(Icons.favorite, size: 14, color: AppColors.primaryOrange),
-          SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              'Tumbuh bersama UMKM',
-              style: TextStyle(
-                fontSize: 10.5,
-                height: 1.35,
-                fontWeight: FontWeight.w500,
-                color: AppColors.secondaryText,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}

@@ -10,11 +10,15 @@ class SpothBottomNav extends StatelessWidget {
     required this.index,
     required this.items,
     required this.onChanged,
+    this.badgeIndex = -1,
+    this.badgeCount = 0,
   });
 
   final int index;
   final List<NavItemData> items;
   final ValueChanged<int> onChanged;
+  final int badgeIndex;
+  final int badgeCount;
 
   @override
   Widget build(BuildContext context) {
@@ -42,6 +46,7 @@ class SpothBottomNav extends StatelessWidget {
               _NavItem(
                 item: items[i],
                 selected: index == i,
+                badgeCount: i == badgeIndex ? badgeCount : 0,
                 onTap: () => onChanged(i),
               ),
           ],
@@ -55,11 +60,13 @@ class _NavItem extends StatelessWidget {
   const _NavItem({
     required this.item,
     required this.selected,
+    required this.badgeCount,
     required this.onTap,
   });
 
   final NavItemData item;
   final bool selected;
+  final int badgeCount;
   final VoidCallback onTap;
 
   @override
@@ -90,10 +97,16 @@ class _NavItem extends StatelessWidget {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(
-                      selected ? item.activeIcon : item.icon,
-                      size: 22,
-                      color: selected ? AppColors.primaryDeep : color,
+                    Badge.count(
+                      count: badgeCount,
+                      isLabelVisible: badgeCount > 0,
+                      backgroundColor: AppColors.primaryOrange,
+                      textColor: AppColors.white,
+                      child: Icon(
+                        selected ? item.activeIcon : item.icon,
+                        size: 22,
+                        color: selected ? AppColors.primaryDeep : color,
+                      ),
                     ),
                     const SizedBox(height: AppSpacing.xs),
                     Text(

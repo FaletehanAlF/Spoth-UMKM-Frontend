@@ -72,6 +72,22 @@ String formatTanggalApi(DateTime tanggal) {
   return '${tanggal.year}-$bulan-$hari';
 }
 
+/// Jumlah hari dalam satu paket sewa (1 minggu = 7, 1 bulan = 30).
+int hariPerPaket(String tipeDurasi) {
+  return tipeDurasi == 'BULANAN' ? 30 : 7;
+}
+
+/// Label satuan paket, contoh "minggu" atau "bulan".
+String labelSatuan(String tipeDurasi) {
+  return tipeDurasi == 'BULANAN' ? 'bulan' : 'minggu';
+}
+
+/// Ringkasan durasi siap tampil, contoh "2 minggu (14 hari)".
+String labelDurasi(String tipeDurasi, int jumlahDurasi) {
+  final hari = hariPerPaket(tipeDurasi) * jumlahDurasi;
+  return '$jumlahDurasi ${labelSatuan(tipeDurasi)} ($hari hari)';
+}
+
 DateTime tanggalSelesaiSewa(
   DateTime tanggalMulai,
   String tipeDurasi,
@@ -87,32 +103,9 @@ DateTime tanggalSelesaiSewa(
     return mulai;
   }
 
-  switch (tipeDurasi) {
-    case 'HARIAN':
-      return mulai.add(Duration(days: jumlahDurasi - 1));
-    case 'MINGGUAN':
-      return mulai.add(Duration(days: jumlahDurasi * 7 - 1));
-    case 'BULANAN':
-      final bulanTujuan = DateTime.utc(
-        mulai.year,
-        mulai.month + jumlahDurasi,
-        1,
-      );
-      final hariTerakhir = DateTime.utc(
-        bulanTujuan.year,
-        bulanTujuan.month + 1,
-        0,
-      ).day;
-      final hari = mulai.day > hariTerakhir ? hariTerakhir : mulai.day;
-
-      return DateTime.utc(
-        bulanTujuan.year,
-        bulanTujuan.month,
-        hari,
-      ).subtract(const Duration(days: 1));
-    default:
-      return mulai;
-  }
+  // Tanggal mulai dan tanggal selesai sama-sama dihitung sebagai hari sewa,
+  // jadi dikurangi 1 hari: 1 bulan (30 hari) dari 1 Des selesai 30 Des.
+  return mulai.add(Duration(days: hariPerPaket(tipeDurasi) * jumlahDurasi - 1));
 }
 
 String formatTanggal(DateTime? tanggal) {

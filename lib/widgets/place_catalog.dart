@@ -87,6 +87,14 @@ class _PlaceCatalogState extends ConsumerState<PlaceCatalog> {
   Widget build(BuildContext context) {
     final kategoriAktif = ref.watch(tenantSearchProvider).kategori;
 
+    ref.listen(
+      tenantSearchProvider.select((state) => state.keyword),
+      (sebelum, sekarang) {
+        if (sekarang == _searchController.text) return;
+        _searchController.text = sekarang;
+      },
+    );
+
     return RefreshIndicator(
       color: AppColors.primaryDeep,
       onRefresh: () => ref.read(tenantPlacesProvider.notifier).refresh(),

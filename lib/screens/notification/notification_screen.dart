@@ -12,44 +12,54 @@ import '../../widgets/shimmer_loading.dart';
 import '../../widgets/spoth_app_bar.dart';
 import '../../widgets/spoth_sidebar_scaffold.dart';
 
-class NotificationScreen extends ConsumerWidget {
+class NotificationScreen extends ConsumerStatefulWidget {
   const NotificationScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final notifications = ref.watch(notificationsProvider);
+  ConsumerState<NotificationScreen> createState() => _NotificationScreenState();
+}
 
-    Widget dibatasi(Widget child) {
-      return Align(
-        alignment: Alignment.topCenter,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: AppWidth.list),
-          child: child,
-        ),
-      );
-    }
+class _NotificationScreenState extends ConsumerState<NotificationScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(notificationsProvider.notifier).markAllRead();
+    });
+  }
+
+  Widget _dibatasi(Widget child) {
+    return Align(
+      alignment: Alignment.topCenter,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: AppWidth.list),
+        child: child,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final notifications = ref.watch(notificationsProvider);
 
     final page = Scaffold(
       backgroundColor: AppColors.canvas,
-      appBar: SpothAppBar(
-        title: const Text('Notifikasi'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.done_all),
-            tooltip: 'Tandai semua dibaca',
-            onPressed: () =>
-                ref.read(notificationsProvider.notifier).markAllRead(),
-          ),
-        ],
-      ),
+      appBar: const SpothAppBar(title: Text('Notifikasi')),
       body: notifications.when(
-        loading: () => dibatasi(
-          const Padding(
-            padding: EdgeInsets.all(20),
-            child: NotificationListSkeleton(count: 5),
+        loading: () => _dibatasi(
+          const SingleChildScrollView(
+            padding: EdgeInsets.fromLTRB(20, 16, 20, 20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                PageTitleSkeleton(subtitleWidth: 180),
+                SizedBox(height: 18),
+                NotificationListSkeleton(count: 5),
+              ],
+            ),
           ),
         ),
-        error: (error, _) => dibatasi(
+        error: (error, _) => _dibatasi(
           Center(
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(20),
@@ -64,11 +74,11 @@ class NotificationScreen extends ConsumerWidget {
             ),
           ),
         ),
-        data: (page) {
-          final items = page.items;
+        data: (halaman) {
+          final items = halaman.items;
 
           if (items.isEmpty) {
-            return dibatasi(
+            return _dibatasi(
               const Center(
                 child: Padding(
                   padding: EdgeInsets.all(20),
@@ -108,14 +118,14 @@ class NotificationScreen extends ConsumerWidget {
             );
           }
 
-          return dibatasi(
+          return _dibatasi(
             RefreshIndicator(
               color: AppColors.primaryDeep,
               onRefresh: () =>
                   ref.read(notificationsProvider.notifier).refresh(),
               child: ListView.builder(
                 padding: const EdgeInsets.all(20),
-                itemCount: items.length + (page.hasMore ? 1 : 0),
+                itemCount: items.length + (halaman.hasMore ? 1 : 0),
                 itemBuilder: (context, index) {
                   if (index == items.length) {
                     return Padding(
@@ -155,116 +165,80 @@ class _NotificationCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final dibaca = notification.dibaca;
-
-    return Material(
-      color: AppColors.white,
-      borderRadius: BorderRadius.circular(18),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(18),
-        onTap: dibaca
-            ? null
-            : () async {
-                await ref
-                    .read(notificationsProvider.notifier)
-                    .markRead(notification.id);
-              },
-        child: Container(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(AppRadius.lg),
-            border: Border.all(
-              color: dibaca
-                  ? AppColors.softBorder
-                  : AppColors.primaryDeep.withValues(alpha: 0.35),
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        border: Border.all(color: AppColors.softBorder),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: const BoxDecoration(
+              color: AppColors.lightOrange,
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.notifications,
+              size: 20,
+              color: AppColors.primaryDeep,
             ),
           ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: dibaca
-                      ? AppColors.surfaceMuted
-                      : AppColors.lightOrange,
-                  shape: BoxShape.circle,
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  notification.judul,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    height: 1.35,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.darkText,
+                  ),
                 ),
-                child: Icon(
-                  dibaca ? Icons.notifications_none : Icons.notifications,
-                  size: 20,
-                  color: dibaca
-                      ? AppColors.secondaryText
-                      : AppColors.primaryDeep,
+                const SizedBox(height: 4),
+                Text(
+                  notification.pesan,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    height: 1.5,
+                    color: AppColors.secondaryText,
+                  ),
                 ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      notification.judul,
-                      style: TextStyle(
-                        fontSize: 14,
-                        height: 1.35,
-                        fontWeight: dibaca ? FontWeight.w500 : FontWeight.w700,
-                        color: AppColors.darkText,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      notification.pesan,
-                      style: const TextStyle(
-                        fontSize: 13,
-                        height: 1.5,
-                        color: AppColors.secondaryText,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      formatTanggalJam(notification.createdAt),
-                      style: const TextStyle(
-                        fontSize: 11,
-                        color: AppColors.secondaryText,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              if (!dibaca) ...[
-                const SizedBox(width: 8),
-                Container(
-                  margin: const EdgeInsets.only(top: 4),
-                  width: 9,
-                  height: 9,
-                  decoration: const BoxDecoration(
-                    color: AppColors.primaryDeep,
-                    shape: BoxShape.circle,
+                const SizedBox(height: 6),
+                Text(
+                  formatTanggalJam(notification.createdAt),
+                  style: const TextStyle(
+                    fontSize: 11,
+                    color: AppColors.secondaryText,
                   ),
                 ),
               ],
-              const SizedBox(width: 4),
-              IconButton(
-                icon: const Icon(Icons.delete_outline, size: 18),
-                tooltip: 'Hapus notifikasi',
-                color: AppColors.secondaryText,
-                onPressed: () async {
-                  await ref
-                      .read(notificationsProvider.notifier)
-                      .delete(notification.id);
-
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Notifikasi dihapus')),
-                    );
-                  }
-                },
-              ),
-            ],
+            ),
           ),
-        ),
+          IconButton(
+            icon: const Icon(Icons.delete_outline, size: 18),
+            tooltip: 'Hapus notifikasi',
+            color: AppColors.secondaryText,
+            onPressed: () async {
+              await ref
+                  .read(notificationsProvider.notifier)
+                  .delete(notification.id);
+
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Notifikasi dihapus')),
+                );
+              }
+            },
+          ),
+        ],
       ),
     );
   }

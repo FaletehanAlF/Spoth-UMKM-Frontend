@@ -1,70 +1,55 @@
 ﻿class PaymentModel {
   const PaymentModel({
-    required this.id,
-    required this.bookingId,
     required this.metode,
-    required this.jumlah,
     required this.status,
-    this.paidAt,
     this.kodeBooking,
-    this.totalHarga = 0,
-    this.adminFee = 0,
-    this.komisiPlatform = 0,
-    this.pendapatanHost = 0,
-    this.namaTempat,
+    this.redirectUrl,
+    this.expiredAt,
   });
 
-  final String id;
-  final String bookingId;
+  /// Jenis pembayaran dari Midtrans ("MIDTRANS", "qris", "bank_transfer", ...).
   final String metode;
-  final double jumlah;
+
+  /// Status pembayaran: PENDING, BERHASIL, GAGAL, EXPIRED, DIBATALKAN.
   final String status;
-  final DateTime? paidAt;
   final String? kodeBooking;
-  final double totalHarga;
-  final double adminFee;
-  final double komisiPlatform;
-  final double pendapatanHost;
-  final String? namaTempat;
+
+  /// Link halaman pembayaran Midtrans (Snap) yang dibuka di dalam aplikasi.
+  final String? redirectUrl;
+  final DateTime? expiredAt;
 
   factory PaymentModel.fromJson(Map<String, dynamic> json) {
     return PaymentModel(
-      id: json['id']?.toString() ?? '',
-      bookingId: json['booking_id']?.toString() ?? '',
-      metode: json['metode'] as String? ?? '',
-      jumlah: _toDouble(json['jumlah']),
+      metode: json['metode'] as String? ?? 'MIDTRANS',
       status: json['status'] as String? ?? '',
-      paidAt: DateTime.tryParse(json['paid_at'] as String? ?? ''),
       kodeBooking: json['kode_booking'] as String?,
-      totalHarga: _toDouble(json['total_harga']),
-      adminFee: _toDouble(json['admin_fee']),
-      komisiPlatform: _toDouble(json['komisi_platform']),
-      pendapatanHost: _toDouble(json['pendapatan_host']),
-      namaTempat: json['nama_tempat'] as String?,
+      redirectUrl: json['redirect_url'] as String?,
+      expiredAt: DateTime.tryParse(json['expired_at'] as String? ?? ''),
     );
   }
 
-  String get metodeLabel => switch (metode) {
-    'DANA' => 'DANA',
-    'OVO' => 'OVO',
-    'GOPAY' => 'GoPay',
-    'SHOPEEPAY' => 'ShopeePay',
-    'SIMULASI' => 'Simulasi',
-    'TRANSFER' => 'Transfer Bank',
-    'QRIS' => 'QRIS',
-    'TUNAI' => 'Tunai',
-    _ => metode,
+  bool get masihMenunggu => status == 'PENDING';
+
+  String get statusLabel => switch (status) {
+    'PENDING' => 'Menunggu pembayaran',
+    'BERHASIL' => 'Pembayaran berhasil',
+    'GAGAL' => 'Pembayaran gagal',
+    'EXPIRED' => 'Pembayaran kedaluwarsa',
+    'DIBATALKAN' => 'Pembayaran dibatalkan',
+    _ => status,
   };
 
-  static double _toDouble(dynamic value) {
-    if (value is num) {
-      return value.toDouble();
-    }
-    if (value is String) {
-      return double.tryParse(value) ?? 0;
-    }
-    return 0;
+  String get metodeLabel {
+    if (metode.toUpperCase() == 'MIDTRANS') return 'Midtrans';
+
+    return metode.replaceAll('_', ' ');
   }
+}
+
+double _toDouble(dynamic value) {
+  if (value is num) return value.toDouble();
+  if (value is String) return double.tryParse(value) ?? 0;
+  return 0;
 }
 
 class EPassModel {
@@ -119,8 +104,8 @@ class EPassModel {
           ? (json['jumlah_durasi'] as num).toInt()
           : 0,
       tipeDurasi: json['tipe_durasi'] as String? ?? '',
-      totalHarga: PaymentModel._toDouble(json['total_harga']),
-      adminFee: PaymentModel._toDouble(json['admin_fee']),
+      totalHarga: _toDouble(json['total_harga']),
+      adminFee: _toDouble(json['admin_fee']),
       status: json['status'] as String? ?? '',
       foto:
           (json['foto'] as List<dynamic>?)
@@ -136,5 +121,3 @@ class EPassModel {
     );
   }
 }
-
-

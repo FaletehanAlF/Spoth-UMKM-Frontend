@@ -1,6 +1,7 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/services/api_service.dart';
 import '../../core/services/booking_service.dart';
@@ -30,20 +31,41 @@ class PaymentScreen extends ConsumerStatefulWidget {
   ConsumerState<PaymentScreen> createState() => _PaymentScreenState();
 }
 
-class _PaymentScreenState extends ConsumerState<PaymentScreen> {
+class _PaymentScreenState extends ConsumerState<PaymentScreen>
+    with WidgetsBindingObserver {
   bool _loading = true;
   String? _error;
 
   BookingModel? _booking;
-  PaymentModel? _paymentAda;
+  PaymentModel? _payment;
 
-  String _metode = 'SIMULASI';
-  bool _membayar = false;
+  bool _memproses = false;
+  bool _memeriksa = false;
+
+  bool _pembayaranDibuka = false;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _load();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state != AppLifecycleState.resumed || !_pembayaranDibuka || !mounted) {
+      return;
+    }
+
+    _pembayaranDibuka = false;
+    setState(() => _memproses = false);
+    _periksaStatus();
   }
 
   void _showSnack(String message) {
@@ -54,6 +76,8 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
   }
 
   Future<void> _load() async {
+    if (!mounted) return;
+
     setState(() {
       _loading = true;
       _error = null;
@@ -79,7 +103,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
       if (!mounted) return;
       setState(() {
         _booking = booking;
-        _paymentAda = payment;
+        _payment = payment;
         _loading = false;
       });
     } on ApiException catch (error) {
@@ -97,59 +121,134 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
     }
   }
 
-  Future<void> _bayar() async {
-    if (_membayar) return;
+  Future<void> _buatTransaksi({bool paksaBaru = false}) async {
+    if (_memproses) return;
 
-    setState(() => _membayar = true);
+    final token = ref.read(authNotifierProvider.select((s) => s.token));
+    if (token == null) return;
+
+    setState(() => _memproses = true);
+
     try {
-      final token = ref.read(authNotifierProvider.select((s) => s.token));
-      if (token == null) return;
-
-      final hasil = await ref
+      final payment = await ref
           .read(paymentServiceProvider)
           .payBooking(
             token: token,
             bookingId: widget.bookingId,
-            metode: _metode,
+            force: paksaBaru,
           );
 
       if (!mounted) return;
-      setState(() {
-        _paymentAda = hasil;
-        _booking = _booking != null
-            ? BookingModel(
-                id: _booking!.id,
-                kodeBooking: hasil.kodeBooking,
-                placeId: _booking!.placeId,
-                tenantId: _booking!.tenantId,
-                jenisUsaha: _booking!.jenisUsaha,
-                tanggalMulai: _booking!.tanggalMulai,
-                tanggalSelesai: _booking!.tanggalSelesai,
-                jumlahDurasi: _booking!.jumlahDurasi,
-                hargaSatuan: _booking!.hargaSatuan,
-                totalHarga: _booking!.totalHarga,
-                adminFee: _booking!.adminFee,
-                status: 'LUNAS',
-                namaTempat: _booking!.namaTempat,
-                kecamatan: _booking!.kecamatan,
-                namaTenant: _booking!.namaTenant,
-                namaHost: _booking!.namaHost,
-                foto: _booking!.foto,
-              )
-            : _booking;
-        _membayar = false;
-      });
+      setState(() => _payment = payment);
 
-      await ref.read(bookingsProvider.notifier).refresh();
-      await ref.read(riwayatBadgeProvider.notifier).refresh();
+      await _bukaLinkPembayaran(payment);
     } on ApiException catch (error) {
       if (!mounted) return;
-      setState(() => _membayar = false);
+      setState(() => _memproses = false);
       _showSnack(error.message);
     } catch (_) {
       if (!mounted) return;
-      setState(() => _membayar = false);
-      _showSnack('Gagal memproses pembayaran. Coba lagi.');
+      setState(() => _memproses = false);
+      _showSnack('Gagal membuat transaksi pembayaran. Coba lagi.');
+    }
+  }
+
+  Future<void> _bukaUlangPembayaran() async {
+    final payment = _payment;
+    if (payment == null || _memproses) return;
+
+    setState(() => _memproses = true);
+    await _bukaLinkPembayaran(payment);
+  }
+
+  /// Membuat transaksi Snap baru saat halaman pembayaran lama sudah
+  /// kedaluwarsa. Transaksi lama otomatis ditutup oleh backend.
+  Future<void> _buatTransaksiBaru() => _buatTransaksi(paksaBaru: true);
+
+  Future<void> _bukaLinkPembayaran(PaymentModel payment) async {
+    final alamat = payment.redirectUrl;
+    if (alamat == null || alamat.isEmpty) {
+      if (mounted) setState(() => _memproses = false);
+      _showSnack('Link pembayaran belum tersedia. Coba lagi sebentar.');
+      return;
+    }
+
+    final uri = Uri.tryParse(alamat);
+    if (uri == null) {
+      if (mounted) setState(() => _memproses = false);
+      _showSnack('Link pembayaran tidak valid.');
+      return;
+    }
+
+    _pembayaranDibuka = true;
+    final terbuka = await _bukaPembayaran(uri);
+
+    if (!terbuka) {
+      _pembayaranDibuka = false;
+    }
+    if (mounted) setState(() => _memproses = false);
+    if (!terbuka && mounted) {
+      _showSnack('Halaman pembayaran tidak bisa dibuka. Periksa browser Anda.');
+    }
+  }
+
+  /// Membuka halaman Midtrans di dalam aplikasi.
+  ///
+  /// Android memakai Chrome Custom Tabs dan iOS memakai SFSafariViewController,
+  /// sehingga pengguna tidak dilempar ke aplikasi browser terpisah. Jika
+  /// perangkat tidak mendukung, halaman dibuka di browser biasa.
+  Future<bool> _bukaPembayaran(Uri uri) async {
+    try {
+      if (await launchUrl(uri, mode: LaunchMode.inAppBrowserView)) {
+        return true;
+      }
+    } catch (_) {
+      // Perangkat tidak punya browser yang mendukung mode dalam aplikasi.
+    }
+
+    try {
+      return await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<void> _periksaStatus() async {
+    if (!mounted || _memeriksa) return;
+
+    final token = ref.read(authNotifierProvider.select((s) => s.token));
+    if (token == null) return;
+
+    setState(() => _memeriksa = true);
+
+    try {
+      final payment = await ref
+          .read(paymentServiceProvider)
+          .syncPayment(token: token, bookingId: widget.bookingId);
+
+      if (!mounted) return;
+      setState(() => _payment = payment);
+
+      await ref.read(bookingsProvider.notifier).refresh();
+      await ref.read(riwayatBadgeProvider.notifier).refresh();
+
+      await _load();
+
+      if (!mounted) return;
+      final terbayar = _booking?.status == 'LUNAS';
+      _showSnack(
+        terbayar
+            ? 'Pembayaran berhasil. E-Pass Anda sudah terbit.'
+            : 'Pembayaran belum masuk. Selesaikan dulu di halaman Midtrans.',
+      );
+    } on ApiException catch (error) {
+      if (!mounted) return;
+      _showSnack(error.message);
+    } catch (_) {
+      if (!mounted) return;
+      _showSnack('Gagal memeriksa status pembayaran. Coba lagi.');
+    } finally {
+      if (mounted) setState(() => _memeriksa = false);
     }
   }
 
@@ -229,166 +328,351 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
       );
     }
 
-    final sudahLunas = booking.status == 'LUNAS';
+    if (booking.status == 'LUNAS') {
+      return Align(
+        alignment: Alignment.topCenter,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 720),
+          child: _SuksesPembayaran(
+            booking: booking,
+            payment: _payment,
+            onLihatEPass: _bukaEPass,
+            onSelesai: () => Navigator.of(context).pop(true),
+          ),
+        ),
+      );
+    }
 
     return Align(
       alignment: Alignment.topCenter,
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 720),
-        child: sudahLunas
-            ? _SuksesPembayaran(
-                booking: booking,
-                payment: _paymentAda,
-                onLihatEPass: _bukaEPass,
-                onSelesai: () => Navigator.of(context).pop(true),
-              )
-            : Column(
-                children: [
-                  Expanded(
-                    child: SingleChildScrollView(
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _RingkasanCard(booking: booking),
-                          const SizedBox(height: 16),
-                          const _SectionHeader(
-                            icon: Icons.payment_outlined,
-                            title: 'Metode Pembayaran',
-                          ),
-                          const SizedBox(height: 12),
-                          ..._pilihanMetode.map(
-                            (pilihan) => Padding(
-                              padding: const EdgeInsets.only(bottom: 10),
-                              child: _MetodeOption(
-                                pilihan: pilihan,
-                                dipilih: _metode == pilihan.kode,
-                                onTap: () =>
-                                    setState(() => _metode = pilihan.kode),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: const [
-                              Icon(
-                                Icons.info_outline,
-                                size: 15,
-                                color: AppColors.secondaryText,
-                              ),
-                              SizedBox(width: 6),
-                              Expanded(
-                                child: Text(
-                                  'Pembayaran ini simulasi dan tidak memindahkan uang asli.',
-                                  style: TextStyle(
-                                    fontSize: 11.5,
-                                    height: 1.4,
-                                    color: AppColors.secondaryText,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
+        child: Column(
+          children: [
+            Expanded(
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _RingkasanCard(booking: booking),
+                    const SizedBox(height: 16),
+                    const _SectionHeader(
+                      icon: Icons.account_balance_wallet_outlined,
+                      title: 'Metode Pembayaran',
                     ),
-                  ),
-                  Container(
-                    decoration: const BoxDecoration(
-                      color: AppColors.white,
-                      border: Border(
-                        top: BorderSide(color: AppColors.softBorder),
-                      ),
+                    const SizedBox(height: 12),
+                    _KartuMidtrans(payment: _payment),
+                    const SizedBox(height: 10),
+                    const _Catatan(
+                      'Pembayaran diproses oleh Midtrans. Pilih QRIS, transfer '
+                      'bank, e-wallet, atau kartu di halaman pembayaran. '
+                      'Setelah selesai, kembali ke aplikasi untuk memeriksa status.',
                     ),
-                    child: SafeArea(
-                      top: false,
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(20, 12, 20, 14),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    'Total Bayar',
-                                    style: const TextStyle(
-                                      fontSize: 12.5,
-                                      color: AppColors.secondaryText,
-                                    ),
-                                  ),
-                                ),
-                                Expanded(
-                                  child: Text(
-                                    formatRupiah(booking.totalHarga),
-                                    textAlign: TextAlign.right,
-                                    style: const TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.w800,
-                                      color: AppColors.primaryInk,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 12),
-                            PrimaryButton(
-                              label: 'Bayar Sekarang',
-                              isLoading: _membayar,
-                              height: 50,
-                              borderRadius: 14,
-                              onPressed: _bayar,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
+                    if (_payment != null && _payment!.masihMenunggu) ...[
+                      const SizedBox(height: 12),
+                      _RingkasanTransaksi(payment: _payment!),
+                    ],
+                  ],
+                ),
               ),
+            ),
+            _BilahAksi(
+              booking: booking,
+              payment: _payment,
+              memproses: _memproses,
+              memeriksa: _memeriksa,
+              onBayar: () => _buatTransaksi(),
+              onBukaUlang: _bukaUlangPembayaran,
+              onBuatUlang: _buatTransaksiBaru,
+              onPeriksa: _periksaStatus,
+            ),
+          ],
+        ),
       ),
     );
   }
 }
 
-class _PilihanMetode {
-  const _PilihanMetode(this.kode, this.label, this.keterangan, this.icon);
+class _KartuMidtrans extends StatelessWidget {
+  const _KartuMidtrans({required this.payment});
 
-  final String kode;
-  final String label;
-  final String keterangan;
-  final IconData icon;
+  final PaymentModel? payment;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.softBorder),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: AppColors.lightOrange,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.verified_user_outlined,
+                  size: 22,
+                  color: AppColors.primaryOrange,
+                ),
+              ),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Midtrans',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.charcoal,
+                      ),
+                    ),
+                    SizedBox(height: 2),
+                    Text(
+                      'QRIS, transfer bank, e-wallet, kartu',
+                      maxLines: 2,
+                      style: TextStyle(
+                        fontSize: 11.5,
+                        color: AppColors.secondaryText,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          if (payment != null) ...[
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              decoration: BoxDecoration(
+                color: AppColors.surfaceMuted,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(
+                payment!.statusLabel,
+                style: const TextStyle(
+                  fontSize: 10.5,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.charcoal,
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
 }
 
-const _pilihanMetode = <_PilihanMetode>[
-  _PilihanMetode(
-    'DANA',
-    'DANA',
-    'Bayar dengan saldo DANA',
-    Icons.account_balance_wallet_outlined,
-  ),
-  _PilihanMetode(
-    'OVO',
-    'OVO',
-    'Bayar dengan saldo OVO',
-    Icons.phone_android_outlined,
-  ),
-  _PilihanMetode(
-    'GOPAY',
-    'GoPay',
-    'Bayar dengan saldo GoPay',
-    Icons.payments_outlined,
-  ),
-  _PilihanMetode(
-    'SHOPEEPAY',
-    'ShopeePay',
-    'Bayar dengan saldo ShopeePay',
-    Icons.shopping_bag_outlined,
-  ),
-];
+class _RingkasanTransaksi extends StatelessWidget {
+  const _RingkasanTransaksi({required this.payment});
+
+  final PaymentModel payment;
+
+  @override
+  Widget build(BuildContext context) {
+    final kedaluwarsa = payment.expiredAt;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceMuted,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Transaksi sudah dibuat',
+            style: TextStyle(
+              fontSize: 12.5,
+              fontWeight: FontWeight.w700,
+              color: AppColors.charcoal,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Selesaikan pembayaran, lalu tekan "Cek Status" agar E-Pass terbit.',
+            style: const TextStyle(
+              fontSize: 11.5,
+              height: 1.45,
+              color: AppColors.secondaryText,
+            ),
+          ),
+          if (kedaluwarsa != null) ...[
+            const SizedBox(height: 6),
+            Text(
+              'Batas akhir: ${formatDateString(kedaluwarsa.toIso8601String())} ${_jam(kedaluwarsa)}',
+              style: const TextStyle(
+                fontSize: 11.5,
+                color: AppColors.secondaryText,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  String _jam(DateTime waktu) {
+    final lokal = waktu.toLocal();
+
+    return '${lokal.hour.toString().padLeft(2, '0')}:'
+        '${lokal.minute.toString().padLeft(2, '0')}';
+  }
+}
+
+class _BilahAksi extends StatelessWidget {
+  const _BilahAksi({
+    required this.booking,
+    required this.payment,
+    required this.memproses,
+    required this.memeriksa,
+    required this.onBayar,
+    required this.onBukaUlang,
+    required this.onBuatUlang,
+    required this.onPeriksa,
+  });
+
+  final BookingModel booking;
+  final PaymentModel? payment;
+  final bool memproses;
+  final bool memeriksa;
+  final VoidCallback onBayar;
+  final VoidCallback onBukaUlang;
+  final VoidCallback onBuatUlang;
+  final VoidCallback onPeriksa;
+
+  @override
+  Widget build(BuildContext context) {
+    final adaTransaksi = payment != null && payment!.masihMenunggu;
+
+    return Container(
+      decoration: const BoxDecoration(
+        color: AppColors.white,
+        border: Border(top: BorderSide(color: AppColors.softBorder)),
+      ),
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 14),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                children: [
+                  const Expanded(
+                    child: Text(
+                      'Total Bayar',
+                      style: TextStyle(
+                        fontSize: 12.5,
+                        color: AppColors.secondaryText,
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    child: Text(
+                      formatRupiah(booking.totalHarga),
+                      textAlign: TextAlign.right,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.primaryInk,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              if (adaTransaksi) ...[
+                PrimaryButton(
+                  label: 'Buka Halaman Pembayaran',
+                  isLoading: memproses,
+                  height: 50,
+                  borderRadius: 14,
+                  onPressed: onBukaUlang,
+                ),
+                const SizedBox(height: 8),
+                TextButton.icon(
+                  onPressed: memeriksa ? null : onPeriksa,
+                  icon: memeriksa
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.refresh, size: 18),
+                  label: const Text('Cek Status Pembayaran'),
+                ),
+                TextButton(
+                  onPressed: memproses ? null : onBuatUlang,
+                  style: TextButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                  ),
+                  child: const Text('Buat Ulang Pembayaran'),
+                ),
+              ] else
+                PrimaryButton(
+                  label: 'Bayar dengan Midtrans',
+                  isLoading: memproses,
+                  height: 50,
+                  borderRadius: 14,
+                  onPressed: onBayar,
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _Catatan extends StatelessWidget {
+  const _Catatan(this.teks);
+
+  final String teks;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Icon(
+          Icons.info_outline,
+          size: 15,
+          color: AppColors.secondaryText,
+        ),
+        const SizedBox(width: 6),
+        Expanded(
+          child: Text(
+            teks,
+            style: const TextStyle(
+              fontSize: 11.5,
+              height: 1.4,
+              color: AppColors.secondaryText,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
 
 class _RingkasanCard extends StatelessWidget {
   const _RingkasanCard({required this.booking});
@@ -439,11 +723,7 @@ class _RingkasanCard extends StatelessWidget {
                 '${formatDateString(booking.tanggalSelesai)}',
           ),
           _BarisInfo(
-            label: 'Lama Sewa',
-            nilai: '${booking.jumlahDurasi} satuan durasi',
-          ),
-          _BarisInfo(
-            label: 'Harga Satuan',
+            label: 'Harga Sewa',
             nilai: formatRupiah(booking.hargaSatuan),
           ),
           _BarisInfo(
@@ -545,114 +825,6 @@ class _SectionHeader extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-class _MetodeOption extends StatelessWidget {
-  const _MetodeOption({
-    required this.pilihan,
-    required this.dipilih,
-    required this.onTap,
-  });
-
-  final _PilihanMetode pilihan;
-  final bool dipilih;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: AppColors.white,
-      borderRadius: BorderRadius.circular(14),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(14),
-        child: Container(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(
-              color: dipilih ? AppColors.primaryOrange : AppColors.softBorder,
-              width: dipilih ? 2 : 1,
-            ),
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 42,
-                height: 42,
-                decoration: BoxDecoration(
-                  color: dipilih ? AppColors.lightOrange : null,
-                  borderRadius: BorderRadius.circular(12),
-                  border: dipilih
-                      ? null
-                      : Border.all(color: AppColors.softBorder),
-                ),
-                child: Icon(
-                  pilihan.icon,
-                  size: 22,
-                  color: dipilih
-                      ? AppColors.primaryOrange
-                      : AppColors.secondaryText,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      pilihan.label,
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                        color: dipilih
-                            ? AppColors.primaryOrange
-                            : AppColors.charcoal,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      pilihan.keterangan,
-                      style: const TextStyle(
-                        fontSize: 11.5,
-                        color: AppColors.secondaryText,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 10),
-              Container(
-                width: 20,
-                height: 20,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: dipilih
-                        ? AppColors.primaryOrange
-                        : AppColors.softBorder,
-                    width: 2,
-                  ),
-                ),
-                child: dipilih
-                    ? Center(
-                        child: Container(
-                          width: 10,
-                          height: 10,
-                          decoration: const BoxDecoration(
-                            color: AppColors.primaryOrange,
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                      )
-                    : null,
-              ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 }
@@ -761,7 +933,10 @@ class _SuksesPembayaran extends StatelessWidget {
                       '${formatDateString(booking.tanggalMulai)} - '
                       '${formatDateString(booking.tanggalSelesai)}',
                 ),
-                _BarisInfo(label: 'Metode', nilai: payment?.metodeLabel ?? '-'),
+                _BarisInfo(
+                  label: 'Metode',
+                  nilai: payment?.metodeLabel ?? 'Midtrans',
+                ),
                 _BarisInfo(
                   label: 'Biaya Admin',
                   nilai: formatRupiah(booking.adminFee),
@@ -799,5 +974,3 @@ class _SuksesPembayaran extends StatelessWidget {
     );
   }
 }
-
-

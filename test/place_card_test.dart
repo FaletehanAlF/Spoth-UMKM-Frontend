@@ -13,8 +13,8 @@ PlaceModel kartuContoh({required bool sudahDisewa}) {
     deskripsi: 'Teras ruko di pinggir jalan raya.',
     alamat: 'Jl. Merdeka No. 12',
     kecamatan: 'Pancoran Mas',
-    harga: 150000,
-    tipeDurasi: 'HARIAN',
+    hargaMingguan: 150000,
+    hargaBulanan: 450000,
     sudahDiSewa: sudahDisewa,
   );
 }

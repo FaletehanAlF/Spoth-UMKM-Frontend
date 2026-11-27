@@ -6,7 +6,6 @@ import '../../../core/constants/place_districts.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_layout.dart';
 import '../../../models/category_model.dart';
-import '../../../models/place_model.dart';
 import '../../../widgets/category_picker.dart';
 import '../../../widgets/shimmer_loading.dart';
 
@@ -23,15 +22,9 @@ class PhotoItem {
 }
 
 class FormSection extends StatelessWidget {
-  const FormSection({
-    super.key,
-    required this.title,
-    required this.icon,
-    required this.child,
-  });
+  const FormSection({super.key, required this.title, required this.child});
 
   final String title;
-  final IconData icon;
   final Widget child;
 
   @override
@@ -39,21 +32,13 @@ class FormSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Row(
-          children: [
-            Icon(icon, size: 17, color: AppColors.primaryDeep),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.charcoal,
-                ),
-              ),
-            ),
-          ],
+        Text(
+          title,
+          style: const TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w700,
+            color: AppColors.charcoal,
+          ),
         ),
         const SizedBox(height: 12),
         child,
@@ -96,26 +81,24 @@ class InfoFields extends StatelessWidget {
 
   bool get _kategoriLain => kategori == CategoryPicker.customValue;
 
-  @override
-  Widget build(BuildContext context) {
+  Widget _fieldNama() {
+    return TextFormField(
+      controller: namaController,
+      textCapitalization: TextCapitalization.words,
+      decoration: const InputDecoration(labelText: 'Nama Tempat'),
+      validator: (value) {
+        final teks = value?.trim() ?? '';
+        if (teks.isEmpty) return 'Nama tempat wajib diisi';
+        if (teks.length < 5) return 'Nama tempat minimal 5 karakter';
+        return null;
+      },
+    );
+  }
+
+  Widget _fieldKategori() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        TextFormField(
-          controller: namaController,
-          textCapitalization: TextCapitalization.words,
-          decoration: const InputDecoration(
-            labelText: 'Nama Tempat',
-            hintText: 'Contoh: Lapak Kuliner Pasar Baru',
-          ),
-          validator: (value) {
-            final teks = value?.trim() ?? '';
-            if (teks.isEmpty) return 'Nama tempat wajib diisi';
-            if (teks.length < 5) return 'Nama tempat minimal 5 karakter';
-            return null;
-          },
-        ),
-        const SizedBox(height: 16),
         const Text(
           'Kategori',
           style: TextStyle(
@@ -143,8 +126,6 @@ class InfoFields extends StatelessWidget {
               textCapitalization: TextCapitalization.words,
               decoration: const InputDecoration(
                 labelText: 'Nama Kategori Baru',
-                hintText: 'Contoh: Warung Minuman',
-                prefixIcon: Icon(Icons.edit_outlined),
               ),
               enabled: enabled,
               validator: (value) {
@@ -156,51 +137,100 @@ class InfoFields extends StatelessWidget {
             ),
           ],
         ],
-        const SizedBox(height: 16),
-        TextFormField(
-          controller: deskripsiController,
-          maxLines: 3,
-          decoration: const InputDecoration(
-            labelText: 'Deskripsi',
-            hintText: 'Contoh: Lapak makan malam dengan area parkir',
-          ),
-          validator: (value) {
-            final teks = value?.trim() ?? '';
-            if (teks.isEmpty) return 'Deskripsi wajib diisi';
-            if (teks.length < 10) return 'Deskripsi minimal 10 karakter';
-            if (teks.length > 250) return 'Deskripsi maksimal 250 karakter';
-            return null;
-          },
-        ),
-        const SizedBox(height: 16),
-        DropdownButtonFormField<String>(
-          initialValue: kecamatan,
-          decoration: const InputDecoration(labelText: 'Kecamatan'),
-          items: [
-            for (final item in PlaceDistricts.depok)
-              DropdownMenuItem(value: item, child: Text(item)),
-          ],
-          onChanged: enabled
-              ? (value) {
-                  if (value != null) onKecamatanChanged(value);
-                }
-              : null,
-        ),
-        const SizedBox(height: 16),
-        TextFormField(
-          controller: alamatController,
-          decoration: const InputDecoration(
-            labelText: 'Alamat',
-            hintText: 'Contoh: Jl. Merdeka No. 10',
-          ),
-          validator: (value) {
-            final teks = value?.trim() ?? '';
-            if (teks.isEmpty) return 'Alamat wajib diisi';
-            if (teks.length < 10) return 'Alamat minimal 10 karakter';
-            return null;
-          },
-        ),
       ],
+    );
+  }
+
+  Widget _fieldDeskripsi() {
+    return TextFormField(
+      controller: deskripsiController,
+      maxLines: 3,
+      decoration: const InputDecoration(labelText: 'Deskripsi'),
+      validator: (value) {
+        final teks = value?.trim() ?? '';
+        if (teks.isEmpty) return 'Deskripsi wajib diisi';
+        if (teks.length < 30) return 'Deskripsi minimal 30 karakter';
+        return null;
+      },
+    );
+  }
+
+  Widget _fieldKecamatan() {
+    return DropdownButtonFormField<String>(
+      initialValue: kecamatan,
+      decoration: const InputDecoration(labelText: 'Kecamatan'),
+      items: [
+        for (final item in PlaceDistricts.depok)
+          DropdownMenuItem(value: item, child: Text(item)),
+      ],
+      onChanged: enabled
+          ? (value) {
+              if (value != null) onKecamatanChanged(value);
+            }
+          : null,
+    );
+  }
+
+  Widget _fieldAlamat() {
+    return TextFormField(
+      controller: alamatController,
+      decoration: const InputDecoration(labelText: 'Alamat'),
+      validator: (value) {
+        final teks = value?.trim() ?? '';
+        if (teks.isEmpty) return 'Alamat wajib diisi';
+        if (teks.length < 10) return 'Alamat minimal 10 karakter';
+        return null;
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final duaKolom = constraints.maxWidth >= 700;
+
+        final fieldsBawah = duaKolom
+            ? Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(flex: 3, child: _fieldDeskripsi()),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    flex: 2,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        _fieldKecamatan(),
+                        const SizedBox(height: 16),
+                        _fieldAlamat(),
+                      ],
+                    ),
+                  ),
+                ],
+              )
+            : Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _fieldDeskripsi(),
+                  const SizedBox(height: 16),
+                  _fieldKecamatan(),
+                  const SizedBox(height: 16),
+                  _fieldAlamat(),
+                ],
+              );
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _fieldNama(),
+            const SizedBox(height: 16),
+            _fieldKategori(),
+            const SizedBox(height: 16),
+            fieldsBawah,
+          ],
+        );
+      },
     );
   }
 }
@@ -260,30 +290,20 @@ class PhotoFields extends StatelessWidget {
     super.key,
     required this.photos,
     required this.maxPhotos,
-    required this.maxPhotoBytes,
     required this.onAdd,
     required this.onRemove,
   });
 
   final List<PhotoItem> photos;
   final int maxPhotos;
-  final int maxPhotoBytes;
   final VoidCallback onAdd;
   final ValueChanged<int> onRemove;
 
   @override
   Widget build(BuildContext context) {
-    final mb = (maxPhotoBytes / (1024 * 1024)).round();
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text(
-          'Maks. $maxPhotos foto, minimal 1. Format JPG, JPEG, PNG, WEBP, '
-          'maks $mb MB per foto.',
-          style: const TextStyle(fontSize: 12, color: AppColors.secondaryText),
-        ),
-        const SizedBox(height: 10),
         LayoutBuilder(
           builder: (context, constraints) {
             final kolom = constraints.maxWidth >= 720
@@ -429,15 +449,21 @@ class _MiniBadge extends StatelessWidget {
 class PriceDurationFields extends StatelessWidget {
   const PriceDurationFields({
     super.key,
-    required this.hargaController,
-    required this.tipeDurasi,
-    required this.onTipeDurasiChanged,
+    required this.paketMingguan,
+    required this.paketBulanan,
+    required this.hargaMingguanController,
+    required this.hargaBulananController,
+    required this.onPaketMingguanChanged,
+    required this.onPaketBulananChanged,
     required this.enabled,
   });
 
-  final TextEditingController hargaController;
-  final String tipeDurasi;
-  final ValueChanged<String> onTipeDurasiChanged;
+  final bool paketMingguan;
+  final bool paketBulanan;
+  final TextEditingController hargaMingguanController;
+  final TextEditingController hargaBulananController;
+  final ValueChanged<bool> onPaketMingguanChanged;
+  final ValueChanged<bool> onPaketBulananChanged;
   final bool enabled;
 
   @override
@@ -445,116 +471,116 @@ class PriceDurationFields extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        TextFormField(
-          controller: hargaController,
-          keyboardType: TextInputType.number,
-          decoration: const InputDecoration(
-            labelText: 'Harga Sewa',
-            prefixText: 'Rp ',
-            hintText: 'Contoh: 250000',
-          ),
-          validator: (value) {
-            final teks = (value ?? '').trim();
-            if (teks.isEmpty) return 'Harga wajib diisi';
-
-            final angka = double.tryParse(
-              teks.replaceAll('.', '').replaceAll(',', '.'),
-            );
-            if (angka == null || angka <= 0) return 'Harga harus berupa angka';
-            return null;
-          },
+        _BlokPaket(
+          judul: 'Mingguan',
+          labelHarga: 'Harga per minggu',
+          aktif: paketMingguan,
+          onAktifChanged: enabled ? onPaketMingguanChanged : null,
+          controller: hargaMingguanController,
+          enabled: enabled && paketMingguan,
         ),
-        const SizedBox(height: 16),
-        const Text(
-          'Durasi',
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: AppColors.darkText,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            for (final durasi in PlaceModel.durasiValues)
-              ChoiceChip(
-                label: Text(PlaceModel.durasiLabels[durasi] ?? durasi),
-                selected: tipeDurasi == durasi,
-                selectedColor: AppColors.primaryDeep,
-                labelStyle: TextStyle(
-                  color: tipeDurasi == durasi
-                      ? AppColors.white
-                      : AppColors.secondaryText,
-                  fontWeight: FontWeight.w600,
-                ),
-                showCheckmark: false,
-                onSelected: enabled ? (_) => onTipeDurasiChanged(durasi) : null,
-              ),
-          ],
+        const SizedBox(height: 12),
+        _BlokPaket(
+          judul: 'Bulanan',
+          labelHarga: 'Harga per bulan',
+          aktif: paketBulanan,
+          onAktifChanged: enabled ? onPaketBulananChanged : null,
+          controller: hargaBulananController,
+          enabled: enabled && paketBulanan,
         ),
       ],
     );
   }
 }
 
-class PeriodFields extends StatelessWidget {
-  const PeriodFields({
-    super.key,
-    required this.mulaiController,
-    required this.selesaiController,
-    required this.isEditing,
-    required this.onPickMulai,
-    required this.onPickSelesai,
+class _BlokPaket extends StatelessWidget {
+  const _BlokPaket({
+    required this.judul,
+    required this.labelHarga,
+    required this.aktif,
+    required this.onAktifChanged,
+    required this.controller,
+    required this.enabled,
   });
 
-  final TextEditingController mulaiController;
-  final TextEditingController selesaiController;
-  final bool isEditing;
-  final VoidCallback onPickMulai;
-  final VoidCallback onPickSelesai;
+  final String judul;
+  final String labelHarga;
+  final bool aktif;
+  final ValueChanged<bool>? onAktifChanged;
+  final TextEditingController controller;
+  final bool enabled;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Text(
-          isEditing
-              ? 'Tempat hanya dapat disewa dalam rentang tanggal ini. '
-                    'Kosongkan keduanya bila tidak dibatasi.'
-              : 'Tempat hanya dapat disewa dalam rentang tanggal ini. '
-                    'Kedua tanggal wajib diisi.',
-          style: const TextStyle(
-            fontSize: 12,
-            height: 1.45,
-            color: AppColors.secondaryText,
-          ),
+    return Container(
+      padding: const EdgeInsets.fromLTRB(12, 8, 12, 10),
+      decoration: BoxDecoration(
+        color: aktif ? AppColors.surfaceMuted : AppColors.white,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        border: Border.all(
+          color: aktif ? AppColors.primaryDeep : AppColors.softBorder,
         ),
-        const SizedBox(height: 12),
-        TextFormField(
-          controller: mulaiController,
-          readOnly: true,
-          decoration: const InputDecoration(
-            labelText: 'Tanggal mulai',
-            hintText: 'Pilih tanggal mulai',
-            prefixIcon: Icon(Icons.calendar_today_outlined),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  judul,
+                  style: const TextStyle(
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.darkText,
+                  ),
+                ),
+              ),
+              Switch(
+                value: aktif,
+                onChanged: onAktifChanged,
+              ),
+            ],
           ),
-          onTap: onPickMulai,
-        ),
-        const SizedBox(height: 12),
-        TextFormField(
-          controller: selesaiController,
-          readOnly: true,
-          decoration: const InputDecoration(
-            labelText: 'Tanggal selesai',
-            hintText: 'Pilih tanggal selesai',
-            prefixIcon: Icon(Icons.event_available_outlined),
-          ),
-          onTap: onPickSelesai,
-        ),
-      ],
+          if (aktif) ...[
+            const SizedBox(height: 4),
+            TextFormField(
+              controller: controller,
+              keyboardType: TextInputType.number,
+              enabled: enabled,
+              decoration: InputDecoration(
+                labelText: labelHarga,
+                prefixText: 'Rp ',
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                  borderSide: const BorderSide(color: AppColors.charcoal),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                  borderSide: const BorderSide(
+                    color: AppColors.charcoal,
+                    width: 1.6,
+                  ),
+                ),
+              ),
+              validator: (value) {
+                if (!aktif) return null;
+
+                final teks = (value ?? '').trim();
+                if (teks.isEmpty) return 'Harga wajib diisi';
+
+                final angka = double.tryParse(
+                  teks.replaceAll('.', '').replaceAll(',', '.'),
+                );
+                if (angka == null || angka <= 0) {
+                  return 'Harga harus berupa angka';
+                }
+                return null;
+              },
+            ),
+          ],
+        ],
+      ),
     );
   }
 }

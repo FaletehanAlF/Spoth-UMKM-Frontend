@@ -1,15 +1,10 @@
 import 'package:flutter/material.dart';
 
-import '../core/constants/category_style.dart';
+import '../core/constants/category_style.dart' show categoryLabel;
 import '../core/theme/app_colors.dart';
 import '../core/theme/app_layout.dart';
 import '../models/category_model.dart';
 
-/// Pemilih kategori untuk form tambah/edit tempat.
-///
-/// Kategori preset ditampilkan sebagai chip berikon, sedangkan opsi
-/// "Lainnya" membuka input teks bebas. Nilai yang dikirim ke backend tetap
-/// `nama` asli kategori.
 class CategoryPicker extends StatelessWidget {
   const CategoryPicker({
     super.key,
@@ -29,11 +24,13 @@ class CategoryPicker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final unik = <String>{};
-    final namaKategori = [
+    final namaKategori = <String>[
       for (final item in categories)
-        if (unik.add(item.nama)) item.nama,
+        if (item.isPreset) item.nama,
     ];
+    if (!namaKategori.contains(selected) && selected != customValue) {
+      namaKategori.add(selected);
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -45,30 +42,17 @@ class CategoryPicker extends StatelessWidget {
             for (final nama in namaKategori)
               _CategoryChip(
                 label: categoryLabel(nama),
-                icon: categoryIcon(nama),
                 selected: selected == nama,
                 enabled: enabled,
                 onTap: () => onChanged(nama),
               ),
             _CategoryChip(
               label: customValue,
-              icon: Icons.edit_outlined,
               selected: selected == customValue,
               enabled: enabled,
               onTap: () => onChanged(customValue),
             ),
           ],
-        ),
-        const SizedBox(height: AppSpacing.sm),
-        Text(
-          selected == customValue
-              ? 'Tulis nama kategori sendiri di kolom bawah.'
-              : 'Pilih kategori yang paling sesuai dengan tempatmu.',
-          style: const TextStyle(
-            fontSize: 12,
-            height: 1.4,
-            color: AppColors.secondaryText,
-          ),
         ),
       ],
     );
@@ -78,14 +62,12 @@ class CategoryPicker extends StatelessWidget {
 class _CategoryChip extends StatelessWidget {
   const _CategoryChip({
     required this.label,
-    required this.icon,
     required this.selected,
     required this.enabled,
     required this.onTap,
   });
 
   final String label;
-  final IconData icon;
   final bool selected;
   final bool enabled;
   final VoidCallback onTap;
@@ -116,8 +98,6 @@ class _CategoryChip extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(icon, size: 16, color: foreground),
-                const SizedBox(width: 6),
                 ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 220),
                   child: Text(

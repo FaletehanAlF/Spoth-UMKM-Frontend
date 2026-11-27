@@ -33,15 +33,6 @@ class ProfileAccountCard extends StatelessWidget {
               color: AppColors.charcoal,
             ),
           ),
-          const SizedBox(height: 2),
-          const Text(
-            'Kelola sesi akun yang sedang aktif di perangkat ini.',
-            style: TextStyle(
-              fontSize: 12,
-              height: 1.4,
-              color: AppColors.secondaryText,
-            ),
-          ),
           const SizedBox(height: AppSpacing.lg),
           ElevatedButton.icon(
             onPressed: onLogout,

@@ -17,6 +17,20 @@ final mainNavIndexProvider = NotifierProvider<MainNavNotifier, MainTab>(
   MainNavNotifier.new,
 );
 
+/// Lebar sidebar: `true` = nama menu tampil, `false` = icon saja.
+class SidebarNotifier extends Notifier<bool> {
+  @override
+  bool build() => true;
+
+  void toggle() {
+    state = !state;
+  }
+}
+
+final sidebarExpandedProvider = NotifierProvider<SidebarNotifier, bool>(
+  SidebarNotifier.new,
+);
+
 List<MainTab> tabsForRole(UserModel? user) {
   if (user?.role == UserModel.roleHost) {
     return const [

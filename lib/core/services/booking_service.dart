@@ -62,10 +62,11 @@ class BookingService {
     required String token,
     required String placeId,
     required String tanggalMulai,
+    required String tipeDurasi,
     required int jumlahDurasi,
   }) async {
     final body = await _apiService.get(
-      '/bookings/preview-price${_query({'place_id': placeId, 'tanggal_mulai': tanggalMulai, 'jumlah_durasi': '$jumlahDurasi'})}',
+      '/bookings/preview-price${_query({'place_id': placeId, 'tanggal_mulai': tanggalMulai, 'tipe_durasi': tipeDurasi, 'jumlah_durasi': '$jumlahDurasi'})}',
       token: token,
     );
 

@@ -2,7 +2,7 @@
 
 ## Prasyarat
 - Flutter SDK terpasang
-- Backend berjalan di `http://localhost:3003` (atau sesuaikan `lib/core/config/app_config.dart`)
+- Backend berjalan di `http://localhost:3004` (atau sesuaikan `lib/core/config/app_config.dart`)
 
 ## Pengujian Otomatis
 ```bash

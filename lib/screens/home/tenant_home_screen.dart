@@ -1,15 +1,11 @@
-﻿import 'package:flutter/gestures.dart';
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../core/constants/category_style.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_layout.dart';
 import '../../core/utils/format.dart';
-import '../../models/booking_model.dart';
 import '../../models/place_model.dart';
-import '../../providers/booking_provider.dart';
 import '../../providers/nav_provider.dart';
 import '../../providers/place_provider.dart';
 import '../../widgets/empty_state.dart';
@@ -24,13 +20,19 @@ class TenantHomeScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final placesAsync = ref.watch(tenantPlacesProvider);
-    final bookingAktif = _penyewaanAktif(ref.watch(bookingsProvider));
-
     final places = placesAsync.value;
-    final rekomendasi = places == null || places.isEmpty
-        ? <PlaceModel>[]
-        : places.take(3).toList();
-    final sisa = places == null ? const <PlaceModel>[] : places.skip(3).toList();
+    final kataKunci = ref.watch(
+      tenantSearchProvider.select((state) => state.keyword),
+    );
+
+    // Daftar tempat sudah diurutkan dari yang paling baru dibuat,
+    // jadi elemen pertama adalah tempat terbaru.
+    final terbaru = places == null || places.isEmpty ? null : places.first;
+    final lainnya = places == null || places.isEmpty
+        ? const <PlaceModel>[]
+        : places.skip(1).toList();
+    final sorotan = lainnya.take(4).toList();
+    final sisa = lainnya.length > 4 ? lainnya.sublist(4) : <PlaceModel>[];
 
     void bukaTempat() {
       ref.read(mainNavIndexProvider.notifier).setTab(MainTab.tempat);
@@ -41,9 +43,8 @@ class TenantHomeScreen extends ConsumerWidget {
       bukaTempat();
     }
 
-    void pilihKategori(String kategori) {
-      ref.read(tenantSearchProvider.notifier).setKategori(kategori);
-      bukaTempat();
+    void kosongkan() {
+      ref.read(tenantSearchProvider.notifier).setKeyword('');
     }
 
     return Scaffold(
@@ -53,70 +54,63 @@ class TenantHomeScreen extends ConsumerWidget {
         color: AppColors.primaryDeep,
         onRefresh: () async {
           await ref.read(tenantPlacesProvider.notifier).refresh();
-          await ref.read(bookingsProvider.notifier).refresh();
         },
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+          padding: const EdgeInsets.only(top: 16, bottom: 32),
           child: Center(
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: AppWidth.page),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _Pencarian(onCari: cari),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: _Pencarian(onCari: cari, onKosongkan: kosongkan),
+                  ),
                   const SizedBox(height: 24),
                   if (placesAsync.hasError)
-                    _PesanGagal(
-                      onMuatUlang: () =>
-                          ref.read(tenantPlacesProvider.notifier).refresh(),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: _PesanGagal(
+                        onMuatUlang: () =>
+                            ref.read(tenantPlacesProvider.notifier).refresh(),
+                      ),
                     )
                   else if (places == null)
                     const PlaceGridSkeleton(count: 3)
                   else if (places.isEmpty)
-                    const EmptyState(
-                      icon: Icons.storefront_outlined,
-                      title: 'Belum ada tempat tersedia',
-                      message:
-                          'Saat ini belum ada ruang usaha yang dibuka untuk '
-                          'disewa. Coba periksa lagi nanti.',
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: kataKunci.trim().isEmpty
+                          ? const EmptyState(
+                              icon: Icons.storefront_outlined,
+                              title: 'Belum ada tempat tersedia',
+                              message:
+                                  'Saat ini belum ada ruang usaha yang dibuka '
+                                  'untuk disewa. Coba periksa lagi nanti.',
+                            )
+                          : EmptyState(
+                              icon: Icons.search_off,
+                              title: 'Tempat tidak ditemukan',
+                              message:
+                                  'Tidak ada tempat yang cocok dengan '
+                                  '"${kataKunci.trim()}". Hapus kata kunci '
+                                  'untuk melihat semua tempat.',
+                              actionLabel: 'Hapus pencarian',
+                              onAction: kosongkan,
+                            ),
                     )
-                  else ...[
-                    SpothSectionHeader(
-                      title: 'Tempat terbaru',
-                      subtitle: 'Baru dibuka oleh pemilik tempat',
-                      action: _TautanAksi(
-                        label: 'Lihat semua',
-                        onTap: bukaTempat,
+                  else
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: _DaftarTempat(
+                        terbaru: terbaru!,
+                        sorotan: sorotan,
+                        sisa: sisa,
+                        onLihatSemua: bukaTempat,
                       ),
                     ),
-                    const SizedBox(height: 12),
-                    _CarouselTerbaru(places: rekomendasi),
-                  ],
-                  const SizedBox(height: 24),
-                  _KategoriBaris(onPilih: pilihKategori),
-                  if (bookingAktif != null) ...[
-                    const SizedBox(height: 28),
-                    const SpothSectionHeader(
-                      title: 'Penyewaan berjalan',
-                      subtitle: 'Pesananmu yang sedang aktif',
-                    ),
-                    const SizedBox(height: 12),
-                    _KartuPenyewaan(booking: bookingAktif),
-                  ],
-                  if (sisa.isNotEmpty) ...[
-                    const SizedBox(height: 28),
-                    SpothSectionHeader(
-                      title: 'Tempat untukmu',
-                      subtitle: 'Pilihan ruang usaha lainnya',
-                      action: _TautanAksi(
-                        label: 'Lihat semua',
-                        onTap: bukaTempat,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    PlaceGrid(places: sisa),
-                  ],
                 ],
               ),
             ),
@@ -127,33 +121,325 @@ class TenantHomeScreen extends ConsumerWidget {
   }
 }
 
-BookingModel? _penyewaanAktif(AsyncValue<List<BookingModel>> bookingsAsync) {
-  final daftar = bookingsAsync.value;
-  if (daftar == null || daftar.isEmpty) {
-    return null;
+class _DaftarTempat extends StatelessWidget {
+  const _DaftarTempat({
+    required this.terbaru,
+    required this.sorotan,
+    required this.sisa,
+    required this.onLihatSemua,
+  });
+
+  final PlaceModel terbaru;
+  final List<PlaceModel> sorotan;
+  final List<PlaceModel> sisa;
+  final VoidCallback onLihatSemua;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, _) {
+        final duaKolom = MediaQuery.sizeOf(context).width >= AppWidth.sidebar;
+
+        if (!duaKolom) {
+          final lainnya = [...sorotan, ...sisa];
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SpothSectionHeader(title: 'Tempat terbaru'),
+              const SizedBox(height: 12),
+              _TempatTerbaru(place: terbaru),
+              const SizedBox(height: 10),
+              _AksiTerbaru(onLihatSemua: onLihatSemua),
+              if (lainnya.isNotEmpty) ...[
+                const SizedBox(height: 28),
+                const SpothSectionHeader(title: 'Tempat untukmu'),
+                const SizedBox(height: 12),
+                PlaceGrid(places: lainnya),
+              ],
+            ],
+          );
+        }
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SpothSectionHeader(title: 'Tempat terbaru'),
+            const SizedBox(height: 12),
+            _Sorotan(terbaru: terbaru, sorotan: sorotan),
+            const SizedBox(height: 10),
+            _AksiTerbaru(onLihatSemua: onLihatSemua),
+            if (sisa.isNotEmpty) ...[
+              const SizedBox(height: 28),
+              const SpothSectionHeader(title: 'Tempat untukmu'),
+              const SizedBox(height: 12),
+              PlaceGrid(places: sisa),
+            ],
+          ],
+        );
+      },
+    );
   }
+}
 
-  final hariIni = formatTanggalApi(DateTime.now());
+class _Sorotan extends StatelessWidget {
+  const _Sorotan({required this.terbaru, required this.sorotan});
 
-  final aktif = daftar.where((booking) {
-    final belumSelesai = booking.tanggalSelesai.compareTo(hariIni) >= 0;
-    return belumSelesai &&
-        (booking.status == 'MENUNGGU_PEMBAYARAN' || booking.status == 'LUNAS');
-  }).toList();
+  final PlaceModel terbaru;
+  final List<PlaceModel> sorotan;
 
-  if (aktif.isEmpty) {
-    return null;
+  @override
+  Widget build(BuildContext context) {
+    if (sorotan.isEmpty) {
+      return _TempatTerbaru(place: terbaru);
+    }
+
+    const jarak = 12.0;
+    const tinggiBaris = 88.0;
+    final tinggiDaftar =
+        sorotan.length * tinggiBaris + (sorotan.length - 1) * jarak;
+    final tinggi = tinggiDaftar.clamp(320.0, 560.0);
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        const celah = 16.0;
+        final lebarKanan = constraints.maxWidth * 0.4;
+        final lebarKiri = constraints.maxWidth - celah - lebarKanan;
+
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SizedBox(
+              width: lebarKiri,
+              child: _TempatTerbaru(place: terbaru, tinggi: tinggi),
+            ),
+            const SizedBox(width: celah),
+            SizedBox(
+              width: lebarKanan,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  for (var i = 0; i < sorotan.length; i++) ...[
+                    SizedBox(
+                      height: tinggiBaris,
+                      child: _BarisSorotan(place: sorotan[i]),
+                    ),
+                    if (i < sorotan.length - 1)
+                      const SizedBox(height: jarak),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        );
+      },
+    );
   }
+}
 
-  aktif.sort((a, b) => a.tanggalMulai.compareTo(b.tanggalMulai));
+class _BarisSorotan extends StatelessWidget {
+  const _BarisSorotan({required this.place});
 
-  return aktif.first;
+  final PlaceModel place;
+
+  @override
+  Widget build(BuildContext context) {
+    final foto = place.foto.isNotEmpty ? place.foto.first : null;
+    final harga = place.paketTermurah;
+
+    return Material(
+      key: const ValueKey('baris-sorotan'),
+      color: AppColors.canvas,
+      child: InkWell(
+        onTap: () => context.push('/place-detail?id=${place.id}'),
+        child: Row(
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(AppRadius.md),
+              child: SizedBox(
+                width: 72,
+                height: 72,
+                child: foto != null
+                    ? Image.network(
+                        foto,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, _, _) =>
+                            const PlacePhotoPlaceholder(),
+                      )
+                    : const PlacePhotoPlaceholder(),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    place.namaTempat,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      height: 1.3,
+                      color: AppColors.charcoal,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  if (harga != null)
+                    Text(
+                      '${formatRupiah(harga.harga)} / ${harga.satuan}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 11.5,
+                        color: AppColors.secondaryText,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _TempatTerbaru extends StatelessWidget {
+  const _TempatTerbaru({required this.place, this.tinggi});
+
+  final PlaceModel place;
+  final double? tinggi;
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      key: const ValueKey('tempat-terbaru'),
+      borderRadius: BorderRadius.circular(20),
+      child: Material(
+        color: AppColors.charcoal,
+        child: InkWell(
+          onTap: () => context.push('/place-detail?id=${place.id}'),
+          child: tinggi == null
+              ? AspectRatio(
+                  aspectRatio: 16 / 10,
+                  child: _IsiTerbaru(place: place),
+                )
+              : SizedBox(height: tinggi, child: _IsiTerbaru(place: place)),
+        ),
+      ),
+    );
+  }
+}
+
+class _IsiTerbaru extends StatelessWidget {
+  const _IsiTerbaru({required this.place});
+
+  final PlaceModel place;
+
+  @override
+  Widget build(BuildContext context) {
+    final foto = place.foto.isNotEmpty ? place.foto.first : null;
+
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        foto != null
+            ? Image.network(
+                foto,
+                fit: BoxFit.cover,
+                errorBuilder: (_, _, _) => const PlacePhotoPlaceholder(),
+              )
+            : const PlacePhotoPlaceholder(),
+        Positioned(
+          left: 14,
+          right: 14,
+          bottom: 14,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                place.namaTempat,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: 18,
+                  height: 1.25,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -0.3,
+                  color: AppColors.white,
+                  shadows: [
+                    Shadow(
+                      color: Color(0xB3000000),
+                      blurRadius: 4,
+                      offset: Offset(0, 1),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 6),
+              _HargaDiAtasFoto(paket: place.paket),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _HargaDiAtasFoto extends StatelessWidget {
+  const _HargaDiAtasFoto({required this.paket});
+
+  final List<PaketSewa> paket;
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      spacing: 12,
+      runSpacing: 4,
+      children: [
+        for (final item in paket)
+          Text(
+            '${formatRupiah(item.harga)} / ${item.satuan}',
+            style: const TextStyle(
+              fontSize: 12.5,
+              fontWeight: FontWeight.w600,
+              color: AppColors.white,
+              shadows: [
+                Shadow(
+                  color: Color(0xB3000000),
+                  blurRadius: 4,
+                  offset: Offset(0, 1),
+                ),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _AksiTerbaru extends StatelessWidget {
+  const _AksiTerbaru({required this.onLihatSemua});
+
+  final VoidCallback onLihatSemua;
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: Alignment.centerRight,
+      child: _TautanAksi(label: 'Lihat semua', onTap: onLihatSemua),
+    );
+  }
 }
 
 class _Pencarian extends StatefulWidget {
-  const _Pencarian({required this.onCari});
+  const _Pencarian({required this.onCari, required this.onKosongkan});
 
   final ValueChanged<String> onCari;
+  final VoidCallback onKosongkan;
 
   @override
   State<_Pencarian> createState() => _PencarianState();
@@ -178,6 +464,14 @@ class _PencarianState extends State<_Pencarian> {
     widget.onCari(kataKunci);
   }
 
+  void _ubah(String nilai) {
+    // Menghapus seluruh teks harus mengembalikan semua tempat, bukan
+    // meninggalkan filter kata kunci lama.
+    if (nilai.trim().isEmpty) {
+      widget.onKosongkan();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return SizedBox(
@@ -186,6 +480,7 @@ class _PencarianState extends State<_Pencarian> {
         controller: _controller,
         textInputAction: TextInputAction.search,
         onSubmitted: _kirim,
+        onChanged: _ubah,
         style: const TextStyle(fontSize: 14, color: AppColors.darkText),
         decoration: InputDecoration(
           filled: true,
@@ -238,45 +533,6 @@ class _PencarianState extends State<_Pencarian> {
   }
 }
 
-class _CarouselTerbaru extends StatelessWidget {
-  const _CarouselTerbaru({required this.places});
-
-  final List<PlaceModel> places;
-
-  @override
-  Widget build(BuildContext context) {
-    final lebarLayar = MediaQuery.sizeOf(context).width;
-    final lebarKartu = lebarLayar >= 900
-        ? 320.0
-        : lebarLayar >= 600
-        ? 288.0
-        : 250.0;
-
-    return SizedBox(
-      key: const ValueKey('carousel-terbaru'),
-      height: 312,
-      child: ScrollConfiguration(
-        behavior: ScrollConfiguration.of(context).copyWith(
-          dragDevices: const {
-            PointerDeviceKind.touch,
-            PointerDeviceKind.mouse,
-            PointerDeviceKind.trackpad,
-          },
-        ),
-        child: ListView.separated(
-          scrollDirection: Axis.horizontal,
-          itemCount: places.length,
-          separatorBuilder: (_, _) => const SizedBox(width: 12),
-          itemBuilder: (context, index) => SizedBox(
-            width: lebarKartu,
-            child: PlaceGridCard(place: places[index]),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 class _PesanGagal extends StatelessWidget {
   const _PesanGagal({required this.onMuatUlang});
 
@@ -290,75 +546,6 @@ class _PesanGagal extends StatelessWidget {
       message: 'Koneksi ke server terputus. Periksa internetmu lalu coba lagi.',
       actionLabel: 'Coba lagi',
       onAction: onMuatUlang,
-    );
-  }
-}
-
-class _KategoriBaris extends StatelessWidget {
-  const _KategoriBaris({required this.onPilih});
-
-  final ValueChanged<String> onPilih;
-
-  @override
-  Widget build(BuildContext context) {
-    const kategori = ['LAPAK_USAHA', 'TERAS_KOMERSIAL', 'BOOTH_EVENT'];
-
-    return Wrap(
-      spacing: 20,
-      runSpacing: 16,
-      children: [
-        for (final nama in kategori)
-          _KategoriTombol(
-            ikon: categoryIcon(nama),
-            label: categoryLabel(nama),
-            onTap: () => onPilih(nama),
-          ),
-      ],
-    );
-  }
-}
-
-class _KategoriTombol extends StatelessWidget {
-  const _KategoriTombol({
-    required this.ikon,
-    required this.label,
-    required this.onTap,
-  });
-
-  final IconData ikon;
-  final String label;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Material(
-          color: AppColors.lightOrange,
-          shape: const CircleBorder(),
-          child: InkWell(
-            customBorder: const CircleBorder(),
-            onTap: onTap,
-            child: SizedBox(
-              width: 52,
-              height: 52,
-              child: Icon(ikon, size: 22, color: AppColors.primaryInk),
-            ),
-          ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          label,
-          textAlign: TextAlign.center,
-          style: const TextStyle(
-            fontSize: 11.5,
-            height: 1.3,
-            fontWeight: FontWeight.w600,
-            color: AppColors.charcoal,
-          ),
-        ),
-      ],
     );
   }
 }
@@ -382,149 +569,6 @@ class _TautanAksi extends StatelessWidget {
         label,
         style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
       ),
-    );
-  }
-}
-
-class _KartuPenyewaan extends StatelessWidget {
-  const _KartuPenyewaan({required this.booking});
-
-  final BookingModel booking;
-
-  @override
-  Widget build(BuildContext context) {
-    final perluBayar = booking.status == 'MENUNGGU_PEMBAYARAN';
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceMuted,
-        borderRadius: BorderRadius.circular(AppRadius.lg),
-        border: Border.all(color: AppColors.softBorder),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Text(
-                  booking.namaTempat ?? 'Tempat usaha',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: -0.2,
-                    color: AppColors.charcoal,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 10),
-              _LencanaStatus(perluBayar: perluBayar),
-            ],
-          ),
-          const SizedBox(height: 12),
-          _BarisInfo(
-            ikon: Icons.calendar_month_outlined,
-            teks:
-                '${formatDateString(booking.tanggalMulai)} – '
-                '${formatDateString(booking.tanggalSelesai)}',
-          ),
-          const SizedBox(height: 6),
-          _BarisInfo(
-            ikon: Icons.payments_outlined,
-            teks: perluBayar
-                ? 'Perlu dibayar ${formatRupiah(booking.totalHarga)}'
-                : 'Sudah dibayar ${formatRupiah(booking.totalHarga)}',
-          ),
-          const SizedBox(height: 16),
-          SizedBox(
-            width: double.infinity,
-            height: 46,
-            child: FilledButton(
-              onPressed: () async {
-                if (perluBayar) {
-                  await context.push('/payment?id=${booking.id}');
-                } else {
-                  await context.push('/riwayat');
-                }
-                if (context.mounted) {
-                  context.go('/home');
-                }
-              },
-              style: FilledButton.styleFrom(
-                backgroundColor: AppColors.primaryDeep,
-                foregroundColor: AppColors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(AppRadius.md),
-                ),
-              ),
-              child: Text(
-                perluBayar ? 'Lanjutkan pembayaran' : 'Lihat E-Pass',
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _LencanaStatus extends StatelessWidget {
-  const _LencanaStatus({required this.perluBayar});
-
-  final bool perluBayar;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration: BoxDecoration(
-        color: perluBayar ? AppColors.lightOrange : AppColors.sageTint,
-        borderRadius: BorderRadius.circular(AppRadius.sm),
-      ),
-      child: Text(
-        perluBayar ? 'Belum dibayar' : 'Aktif',
-        style: TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w700,
-          color: perluBayar ? AppColors.primaryInk : AppColors.success,
-        ),
-      ),
-    );
-  }
-}
-
-class _BarisInfo extends StatelessWidget {
-  const _BarisInfo({required this.ikon, required this.teks});
-
-  final IconData ikon;
-  final String teks;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Icon(ikon, size: 16, color: AppColors.secondaryText),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Text(
-            teks,
-            style: const TextStyle(
-              fontSize: 13,
-              height: 1.45,
-              color: AppColors.secondaryText,
-            ),
-          ),
-        ),
-      ],
     );
   }
 }
