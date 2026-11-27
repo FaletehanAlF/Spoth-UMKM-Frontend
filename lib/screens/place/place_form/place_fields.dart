@@ -38,40 +38,56 @@ class LokasiFields extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text(
+        const Text(
           'Alamat lengkap diisi di atas. Koordinat dipakai untuk peta.',
-          style: const TextStyle(fontSize: 12.5, color: AppColors.secondaryText),
+          style: TextStyle(fontSize: 12.5, height: 1.4, color: AppColors.secondaryText),
         ),
-        const SizedBox(height: 12),
-        FilledButton.icon(
-          onPressed: aktif ? onGunakanLokasiSaatIni : null,
-          icon: const Icon(Icons.my_location, size: 18),
-          label: Text(membacaLokasi ? 'Mengambil lokasi...' : 'Gunakan lokasi saat ini'),
+        const SizedBox(height: 14),
+        SizedBox(
+          width: double.infinity,
+          child: FilledButton.icon(
+            onPressed: aktif ? onGunakanLokasiSaatIni : null,
+            icon: const Icon(Icons.my_location, size: 18),
+            label: Text(membacaLokasi ? 'Mengambil lokasi...' : 'Gunakan lokasi saat ini'),
+            style: FilledButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+          ),
         ),
-        const SizedBox(height: 8),
-        OutlinedButton.icon(
-          onPressed: aktif ? onCariKoordinatDariAlamat : null,
-          icon: const Icon(Icons.search, size: 18),
-          label: const Text('Cari koordinat dari alamat'),
+        const SizedBox(height: 10),
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            onPressed: aktif ? onCariKoordinatDariAlamat : null,
+            icon: const Icon(Icons.search, size: 18),
+            label: const Text('Cari koordinat dari alamat'),
+            style: OutlinedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+          ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 14),
         if (punyaLokasi) ...[
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: AppColors.surfaceMuted,
               borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColors.softBorder),
             ),
             child: Row(
               children: [
                 const Icon(Icons.location_on, size: 18, color: AppColors.primaryOrange),
-                const SizedBox(width: 8),
+                const SizedBox(width: 10),
                 Expanded(
                   child: Text(
                     'Latitude ${latitude!.toStringAsFixed(6)}, Longitude ${longitude!.toStringAsFixed(6)}',
-                    style: const TextStyle(fontSize: 12.5, color: AppColors.charcoal),
+                    style: const TextStyle(fontSize: 12.5, height: 1.4, color: AppColors.charcoal),
                   ),
                 ),
+                const SizedBox(width: 8),
                 TextButton(
                   onPressed: enabled ? onHapusLokasi : null,
                   child: const Text('Hapus'),
@@ -80,9 +96,9 @@ class LokasiFields extends StatelessWidget {
             ),
           ),
         ] else
-          Text(
+          const Text(
             'Lokasi peta opsional. Isi alamat lengkap tetap wajib.',
-            style: const TextStyle(fontSize: 12.5, color: AppColors.secondaryText),
+            style: TextStyle(fontSize: 12.5, height: 1.4, color: AppColors.secondaryText),
           ),
       ],
     );
