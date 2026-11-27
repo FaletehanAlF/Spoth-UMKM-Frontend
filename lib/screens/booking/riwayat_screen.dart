@@ -97,7 +97,7 @@ class _RiwayatScreenState extends ConsumerState<RiwayatScreen> {
       return Align(
         alignment: Alignment.topCenter,
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: AppWidth.list),
+          constraints: const BoxConstraints(maxWidth: AppWidth.page),
           child: child,
         ),
       );
@@ -124,7 +124,14 @@ class _RiwayatScreenState extends ConsumerState<RiwayatScreen> {
           ? dibatasi(
               const SingleChildScrollView(
                 padding: EdgeInsets.all(20),
-                child: RiwayatListSkeleton(count: 4),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    PageTitleSkeleton(subtitleWidth: 150),
+                    SizedBox(height: 18),
+                    RiwayatListSkeleton(count: 4),
+                  ],
+                ),
               ),
             )
           : _error != null
@@ -226,18 +233,33 @@ class _RiwayatScreenState extends ConsumerState<RiwayatScreen> {
               RefreshIndicator(
                 color: AppColors.primaryDeep,
                 onRefresh: _load,
-                child: ListView.separated(
+                child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
                   padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
-                  itemCount: _items.length,
-                  separatorBuilder: (_, _) => const SizedBox(height: 12),
-                  itemBuilder: (context, index) {
-                    final booking = _items[index];
-                    return _RiwayatCard(
-                      booking: booking,
-                      isHost: isHost,
-                      onLihatEPass: () => _bukaEPass(booking),
-                    );
-                  },
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final duaKolom = constraints.maxWidth >= 700;
+                      final lebarKartu = duaKolom
+                          ? (constraints.maxWidth - 12) / 2
+                          : constraints.maxWidth;
+
+                      return Wrap(
+                        spacing: 12,
+                        runSpacing: 12,
+                        children: [
+                          for (final booking in _items)
+                            SizedBox(
+                              width: lebarKartu,
+                              child: _RiwayatCard(
+                                booking: booking,
+                                isHost: isHost,
+                                onLihatEPass: () => _bukaEPass(booking),
+                              ),
+                            ),
+                        ],
+                      );
+                    },
+                  ),
                 ),
               ),
             ),
@@ -352,8 +374,7 @@ class _RiwayatCard extends StatelessWidget {
                 Expanded(
                   child: Text(
                     '${formatDateString(booking.tanggalMulai)} – '
-                    '${formatDateString(booking.tanggalSelesai)} '
-                    '(${booking.jumlahDurasi} satuan)',
+                    '${formatDateString(booking.tanggalSelesai)}',
                     style: const TextStyle(
                       fontSize: 12,
                       height: 1.4,

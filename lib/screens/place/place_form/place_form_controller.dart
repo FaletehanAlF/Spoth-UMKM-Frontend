@@ -7,7 +7,6 @@ import '../../../core/services/api_service.dart';
 import '../../../core/services/permission_service.dart';
 import '../../../core/services/place_service.dart';
 import '../../../core/services/upload_service.dart';
-import '../../../core/utils/format.dart';
 import '../../../models/category_model.dart';
 import '../../../models/place_model.dart';
 import '../../../providers/auth_provider.dart';
@@ -40,20 +39,20 @@ class PlaceFormController extends ChangeNotifier {
   final namaController = TextEditingController();
   final deskripsiController = TextEditingController();
   final alamatController = TextEditingController();
-  final hargaController = TextEditingController();
-  final tanggalMulaiController = TextEditingController();
-  final tanggalSelesaiController = TextEditingController();
+  final hargaMingguanController = TextEditingController();
+  final hargaBulananController = TextEditingController();
   final kategoriLainController = TextEditingController();
   final ImagePicker _picker = ImagePicker();
 
   String kecamatan = PlaceDistricts.defaultDistrict;
   String kategori = PlaceModel.kategoriValues.first;
-  String tipeDurasi = PlaceModel.durasiValues.first;
+
+  /// Paket yang ditawarkan tempat ini.
+  bool paketMingguan = true;
+  bool paketBulanan = false;
   List<CategoryModel> categories = const [];
   bool categoriesLoading = false;
   String? categoriesError;
-  DateTime? tanggalMulaiTersedia;
-  DateTime? tanggalSelesaiTersedia;
   final List<PhotoItem> photos = [];
   bool loading = false;
   bool submitting = false;
@@ -108,21 +107,20 @@ class PlaceFormController extends ChangeNotifier {
       deskripsiController.text = place.deskripsi;
       alamatController.text = place.alamat;
       kecamatan = place.kecamatan;
-      hargaController.text = _trimNumber(place.harga);
+      paketMingguan = place.hargaMingguan != null;
+      paketBulanan = place.hargaBulanan != null;
+      hargaMingguanController.text = place.hargaMingguan == null
+          ? ''
+          : _trimNumber(place.hargaMingguan!);
+      hargaBulananController.text = place.hargaBulanan == null
+          ? ''
+          : _trimNumber(place.hargaBulanan!);
       kategori = place.kategori;
-
       if (!categories.any((item) => item.nama == place.kategori)) {
         kategori = CategoryModel.useLainya;
         kategoriLainController.text = place.kategori;
       }
 
-      tipeDurasi = place.tipeDurasi;
-      tanggalMulaiTersedia = place.tanggalMulaiTersedia;
-      tanggalSelesaiTersedia = place.tanggalSelesaiTersedia;
-      tanggalMulaiController.text = formatTanggal(place.tanggalMulaiTersedia);
-      tanggalSelesaiController.text = formatTanggal(
-        place.tanggalSelesaiTersedia,
-      );
       photos
         ..clear()
         ..addAll(place.foto.map((url) => PhotoItem.existing(url: url)));
@@ -155,53 +153,13 @@ class PlaceFormController extends ChangeNotifier {
     notifyListeners();
   }
 
-  void setTipeDurasi(String value) {
-    tipeDurasi = value;
+  void setPaketMingguan(bool aktif) {
+    paketMingguan = aktif;
     notifyListeners();
   }
 
-  void setKategoriLain(String value) {
-    kategoriLainController.text = value;
-  }
-
-  Future<void> pilihTanggal({required bool mulai}) async {
-    final hariIni = DateTime.now();
-    final awal = mulai
-        ? tanggalMulaiTersedia
-        : tanggalSelesaiTersedia ?? tanggalMulaiTersedia;
-    final pertama = mulai
-        ? DateTime(2000)
-        : tanggalMulaiTersedia ?? DateTime(2000);
-    final terakhir = DateTime(hariIni.year + 10, 12, 31);
-    final dasar = awal ?? hariIni;
-    final initial = dasar.isBefore(pertama)
-        ? pertama
-        : dasar.isAfter(terakhir)
-        ? terakhir
-        : dasar;
-
-    final dipilih = await showDatePicker(
-      context: ref.context,
-      initialDate: initial,
-      firstDate: pertama,
-      lastDate: terakhir,
-    );
-
-    if (dipilih == null) return;
-
-    if (mulai) {
-      tanggalMulaiTersedia = dipilih;
-      tanggalMulaiController.text = formatTanggal(dipilih);
-      if (tanggalSelesaiTersedia != null &&
-          tanggalSelesaiTersedia!.isBefore(dipilih)) {
-        tanggalSelesaiTersedia = dipilih;
-        tanggalSelesaiController.text = formatTanggal(dipilih);
-      }
-    } else {
-      tanggalSelesaiTersedia = dipilih;
-      tanggalSelesaiController.text = formatTanggal(dipilih);
-    }
-
+  void setPaketBulanan(bool aktif) {
+    paketBulanan = aktif;
     notifyListeners();
   }
 
@@ -261,36 +219,26 @@ class PlaceFormController extends ChangeNotifier {
       return const HasilSimpan(false, 'Tambahkan minimal 1 foto tempat.');
     }
 
-    final harga = parseHarga(hargaController.text);
-    if (harga == null || harga <= 0) {
-      return const HasilSimpan(false, 'Harga tidak valid.');
-    }
-
-    final periodeKosong =
-        tanggalMulaiTersedia == null && tanggalSelesaiTersedia == null;
-
-    if (!isEditing && periodeKosong) {
+    if (!paketMingguan && !paketBulanan) {
       return const HasilSimpan(
         false,
-        'Tanggal mulai dan selesai ketersediaan wajib diisi.',
+        'Aktifkan minimal satu paket: mingguan atau bulanan.',
       );
     }
 
-    if (!periodeKosong &&
-        (tanggalMulaiTersedia == null || tanggalSelesaiTersedia == null)) {
-      return const HasilSimpan(
-        false,
-        'Lengkapi kedua tanggal periode atau kosongkan keduanya.',
-      );
+    final hargaMingguan = paketMingguan
+        ? parseHarga(hargaMingguanController.text)
+        : null;
+    final hargaBulanan = paketBulanan
+        ? parseHarga(hargaBulananController.text)
+        : null;
+
+    if (paketMingguan && (hargaMingguan == null || hargaMingguan <= 0)) {
+      return const HasilSimpan(false, 'Harga paket mingguan tidak valid.');
     }
 
-    if (tanggalMulaiTersedia != null &&
-        tanggalSelesaiTersedia != null &&
-        tanggalSelesaiTersedia!.isBefore(tanggalMulaiTersedia!)) {
-      return const HasilSimpan(
-        false,
-        'Tanggal selesai tidak boleh sebelum tanggal mulai.',
-      );
+    if (paketBulanan && (hargaBulanan == null || hargaBulanan <= 0)) {
+      return const HasilSimpan(false, 'Harga paket bulanan tidak valid.');
     }
 
     if (nilaiKategori.trim().isEmpty) {
@@ -340,16 +288,10 @@ class PlaceFormController extends ChangeNotifier {
         'kategori': nilaiKategori.trim(),
         'alamat': alamatController.text.trim(),
         'kecamatan': kecamatan,
-        'harga': harga,
-        'tipe_durasi': tipeDurasi,
+        'harga_mingguan': hargaMingguan,
+        'harga_bulanan': hargaBulanan,
         'deskripsi': deskripsiController.text.trim(),
         'foto': fotoUrls,
-        'tanggal_mulai_tersedia': tanggalMulaiTersedia == null
-            ? null
-            : formatTanggalApi(tanggalMulaiTersedia!),
-        'tanggal_selesai_tersedia': tanggalSelesaiTersedia == null
-            ? null
-            : formatTanggalApi(tanggalSelesaiTersedia!),
       };
 
       final service = ref.read(placeServiceProvider);
@@ -366,6 +308,7 @@ class PlaceFormController extends ChangeNotifier {
 
       await ref.read(myPlacesProvider.notifier).refresh();
       await ref.read(hostSummaryProvider.notifier).refresh();
+      await ref.read(tenantPlacesProvider.notifier).refresh();
 
       return HasilSimpan(
         true,
@@ -385,9 +328,8 @@ class PlaceFormController extends ChangeNotifier {
       namaController,
       deskripsiController,
       alamatController,
-      hargaController,
-      tanggalMulaiController,
-      tanggalSelesaiController,
+      hargaMingguanController,
+      hargaBulananController,
       kategoriLainController,
     ]) {
       controller.dispose();

@@ -10,15 +10,12 @@ import '../../../models/user_model.dart';
 /// Semua nilai ditampilkan sebagai teks biasa, bukan input, supaya tidak ada
 /// kesan bahwa data bisa berubah tanpa disengaja.
 class ProfileInfoCard extends StatelessWidget {
-  const ProfileInfoCard({super.key, required this.user, required this.alamat});
+  const ProfileInfoCard({super.key, required this.user});
 
   final UserModel user;
-  final String alamat;
 
   @override
   Widget build(BuildContext context) {
-    final alamatBersih = alamat.trim();
-
     return _ProfileCard(
       title: 'Informasi Pribadi',
       subtitle: 'Data yang dipakai untuk kebutuhan penyewaan.',
@@ -32,12 +29,6 @@ class ProfileInfoCard extends StatelessWidget {
             value: (user.noHp ?? '').trim().isEmpty
                 ? 'Belum diisi'
                 : user.noHp!,
-          ),
-          const Divider(height: 22),
-          _InfoRow(
-            icon: Icons.location_on_outlined,
-            label: 'Alamat',
-            value: alamatBersih.isEmpty ? 'Belum diisi' : alamatBersih,
           ),
           const Divider(height: 22),
           _InfoRow(

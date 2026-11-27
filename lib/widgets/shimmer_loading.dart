@@ -101,64 +101,6 @@ class PlaceListSkeleton extends StatelessWidget {
   }
 }
 
-class SummarySkeleton extends StatelessWidget {
-  const SummarySkeleton({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const ShimmerLoading(
-      child: Column(
-        children: [
-          _SkeletonCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _SkeletonBar(height: 12, width: 96),
-                SizedBox(height: 14),
-                _SkeletonBar(height: 28, width: 168),
-                SizedBox(height: 12),
-                _SkeletonBar(height: 12, width: double.infinity),
-                SizedBox(height: 8),
-                _SkeletonBar(height: 12, width: 210),
-              ],
-            ),
-          ),
-          SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: _SkeletonCard(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _SkeletonBar(height: 22, width: 64),
-                      SizedBox(height: 10),
-                      _SkeletonBar(height: 11, width: 88),
-                    ],
-                  ),
-                ),
-              ),
-              SizedBox(width: 12),
-              Expanded(
-                child: _SkeletonCard(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _SkeletonBar(height: 22, width: 56),
-                      SizedBox(height: 10),
-                      _SkeletonBar(height: 11, width: 78),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class NotificationListSkeleton extends StatelessWidget {
   const NotificationListSkeleton({super.key, this.count = 5});
 
@@ -207,50 +149,82 @@ class BookingListSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ShimmerLoading(
-      child: Column(
-        children: List.generate(
-          count,
-          (index) => const Padding(
-            padding: EdgeInsets.only(bottom: 12),
-            child: _SkeletonCard(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _SkeletonBar(height: 56, width: 56, radius: 12),
-                      SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final duaKolom = constraints.maxWidth >= 700;
+        final lebarKartu = duaKolom
+            ? (constraints.maxWidth - 12) / 2
+            : constraints.maxWidth;
+
+        return ShimmerLoading(
+          child: Wrap(
+            spacing: 12,
+            runSpacing: 12,
+            children: [
+              for (var i = 0; i < count; i++)
+                SizedBox(
+                  width: lebarKartu,
+                  child: const _SkeletonCard(
+                    child: Column(
+                      children: [
+                        Row(
                           children: [
-                            _SkeletonBar(height: 14, width: 148),
-                            SizedBox(height: 8),
-                            _SkeletonBar(height: 11, width: 118),
+                            _SkeletonBar(height: 56, width: 56, radius: 12),
+                            SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  _SkeletonBar(height: 14, width: 148),
+                                  SizedBox(height: 8),
+                                  _SkeletonBar(height: 11, width: 118),
+                                  SizedBox(height: 6),
+                                  _SkeletonBar(height: 11, width: 96),
+                                ],
+                              ),
+                            ),
+                            SizedBox(width: 8),
+                            _SkeletonBar(height: 22, width: 74, radius: 12),
                           ],
                         ),
-                      ),
-                      SizedBox(width: 8),
-                      _SkeletonBar(height: 20, width: 62, radius: 8),
-                    ],
+                        SizedBox(height: 12),
+                        Row(
+                          children: [
+                            Spacer(),
+                            _SkeletonBar(height: 15, width: 96),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
-                  SizedBox(height: 12),
-                  _SkeletonBar(height: 11, width: 210),
-                  SizedBox(height: 14),
-                  Row(
-                    children: [
-                      _SkeletonBar(height: 15, width: 92),
-                      Spacer(),
-                      _SkeletonBar(height: 30, width: 74, radius: 8),
-                    ],
-                  ),
-                ],
-              ),
-            ),
+                ),
+            ],
           ),
-        ),
+        );
+      },
+    );
+  }
+}
+
+/// Kerangka judul halaman (tulisan besar + garis bawah) yang ikut ber-shimmer.
+///
+/// Dipakai di bagian atas halaman saat daftar di bawahnya masih dimuat,
+/// supaya shimmer tidak hanya muncul di kartu.
+class PageTitleSkeleton extends StatelessWidget {
+  const PageTitleSkeleton({super.key, this.subtitleWidth = 130});
+
+  final double subtitleWidth;
+
+  @override
+  Widget build(BuildContext context) {
+    return ShimmerLoading(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const _SkeletonBar(height: 18, width: 150),
+          SizedBox(height: 8),
+          _SkeletonBar(height: 12, width: subtitleWidth),
+        ],
       ),
     );
   }
@@ -263,53 +237,64 @@ class RiwayatListSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ShimmerLoading(
-      child: Column(
-        children: List.generate(
-          count,
-          (index) => const Padding(
-            padding: EdgeInsets.only(bottom: 12),
-            child: _SkeletonCard(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _SkeletonBar(height: 72, width: 72, radius: 12),
-                      SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final duaKolom = constraints.maxWidth >= 700;
+        final lebarKartu = duaKolom
+            ? (constraints.maxWidth - 12) / 2
+            : constraints.maxWidth;
+
+        return ShimmerLoading(
+          child: Wrap(
+            spacing: 12,
+            runSpacing: 12,
+            children: [
+              for (var i = 0; i < count; i++)
+                SizedBox(
+                  width: lebarKartu,
+                  child: const _SkeletonCard(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            _SkeletonBar(height: 15, width: 162),
-                            SizedBox(height: 8),
-                            _SkeletonBar(height: 11, width: 128),
-                            SizedBox(height: 6),
-                            _SkeletonBar(height: 11, width: 96),
+                            _SkeletonBar(height: 72, width: 72, radius: 12),
+                            SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  _SkeletonBar(height: 15, width: 162),
+                                  SizedBox(height: 8),
+                                  _SkeletonBar(height: 11, width: 128),
+                                  SizedBox(height: 6),
+                                  _SkeletonBar(height: 11, width: 96),
+                                ],
+                              ),
+                            ),
+                            SizedBox(width: 8),
+                            _SkeletonBar(height: 22, width: 76, radius: 8),
                           ],
                         ),
-                      ),
-                      SizedBox(width: 8),
-                      _SkeletonBar(height: 22, width: 76, radius: 8),
-                    ],
+                        SizedBox(height: 12),
+                        _SkeletonBar(height: 11, width: 190),
+                        SizedBox(height: 14),
+                        Row(
+                          children: [
+                            _SkeletonBar(height: 16, width: 104),
+                            Spacer(),
+                            _SkeletonBar(height: 32, width: 86, radius: 8),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
-                  SizedBox(height: 12),
-                  _SkeletonBar(height: 11, width: 190),
-                  SizedBox(height: 14),
-                  Row(
-                    children: [
-                      _SkeletonBar(height: 16, width: 104),
-                      Spacer(),
-                      _SkeletonBar(height: 32, width: 86, radius: 8),
-                    ],
-                  ),
-                ],
-              ),
-            ),
+                ),
+            ],
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }
@@ -321,7 +306,7 @@ class DetailSkeleton extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final duaKolom = constraints.maxWidth >= AppWidth.twoColumn;
+        final duaKolom = MediaQuery.sizeOf(context).width >= AppWidth.sidebar;
 
         final hero = Container(
           height: duaKolom
@@ -333,49 +318,47 @@ class DetailSkeleton extends StatelessWidget {
           ),
         );
 
-        const isi = _SkeletonCard(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  _SkeletonBar(height: 22, width: 88, radius: 6),
-                  SizedBox(width: 8),
-                  _SkeletonBar(height: 22, width: 68, radius: 6),
-                ],
-              ),
-              SizedBox(height: 16),
-              _SkeletonBar(height: 24, width: 230),
-              SizedBox(height: 12),
-              _SkeletonBar(height: 13, width: 176),
-              SizedBox(height: 20),
-              _SkeletonBar(height: 26, width: 148),
-              SizedBox(height: 22),
-              _SkeletonBar(height: 72, width: double.infinity, radius: 16),
-              SizedBox(height: 24),
-              _SkeletonBar(height: 13, width: 84),
-              SizedBox(height: 12),
-              _SkeletonBar(height: 12, width: double.infinity),
-              SizedBox(height: 8),
-              _SkeletonBar(height: 12, width: 260),
-              SizedBox(height: 8),
-              _SkeletonBar(height: 12, width: 210),
-              SizedBox(height: 24),
-              _SkeletonBar(height: 46, width: double.infinity, radius: 12),
-            ],
-          ),
+        const isi = Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _SkeletonBar(height: 24, width: 230),
+            SizedBox(height: 12),
+            _SkeletonBar(height: 13, width: 176),
+            SizedBox(height: 16),
+            _SkeletonBar(height: 26, width: 148),
+            SizedBox(height: 24),
+            _SkeletonBar(height: 13, width: 84),
+            SizedBox(height: 12),
+            _SkeletonBar(height: 12, width: double.infinity),
+            SizedBox(height: 8),
+            _SkeletonBar(height: 12, width: 260),
+            SizedBox(height: 24),
+            _SkeletonBar(height: 13, width: 120),
+            SizedBox(height: 12),
+            _SkeletonBar(height: 12, width: double.infinity),
+            SizedBox(height: 8),
+            _SkeletonBar(height: 12, width: 210),
+          ],
         );
 
         if (!duaKolom) {
           return ShimmerLoading(
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 hero,
-                const SizedBox(height: 16),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: isi,
+                Transform.translate(
+                  offset: const Offset(0, -20),
+                  child: Container(
+                    padding: const EdgeInsets.fromLTRB(16, 18, 16, 28),
+                    decoration: const BoxDecoration(
+                      color: AppColors.canvas,
+                      borderRadius: BorderRadius.vertical(
+                        top: Radius.circular(AppRadius.xl),
+                      ),
+                    ),
+                    child: isi,
+                  ),
                 ),
               ],
             ),
@@ -403,60 +386,85 @@ class DetailSkeleton extends StatelessWidget {
 class PlaceFormSkeleton extends StatelessWidget {
   const PlaceFormSkeleton({super.key});
 
+  static const _judulFoto = _SkeletonBar(height: 15, width: 96);
+  static const _judulInfo = _SkeletonBar(height: 15, width: 132);
+  static const _judulHarga = _SkeletonBar(height: 15, width: 104);
+
+  static const _foto = _SkeletonBar(
+    height: 120,
+    width: double.infinity,
+    radius: AppRadius.lg,
+  );
+
+  static const _paket = Column(
+    children: [
+      _SkeletonBar(height: 52, width: double.infinity, radius: 12),
+      SizedBox(height: 12),
+      _SkeletonBar(height: 52, width: double.infinity, radius: 12),
+    ],
+  );
+
+  static const _info = Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      _SkeletonBar(height: 52, width: double.infinity, radius: 12),
+      SizedBox(height: 16),
+      _SkeletonBar(height: 40, width: 220, radius: AppRadius.pill),
+      SizedBox(height: 16),
+      _SkeletonBar(height: 84, width: double.infinity, radius: 12),
+      SizedBox(height: 16),
+      _SkeletonBar(height: 52, width: double.infinity, radius: 12),
+    ],
+  );
+
+  Widget _bagian(Widget judul, Widget isi) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [judul, const SizedBox(height: 12), isi],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final duaKolom = MediaQuery.sizeOf(context).width >= AppWidth.sidebar;
+
     return ShimmerLoading(
       child: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: AppWidth.form),
-          child: const Padding(
-            padding: EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _SkeletonBar(height: 13, width: 88),
-                SizedBox(height: 10),
-                _SkeletonBar(
-                  height: 140,
-                  width: double.infinity,
-                  radius: AppRadius.lg,
-                ),
-                SizedBox(height: 24),
-                _SkeletonBar(height: 13, width: 104),
-                SizedBox(height: 10),
-                _SkeletonBar(height: 52, width: double.infinity, radius: 12),
-                SizedBox(height: 18),
-                _SkeletonBar(height: 13, width: 76),
-                SizedBox(height: 10),
-                _SkeletonBar(height: 52, width: double.infinity, radius: 12),
-                SizedBox(height: 18),
-                _SkeletonBar(height: 13, width: 92),
-                SizedBox(height: 10),
-                _SkeletonBar(height: 96, width: double.infinity, radius: 12),
-                SizedBox(height: 24),
-                _SkeletonBar(height: 13, width: 118),
-                SizedBox(height: 10),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _SkeletonBar(
-                        height: 52,
-                        width: double.infinity,
-                        radius: 12,
+          constraints: BoxConstraints(
+            maxWidth: duaKolom ? AppWidth.page : AppWidth.form,
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: duaKolom
+                ? Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        flex: 4,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            _bagian(_judulFoto, _foto),
+                            const SizedBox(height: 24),
+                            _bagian(_judulHarga, _paket),
+                          ],
+                        ),
                       ),
-                    ),
-                    SizedBox(width: 12),
-                    Expanded(
-                      child: _SkeletonBar(
-                        height: 52,
-                        width: double.infinity,
-                        radius: 12,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
+                      const SizedBox(width: 24),
+                      Expanded(flex: 6, child: _bagian(_judulInfo, _info)),
+                    ],
+                  )
+                : Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _bagian(_judulFoto, _foto),
+                      const SizedBox(height: 24),
+                      _bagian(_judulInfo, _info),
+                      const SizedBox(height: 24),
+                      _bagian(_judulHarga, _paket),
+                    ],
+                  ),
           ),
         ),
       ),

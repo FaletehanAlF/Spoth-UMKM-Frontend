@@ -1,4 +1,23 @@
-﻿class PlaceModel {
+﻿/// Satu paket sewa yang ditawarkan sebuah tempat.
+class PaketSewa {
+  const PaketSewa({required this.tipe, required this.harga});
+
+  /// "MINGGUAN" atau "BULANAN".
+  final String tipe;
+
+  /// Harga untuk satu paket ini.
+  final double harga;
+
+  String get label => PlaceModel.durasiLabels[tipe] ?? tipe;
+
+  /// Label satuan untuk ditulis setelah harga, contoh "minggu".
+  String get satuan => label.toLowerCase();
+
+  /// Jumlah hari dalam satu paket (1 minggu = 7, 1 bulan = 30).
+  int get hariPerPaket => tipe == 'BULANAN' ? 30 : 7;
+}
+
+class PlaceModel {
   const PlaceModel({
     required this.id,
     required this.hostId,
@@ -7,14 +26,13 @@
     required this.deskripsi,
     required this.alamat,
     required this.kecamatan,
-    required this.harga,
-    required this.tipeDurasi,
+    this.hargaMingguan,
+    this.hargaBulanan,
     this.createdAt,
     this.updatedAt,
-    this.tanggalMulaiTersedia,
-    this.tanggalSelesaiTersedia,
     this.foto = const [],
     this.namaHost,
+    this.fotoHost,
     this.jumlahFoto = 0,
     this.sudahDiSewa = false,
     this.jadwalTerpakai = const [],
@@ -33,12 +51,12 @@
   ];
 
   static const Map<String, String> durasiLabels = {
-    'HARIAN': 'Harian',
     'MINGGUAN': 'Mingguan',
     'BULANAN': 'Bulanan',
   };
 
-  static const List<String> durasiValues = ['HARIAN', 'MINGGUAN', 'BULANAN'];
+  /// Paket yang didukung sistem, berurutan dari yang paling pendek.
+  static const List<String> durasiValues = ['MINGGUAN', 'BULANAN'];
 
   final String id;
   final String hostId;
@@ -47,22 +65,50 @@
   final String deskripsi;
   final String alamat;
   final String kecamatan;
-  final double harga;
-  final String tipeDurasi;
+
+  /// Harga paket mingguan (null bila paket ini tidak ditawarkan).
+  final double? hargaMingguan;
+
+  /// Harga paket bulanan (null bila paket ini tidak ditawarkan).
+  final double? hargaBulanan;
+
   final DateTime? createdAt;
   final DateTime? updatedAt;
-  final DateTime? tanggalMulaiTersedia;
-  final DateTime? tanggalSelesaiTersedia;
   final List<String> foto;
   final String? namaHost;
+
+  /// Foto profil pemilik tempat (null bila belum diunggah).
+  final String? fotoHost;
   final int jumlahFoto;
   final bool sudahDiSewa;
   final List<BookedRange> jadwalTerpakai;
 
   String get kategoriLabel => kategoriLabels[kategori] ?? kategori;
-  String get durasiLabel => durasiLabels[tipeDurasi] ?? tipeDurasi;
-  bool get hasPeriodeKetersediaan =>
-      tanggalMulaiTersedia != null && tanggalSelesaiTersedia != null;
+
+  /// Semua paket yang ditawarkan tempat ini.
+  List<PaketSewa> get paket => [
+    if (hargaMingguan != null) PaketSewa(tipe: 'MINGGUAN', harga: hargaMingguan!),
+    if (hargaBulanan != null) PaketSewa(tipe: 'BULANAN', harga: hargaBulanan!),
+  ];
+
+  bool punyaPaket(String tipe) => tipe == 'BULANAN'
+      ? hargaBulanan != null
+      : hargaMingguan != null;
+
+  /// Paket yang dipilih berdasarkan satuannya (null bila tidak ditawarkan).
+  PaketSewa? paketDari(String tipe) {
+    final daftar = paket.where((item) => item.tipe == tipe);
+    return daftar.isEmpty ? null : daftar.first;
+  }
+
+  /// Paket termurah, untuk ditampilkan di kartu dan ringkasan.
+  PaketSewa? get paketTermurah {
+    final daftar = paket;
+    if (daftar.isEmpty) {
+      return null;
+    }
+    return daftar.reduce((a, b) => a.harga <= b.harga ? a : b);
+  }
 
   factory PlaceModel.fromJson(Map<String, dynamic> json) {
     return PlaceModel(
@@ -73,18 +119,17 @@
       deskripsi: json['deskripsi'] as String? ?? '',
       alamat: json['alamat'] as String? ?? '',
       kecamatan: json['kecamatan'] as String? ?? '',
-      harga: _toDouble(json['harga']),
-      tipeDurasi: json['tipe_durasi'] as String? ?? '',
+      hargaMingguan: _toNullableDouble(json['harga_mingguan']),
+      hargaBulanan: _toNullableDouble(json['harga_bulanan']),
       createdAt: DateTime.tryParse(json['created_at'] as String? ?? ''),
       updatedAt: DateTime.tryParse(json['updated_at'] as String? ?? ''),
-      tanggalMulaiTersedia: _toDate(json['tanggal_mulai_tersedia']),
-      tanggalSelesaiTersedia: _toDate(json['tanggal_selesai_tersedia']),
       foto:
           (json['foto'] as List<dynamic>?)
               ?.map((item) => item.toString())
               .toList() ??
           const [],
       namaHost: json['nama_host'] as String?,
+      fotoHost: json['foto_host'] as String?,
       jumlahFoto: (json['jumlah_foto'] as num?)?.toInt() ?? 0,
       sudahDiSewa: json['sudah_di_sewa'] as bool? ?? false,
       jadwalTerpakai: (json['jadwal_terpakai'] as List<dynamic>? ?? const [])
@@ -94,21 +139,14 @@
     );
   }
 
-  static DateTime? _toDate(dynamic value) {
-    if (value is! String || value.isEmpty) {
-      return null;
-    }
-    return DateTime.tryParse(value);
-  }
-
-  static double _toDouble(dynamic value) {
+  static double? _toNullableDouble(dynamic value) {
     if (value is num) {
       return value.toDouble();
     }
     if (value is String) {
-      return double.tryParse(value) ?? 0;
+      return double.tryParse(value);
     }
-    return 0;
+    return null;
   }
 }
 

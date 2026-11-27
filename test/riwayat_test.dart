@@ -139,4 +139,38 @@ void main() {
     expect(tester.takeException(), isNull);
     expect(find.text('Belum Ada Riwayat'), findsOneWidget);
   });
+
+  testWidgets('riwayat web menampilkan dua kartu per baris', (tester) async {
+    final pertama = bookingContoh();
+    final kedua = BookingModel(
+      id: '2',
+      kodeBooking: 'SPT-002',
+      placeId: '7',
+      jenisUsaha: 'Kuliner',
+      tanggalMulai: '2026-11-25',
+      tanggalSelesai: '2026-12-01',
+      jumlahDurasi: 1,
+      hargaSatuan: 500000,
+      totalHarga: 500000,
+      status: 'LUNAS',
+      namaTempat: 'Ruang Usaha Kedua',
+      epassTersedia: true,
+    );
+
+    await tampilkanRiwayat(
+      tester,
+      role: UserModel.roleTenant,
+      lebar: 1200,
+      tinggi: 900,
+      items: [pertama, kedua],
+    );
+
+    expect(tester.takeException(), isNull);
+    final yPertama = tester.getCenter(
+      find.text('Warung Makan Rasa Nusantara'),
+    ).dy;
+    final yKedua = tester.getCenter(find.text('Ruang Usaha Kedua')).dy;
+
+    expect((yPertama - yKedua).abs(), lessThan(2));
+  });
 }

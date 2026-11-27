@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -33,19 +32,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   final _formKey = GlobalKey<FormState>();
   final _namaController = TextEditingController();
   final _noHpController = TextEditingController();
-  final _alamatController = TextEditingController();
   final _emailController = TextEditingController();
 
-  final FlutterSecureStorage _storage = const FlutterSecureStorage();
   final ImagePicker _picker = ImagePicker();
-
-  static const String _addressKey = 'profile_address';
 
   bool _isEditing = false;
   bool _isSaving = false;
   bool _isUploading = false;
   String? _fotoUrl;
-  String _alamatTersimpan = '';
 
   @override
   void initState() {
@@ -57,33 +51,24 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final user = ref.read(authNotifierProvider).user;
     if (user == null) return;
 
-    final alamat = await _storage.read(key: _addressKey);
-    if (!mounted) return;
-
     setState(() {
-      _alamatTersimpan = alamat ?? '';
-      _isiController(user, _alamatTersimpan);
+      _isiController(user);
       _fotoUrl = user.foto;
     });
   }
 
-  void _isiController(UserModel user, String alamat) {
+  void _isiController(UserModel user) {
     _namaController.text = user.nama;
     _emailController.text = user.email;
     _noHpController.text = user.noHp ?? '';
-    _alamatController.text = alamat;
   }
 
   Future<void> _mulaiEdit() async {
     final user = ref.read(authNotifierProvider).user;
     if (user == null) return;
 
-    final alamat = await _storage.read(key: _addressKey) ?? _alamatTersimpan;
-    if (!mounted) return;
-
     setState(() {
-      _alamatTersimpan = alamat;
-      _isiController(user, alamat);
+      _isiController(user);
       _fotoUrl = user.foto;
       _isEditing = true;
     });
@@ -94,7 +79,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     if (user == null) return;
 
     setState(() {
-      _isiController(user, _alamatTersimpan);
+      _isiController(user);
       _fotoUrl = user.foto;
       _isEditing = false;
     });
@@ -105,7 +90,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
     setState(() => _isSaving = true);
 
-    final alamat = _alamatController.text.trim();
     final berhasil = await ref
         .read(authNotifierProvider.notifier)
         .updateProfile(
@@ -119,11 +103,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     if (!mounted) return;
 
     if (berhasil) {
-      await _storage.write(key: _addressKey, value: alamat);
-      if (!mounted) return;
-
       setState(() {
-        _alamatTersimpan = alamat;
         _isEditing = false;
         _isSaving = false;
       });
@@ -299,7 +279,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   void dispose() {
     _namaController.dispose();
     _noHpController.dispose();
-    _alamatController.dispose();
     _emailController.dispose();
     super.dispose();
   }
@@ -338,7 +317,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         namaController: _namaController,
                         emailController: _emailController,
                         noHpController: _noHpController,
-                        alamatController: _alamatController,
                         isSaving: _isSaving,
                         onSave: _simpan,
                         onCancel: _batalEdit,
@@ -346,7 +324,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     : Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          ProfileInfoCard(user: user, alamat: _alamatTersimpan),
+                          ProfileInfoCard(user: user),
                           const SizedBox(height: 20),
                           ProfileAccountCard(onLogout: _logout),
                         ],

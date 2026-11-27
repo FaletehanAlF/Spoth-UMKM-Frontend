@@ -1,5 +1,4 @@
 ﻿import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -84,33 +83,29 @@ class _OwnerPlaceListState extends ConsumerState<OwnerPlaceList> {
 
             return LayoutBuilder(
               builder: (context, constraints) {
-                final duaKolom = constraints.maxWidth >= 980;
-                final lebarKartu = duaKolom
-                    ? (constraints.maxWidth - 12) / 2
-                    : constraints.maxWidth;
+                final duaKolom = constraints.maxWidth >= 700;
 
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '${items.length} tempat',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: AppColors.secondaryText,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    Wrap(
-                      spacing: 12,
-                      runSpacing: 12,
-                      children: [
-                        for (final item in items)
-                          SizedBox(
-                            width: lebarKartu,
-                            child: _OwnerPlaceCard(place: item),
-                          ),
+                if (!duaKolom) {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      for (final item in items) ...[
+                        _OwnerPlaceCard(place: item),
+                        const SizedBox(height: 12),
                       ],
-                    ),
+                    ],
+                  );
+                }
+
+                return Wrap(
+                  spacing: 12,
+                  runSpacing: 12,
+                  children: [
+                    for (final item in items)
+                      SizedBox(
+                        width: (constraints.maxWidth - 12) / 2,
+                        child: _OwnerPlaceCard(place: item),
+                      ),
                   ],
                 );
               },
@@ -319,6 +314,7 @@ class _OwnerPlaceCardState extends ConsumerState<_OwnerPlaceCard> {
           .deletePlace(token: token, id: place.id);
       await ref.read(myPlacesProvider.notifier).refresh();
       await ref.read(hostSummaryProvider.notifier).refresh();
+      await ref.read(tenantPlacesProvider.notifier).refresh();
 
       if (!mounted) return;
       ScaffoldMessenger.of(
@@ -342,6 +338,7 @@ class _OwnerPlaceCardState extends ConsumerState<_OwnerPlaceCard> {
     if (saved == true && mounted) {
       await ref.read(myPlacesProvider.notifier).refresh();
       await ref.read(hostSummaryProvider.notifier).refresh();
+      await ref.read(tenantPlacesProvider.notifier).refresh();
     }
   }
 
@@ -362,9 +359,137 @@ class _OwnerPlaceCardState extends ConsumerState<_OwnerPlaceCard> {
     }
   }
 
+  Widget _isi(String? foto) {
+    final terisi = place.sudahDiSewa;
+    final paket = place.paket;
+
+    return Row(
+      children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: SizedBox(
+            width: 72,
+            height: 72,
+            child: foto != null
+                ? Image.network(
+                    foto,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, _, _) => const _PhotoPlaceholder(),
+                  )
+                : const _PhotoPlaceholder(),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                place.namaTempat,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.charcoal,
+                ),
+              ),
+              const SizedBox(height: 3),
+              Row(
+                children: [
+                  const Icon(
+                    Icons.location_on_outlined,
+                    size: 12,
+                    color: AppColors.secondaryText,
+                  ),
+                  const SizedBox(width: 2),
+                  Expanded(
+                    child: Text(
+                      '${place.kategoriLabel} - ${place.kecamatan}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppColors.secondaryText,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 5),
+              for (final item in paket) ...[
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        '${formatRupiah(item.harga)} /${item.satuan}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: -0.1,
+                          color: AppColors.charcoal,
+                        ),
+                      ),
+                    ),
+                    if (terisi && item == paket.first) ...[
+                      const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 3,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.sageTint,
+                          borderRadius: BorderRadius.circular(AppRadius.sm),
+                        ),
+                        child: const Text(
+                          'Sudah disewa',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.success,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+                const SizedBox(height: 2),
+              ],
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final foto = place.foto.isNotEmpty ? place.foto.first : null;
+
+    final isiKartu = Container(
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        border: Border.all(color: AppColors.softBorder),
+      ),
+      padding: const EdgeInsets.all(12),
+      child: Row(
+        children: [
+          Expanded(child: _isi(foto)),
+          IconButton(
+            onPressed: _acting ? null : _showKelolaSheet,
+            icon: const Icon(Icons.more_vert),
+            tooltip: place.sudahDiSewa
+                ? 'Tempat sudah di sewa'
+                : 'Kelola Tempat',
+            color: AppColors.secondaryText,
+          ),
+        ],
+      ),
+    );
 
     return Material(
       color: AppColors.white,
@@ -372,142 +497,7 @@ class _OwnerPlaceCardState extends ConsumerState<_OwnerPlaceCard> {
       child: InkWell(
         borderRadius: BorderRadius.circular(AppRadius.lg),
         onTap: () => context.push('/place-detail?id=${place.id}'),
-        child: Container(
-          decoration: BoxDecoration(
-            color: AppColors.white,
-            borderRadius: BorderRadius.circular(AppRadius.lg),
-            border: Border.all(color: AppColors.softBorder),
-          ),
-          padding: const EdgeInsets.all(12),
-          child: Row(
-            children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(14),
-                child: SizedBox(
-                  width: 84,
-                  height: 84,
-                  child: foto != null
-                      ? Image.network(
-                          foto,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, _, _) => const _PhotoPlaceholder(),
-                        )
-                      : const _PhotoPlaceholder(),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            place.namaTempat,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.charcoal,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 3),
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.location_on_outlined,
-                          size: 12,
-                          color: AppColors.secondaryText,
-                        ),
-                        const SizedBox(width: 2),
-                        Expanded(
-                          child: Text(
-                            '${place.kategoriLabel} - ${place.kecamatan}',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              fontSize: 12,
-                              color: AppColors.secondaryText,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      formatRupiah(place.harga),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 14.5,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: -0.1,
-                        color: AppColors.charcoal,
-                      ),
-                    ),
-                    Text(
-                      'per ${place.durasiLabel.toLowerCase()}',
-                      style: const TextStyle(
-                        fontSize: 11.5,
-                        color: AppColors.secondaryText,
-                      ),
-                    ),
-                    if (place.sudahDiSewa) ...[
-                      const SizedBox(height: 6),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColors.danger.withValues(alpha: 0.08),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(
-                            color: AppColors.danger.withValues(alpha: 0.25),
-                          ),
-                        ),
-                        child: const Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.lock_clock,
-                              size: 12,
-                              color: AppColors.danger,
-                            ),
-                            SizedBox(width: 4),
-                            Text(
-                              'Tempat sudah di sewa',
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w700,
-                                color: AppColors.danger,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-              IconButton(
-                onPressed: _acting ? null : _showKelolaSheet,
-                icon: const Icon(Icons.more_vert),
-                tooltip: place.sudahDiSewa
-                    ? 'Tempat sudah di sewa'
-                    : 'Kelola Tempat',
-                color: place.sudahDiSewa
-                    ? AppColors.danger
-                    : AppColors.secondaryText,
-              ),
-            ],
-          ),
-        ),
+        child: isiKartu,
       ),
     );
   }

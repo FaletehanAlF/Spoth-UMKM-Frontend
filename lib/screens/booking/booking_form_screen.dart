@@ -8,6 +8,7 @@ import '../../core/services/api_service.dart';
 import '../../core/services/booking_service.dart';
 import '../../core/services/place_service.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_layout.dart';
 import '../../core/utils/format.dart';
 import '../../models/availability_model.dart';
 import '../../models/booking_model.dart';
@@ -34,8 +35,13 @@ class BookingFormScreen extends ConsumerStatefulWidget {
 class _BookingFormScreenState extends ConsumerState<BookingFormScreen> {
   final _formKey = GlobalKey<FormState>();
   final _tanggalController = TextEditingController();
-  final _durasiController = TextEditingController();
   final _jenisUsahaController = TextEditingController();
+
+  /// Paket yang dipilih penyewa: "MINGGUAN" atau "BULANAN".
+  String _tipeDurasi = 'MINGGUAN';
+
+  /// Berapa paket yang disewa (1-3 minggu, atau 1-6 bulan).
+  int _jumlahDurasi = 1;
 
   DateTime? _tanggalMulai;
   PricePreviewModel? _preview;
@@ -63,7 +69,6 @@ class _BookingFormScreenState extends ConsumerState<BookingFormScreen> {
   void dispose() {
     _availabilityDebounce?.cancel();
     _tanggalController.dispose();
-    _durasiController.dispose();
     _jenisUsahaController.dispose();
     super.dispose();
   }
@@ -81,7 +86,14 @@ class _BookingFormScreenState extends ConsumerState<BookingFormScreen> {
           .getPlaceDetail(id: widget.placeId, token: token);
 
       if (!mounted) return;
-      setState(() => _place = place);
+      setState(() {
+        _place = place;
+        final paket = place.paketTermurah;
+        if (paket != null) {
+          _tipeDurasi = paket.tipe;
+          _jumlahDurasi = 1;
+        }
+      });
     } catch (_) {
       if (mounted) {
         setState(() => _loadError = 'Gagal memuat data tempat');
@@ -91,13 +103,28 @@ class _BookingFormScreenState extends ConsumerState<BookingFormScreen> {
     }
   }
 
-  Future<void> _pickTanggal() async {
+  /// Tanggal paling awal yang boleh dipilih: hari ini.
+  DateTime get _tanggalPertama {
     final hariIni = DateTime.now();
+    return DateTime(hariIni.year, hariIni.month, hariIni.day);
+  }
+
+  /// Tanggal paling akhir yang boleh dipilih (setahun setelah mulai).
+  DateTime get _tanggalTerakhir => _tanggalPertama.add(const Duration(days: 365));
+
+  Future<void> _pickTanggal() async {
+    final pertama = _tanggalPertama;
+    final terakhir = _tanggalTerakhir;
+    final awalTerpilih = _tanggalMulai;
+    final awal = awalTerpilih != null && !awalTerpilih.isBefore(pertama)
+        ? awalTerpilih
+        : pertama;
+
     final dipilih = await showDatePicker(
       context: context,
-      initialDate: _tanggalMulai ?? hariIni,
-      firstDate: DateTime(hariIni.year, hariIni.month, hariIni.day),
-      lastDate: hariIni.add(const Duration(days: 365)),
+      initialDate: awal,
+      firstDate: pertama,
+      lastDate: terakhir,
       builder: (context, child) => Theme(
         data: Theme.of(context).copyWith(
           colorScheme: Theme.of(context).colorScheme
@@ -110,7 +137,7 @@ class _BookingFormScreenState extends ConsumerState<BookingFormScreen> {
     if (dipilih != null) {
       setState(() {
         _tanggalMulai = dipilih;
-        _tanggalController.text = formatDateString(_tanggalText(dipilih));
+        _tanggalController.text = _formatTanggalInput(dipilih);
         _batalkanPratinjau();
         _availability = null;
         _availabilityKey = null;
@@ -126,64 +153,110 @@ class _BookingFormScreenState extends ConsumerState<BookingFormScreen> {
     return '${tanggal.year}-$bulan-$hari';
   }
 
-  int get _jumlahDurasi => int.tryParse(_durasiController.text.trim()) ?? 0;
+  /// Format tanggal untuk diketik penyewa, contoh "26/11/2026".
+  String _formatTanggalInput(DateTime tanggal) {
+    final bulan = tanggal.month.toString().padLeft(2, '0');
+    final hari = tanggal.day.toString().padLeft(2, '0');
+    return '$hari/$bulan/${tanggal.year}';
+  }
 
-  String get _satuanDurasi => switch (_place?.tipeDurasi) {
-    'HARIAN' => 'hari',
-    'MINGGUAN' => 'minggu',
-    'BULANAN' => 'bulan',
-    _ => 'satuan',
-  };
+  /// Membaca tanggal yang diketik (format dd/MM/yyyy).
+  DateTime? _bacaTanggalInput(String nilai) {
+    final bagian = nilai.trim().split('/');
+    if (bagian.length != 3) return null;
+
+    final hari = int.tryParse(bagian[0]);
+    final bulan = int.tryParse(bagian[1]);
+    final tahun = int.tryParse(bagian[2]);
+    if (hari == null || bulan == null || tahun == null) return null;
+
+    final tanggal = DateTime(tahun, bulan, hari);
+    final cocok =
+        tanggal.day == hari && tanggal.month == bulan && tanggal.year == tahun;
+    return cocok ? tanggal : null;
+  }
+
+  bool _diLuarBatasTanggal(DateTime tanggal) {
+    final hari = DateTime(tanggal.year, tanggal.month, tanggal.day);
+    return hari.isBefore(_tanggalPertama) || hari.isAfter(_tanggalTerakhir);
+  }
+
+  void _ubahTanggalMulai(String nilai) {
+    final tanggal = _bacaTanggalInput(nilai);
+
+    if (nilai.trim().isEmpty) {
+      setState(() {
+        _tanggalMulai = null;
+        _batalkanPratinjau();
+        _availability = null;
+        _availabilityKey = null;
+        _availabilityError = null;
+      });
+      return;
+    }
+
+    if (tanggal == null || _diLuarBatasTanggal(tanggal)) return;
+
+    setState(() {
+      _tanggalMulai = tanggal;
+      _batalkanPratinjau();
+      _availability = null;
+      _availabilityKey = null;
+      _availabilityError = null;
+    });
+    _jadwalkanCekKetersediaan();
+  }
+
+  String? _validasiTanggalMulai(String? nilai) {
+    final teks = nilai?.trim() ?? '';
+    if (teks.isEmpty) return 'Tanggal mulai wajib diisi';
+
+    final tanggal = _bacaTanggalInput(teks);
+    if (tanggal == null) return 'Gunakan format 26/11/2026';
+
+    if (tanggal.isBefore(_tanggalPertama)) {
+      return 'Tanggal mulai tidak boleh sebelum hari ini';
+    }
+    if (tanggal.isAfter(_tanggalTerakhir)) {
+      return 'Tanggal mulai maksimal 1 tahun ke depan';
+    }
+    return null;
+  }
+
+  /// Batas jumlah paket: 3 minggu atau 6 bulan.
+  int get _batasPaket => _tipeDurasi == 'BULANAN' ? 6 : 3;
+
+  String get _satuanDurasi => labelSatuan(_tipeDurasi);
 
   DateTime? get _tanggalSelesai {
     final mulai = _tanggalMulai;
-    final place = _place;
-    final jumlah = _jumlahDurasi;
 
-    if (mulai == null || place == null || jumlah < 1 || jumlah > 365) {
+    if (mulai == null || _jumlahDurasi < 1 || _jumlahDurasi > _batasPaket) {
       return null;
     }
 
-    return tanggalSelesaiSewa(mulai, place.tipeDurasi, jumlah);
+    return tanggalSelesaiSewa(mulai, _tipeDurasi, _jumlahDurasi);
   }
 
-  int? get _totalHari {
-    final mulai = _tanggalMulai;
-    final selesai = _tanggalSelesai;
-
-    if (mulai == null || selesai == null) {
-      return null;
-    }
-
-    final awal = DateTime.utc(mulai.year, mulai.month, mulai.day);
-    return selesai.difference(awal).inDays + 1;
+  void _setJumlahDurasi(int nilai) {
+    setState(() {
+      _jumlahDurasi = nilai.clamp(1, _batasPaket);
+      _batalkanPratinjau();
+      _availability = null;
+      _availabilityKey = null;
+      _availabilityError = null;
+    });
+    _jadwalkanCekKetersediaan();
   }
 
-  String get _ringkasanDurasi {
-    final totalHari = _totalHari;
-
-    if (totalHari == null) {
-      return 'Dihitung otomatis setelah tanggal dan lama sewa diisi.';
+  void _setTipeDurasi(String tipe) {
+    if (tipe == _tipeDurasi) {
+      return;
     }
-
-    if (_satuanDurasi == 'hari') {
-      return '$_jumlahDurasi hari, dihitung otomatis oleh sistem.';
-    }
-
-    return '$_jumlahDurasi $_satuanDurasi ($totalHari hari), '
-        'dihitung otomatis oleh sistem.';
-  }
-
-  void _setDurasi(int nilai) {
-    final baru = nilai.clamp(1, 365);
-    final teks = '$baru';
-
-    _durasiController.value = TextEditingValue(
-      text: teks,
-      selection: TextSelection.collapsed(offset: teks.length),
-    );
 
     setState(() {
+      _tipeDurasi = tipe;
+      _jumlahDurasi = 1;
       _batalkanPratinjau();
       _availability = null;
       _availabilityKey = null;
@@ -200,11 +273,11 @@ class _BookingFormScreenState extends ConsumerState<BookingFormScreen> {
   String? get _availabilitySelectionKey {
     final mulai = _tanggalMulai;
 
-    if (mulai == null || _jumlahDurasi < 1 || _jumlahDurasi > 365) {
+    if (mulai == null || _jumlahDurasi < 1 || _jumlahDurasi > _batasPaket) {
       return null;
     }
 
-    return '${_tanggalText(mulai)}|$_jumlahDurasi';
+    return '${_tanggalText(mulai)}|$_tipeDurasi|$_jumlahDurasi';
   }
 
   PlaceAvailabilityModel? get _availabilitySaatIni =>
@@ -270,6 +343,7 @@ class _BookingFormScreenState extends ConsumerState<BookingFormScreen> {
           .checkAvailability(
             placeId: widget.placeId,
             tanggalMulai: _tanggalText(mulai),
+            tipeDurasi: _tipeDurasi,
             jumlahDurasi: jumlahDurasi,
             token: token,
           );
@@ -347,6 +421,7 @@ class _BookingFormScreenState extends ConsumerState<BookingFormScreen> {
             token: token,
             placeId: widget.placeId,
             tanggalMulai: _tanggalText(mulai),
+            tipeDurasi: _tipeDurasi,
             jumlahDurasi: jumlahDurasi,
           );
 
@@ -432,6 +507,7 @@ class _BookingFormScreenState extends ConsumerState<BookingFormScreen> {
             payload: {
               'place_id': widget.placeId,
               'tanggal_mulai': _tanggalText(mulai),
+              'tipe_durasi': _tipeDurasi,
               'jumlah_durasi': jumlahDurasi,
               'jenis_usaha': _jenisUsahaController.text.trim(),
             },
@@ -465,109 +541,105 @@ class _BookingFormScreenState extends ConsumerState<BookingFormScreen> {
     return InputDecoration(labelText: label, hintText: hint);
   }
 
-  Widget _buildFields() {
-    final selesai = _tanggalSelesai;
-    final teksSelesai = selesai == null
-        ? ''
-        : formatDateString(_tanggalText(selesai));
-
+  Widget _buildPaket() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const _SectionHeader(
-          icon: Icons.date_range_outlined,
-          title: 'Periode Sewa',
+        const _SectionHeader(title: 'Lama Sewa'),
+        const SizedBox(height: 12),
+        _PemilihPaket(
+          paket: _place?.paket ?? const [],
+          aktif: _tipeDurasi,
+          onPilih: _setTipeDurasi,
+          enabled: !_submitting,
         ),
         const SizedBox(height: 12),
-        TextFormField(
-          readOnly: true,
-          controller: _tanggalController,
-          decoration:
-              _inputDecoration(
-                'Tanggal Mulai',
-                'Pilih tanggal mulai sewa',
-              ).copyWith(
-                prefixIcon: const Icon(
-                  Icons.calendar_today_outlined,
-                  color: AppColors.secondaryText,
-                ),
-                suffixIcon: IconButton(
-                  icon: const Icon(Icons.edit_calendar_outlined),
-                  tooltip: 'Pilih tanggal',
-                  onPressed: _pickTanggal,
-                ),
-              ),
-          onTap: _pickTanggal,
-          validator: (value) =>
-              _tanggalMulai == null ? 'Tanggal mulai wajib dipilih' : null,
-        ),
-        const SizedBox(height: 16),
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _DurasiButton(
               icon: Icons.remove,
               onPressed: _jumlahDurasi > 1
-                  ? () => _setDurasi(_jumlahDurasi - 1)
+                  ? () => _setJumlahDurasi(_jumlahDurasi - 1)
                   : null,
             ),
             const SizedBox(width: 8),
             Expanded(
-              child: TextFormField(
-                controller: _durasiController,
-                keyboardType: TextInputType.number,
-                textAlign: TextAlign.center,
-                decoration: _inputDecoration(
-                  'Lama Sewa',
-                  'Contoh: 3',
-                ).copyWith(suffixText: _satuanDurasi),
-                onChanged: (_) {
-                  setState(() {
-                    _batalkanPratinjau();
-                    _availability = null;
-                    _availabilityKey = null;
-                    _availabilityError = null;
-                  });
-                  _jadwalkanCekKetersediaan();
-                },
-                validator: (value) {
-                  final jumlah = int.tryParse(value?.trim() ?? '') ?? 0;
-                  if (jumlah < 1) {
-                    return 'Lama sewa minimal 1 $_satuanDurasi';
-                  }
-                  if (jumlah > 365) {
-                    return 'Lama sewa maksimal 365 $_satuanDurasi';
-                  }
-                  return null;
-                },
+              child: Column(
+                children: [
+                  Text(
+                    '$_jumlahDurasi $_satuanDurasi',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.charcoal,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'Maksimal $_batasPaket $_satuanDurasi',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: AppColors.secondaryText,
+                    ),
+                  ),
+                ],
               ),
             ),
             const SizedBox(width: 8),
             _DurasiButton(
               icon: Icons.add,
-              onPressed: _jumlahDurasi < 365
-                  ? () => _setDurasi(_jumlahDurasi + 1)
+              onPressed: _jumlahDurasi < _batasPaket
+                  ? () => _setJumlahDurasi(_jumlahDurasi + 1)
                   : null,
             ),
           ],
         ),
-        const SizedBox(height: 16),
+      ],
+    );
+  }
+
+  Widget _buildJadwal() {
+    final selesai = _tanggalSelesai;
+    final teksSelesai = selesai == null ? '' : _formatTanggalInput(selesai);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const _SectionHeader(title: 'Periode Sewa'),
+        const SizedBox(height: 12),
+        TextFormField(
+          controller: _tanggalController,
+          keyboardType: TextInputType.datetime,
+          decoration:
+              _inputDecoration(
+                'Tanggal Mulai',
+                'Contoh: 26/11/2026',
+              ).copyWith(
+                prefixIcon: IconButton(
+                  icon: const Icon(
+                    Icons.calendar_today_outlined,
+                    color: AppColors.secondaryText,
+                  ),
+                  tooltip: 'Pilih dari kalender',
+                  onPressed: _pickTanggal,
+                ),
+              ),
+          onChanged: _ubahTanggalMulai,
+          validator: _validasiTanggalMulai,
+        ),
+        const SizedBox(height: 20),
+        const _SectionHeader(title: 'Waktu Sewa'),
+        const SizedBox(height: 12),
         TextFormField(
           key: ValueKey('tanggal-selesai-$teksSelesai'),
           initialValue: teksSelesai,
           readOnly: true,
           canRequestFocus: false,
           decoration: _inputDecoration('Tanggal Selesai', 'Terisi otomatis')
-              .copyWith(
-                filled: true,
-                fillColor: AppColors.lightOrange,
-                prefixIcon: const Icon(
-                  Icons.event_available_outlined,
-                  color: AppColors.primaryInk,
-                ),
-                helperText: _ringkasanDurasi,
-                helperMaxLines: 2,
-              ),
+              .copyWith(filled: true, fillColor: AppColors.lightOrange),
         ),
         if (_availabilitySelectionKey != null) ...[
           const SizedBox(height: 12),
@@ -578,11 +650,15 @@ class _BookingFormScreenState extends ConsumerState<BookingFormScreen> {
             onRetry: _cekKetersediaan,
           ),
         ],
-        const SizedBox(height: 24),
-        const _SectionHeader(
-          icon: Icons.storefront_outlined,
-          title: 'Detail Usaha',
-        ),
+      ],
+    );
+  }
+
+  Widget _buildDetail() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const _SectionHeader(title: 'Detail Usaha'),
         const SizedBox(height: 12),
         TextFormField(
           controller: _jenisUsahaController,
@@ -595,9 +671,15 @@ class _BookingFormScreenState extends ConsumerState<BookingFormScreen> {
             return null;
           },
         ),
-        const SizedBox(height: 24),
+      ],
+    );
+  }
+
+  Widget _buildAksi() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
         SizedBox(
-          width: double.infinity,
           height: 48,
           child: OutlinedButton.icon(
             onPressed: _checkingPreview ? null : _checkPreview,
@@ -613,23 +695,13 @@ class _BookingFormScreenState extends ConsumerState<BookingFormScreen> {
             ),
           ),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 12),
         PrimaryButton(
           label: _tidakTersedia ? 'Tanggal Tidak Tersedia' : 'Buat Pemesanan',
           isLoading: _submitting,
           height: 52,
           borderRadius: 14,
           onPressed: _tidakTersedia ? null : _submit,
-        ),
-        const SizedBox(height: 8),
-        Text(
-          'Tanggal selesai dihitung otomatis oleh server berdasarkan '
-          'lama sewa dan tipe durasi tempat.',
-          style: const TextStyle(
-            fontSize: 11.5,
-            height: 1.4,
-            color: AppColors.secondaryText,
-          ),
         ),
       ],
     );
@@ -638,22 +710,28 @@ class _BookingFormScreenState extends ConsumerState<BookingFormScreen> {
   @override
   Widget build(BuildContext context) {
     final user = ref.watch(authNotifierProvider).user;
-    final bolehMemesan = user?.role == UserModel.roleTenant;
+    final adalahPemilik =
+        _place != null && user?.id == _place!.hostId && user!.id.isNotEmpty;
+    final bolehMemesan =
+        user?.role == UserModel.roleTenant && !adalahPemilik;
     final preview = _previewSaatIni;
 
     final page = Scaffold(
       backgroundColor: AppColors.canvas,
       appBar: const SpothAppBar(title: Text('Form Penyewaan')),
       body: !bolehMemesan
-          ? const Center(
+          ? Center(
               child: SingleChildScrollView(
-                padding: EdgeInsets.all(20),
+                padding: const EdgeInsets.all(20),
                 child: EmptyState(
                   icon: Icons.lock_outline,
-                  title: 'Hanya penyewa yang dapat memesan',
-                  message:
-                      'Fitur penyewaan tempat khusus untuk akun dengan role '
-                      'Penyewa.',
+                  title: adalahPemilik
+                      ? 'Ini tempat Anda sendiri'
+                      : 'Hanya penyewa yang dapat memesan',
+                  message: adalahPemilik
+                      ? 'Anda tidak bisa menyewa tempat milik Anda sendiri.'
+                      : 'Fitur penyewaan tempat khusus untuk akun dengan role '
+                          'Penyewa.',
                 ),
               ),
             )
@@ -678,21 +756,42 @@ class _BookingFormScreenState extends ConsumerState<BookingFormScreen> {
                 physics: const AlwaysScrollableScrollPhysics(),
                 padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
                 child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 960),
+                  constraints: const BoxConstraints(maxWidth: AppWidth.page),
                   child: LayoutBuilder(
                     builder: (context, constraints) {
-                      final lebarKolomWeb = constraints.maxWidth >= 860;
+                      final duaKolom =
+                          constraints.maxWidth >= AppWidth.twoColumn;
+                      final form = Form(
+                        key: _formKey,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildPaket(),
+                            const SizedBox(height: 24),
+                            _buildJadwal(),
+                            const SizedBox(height: 24),
+                            _buildDetail(),
+                          ],
+                        ),
+                      );
+                      final kartuTempat = _TempatCard(place: _place!);
+                      final aksi = _buildAksi();
+                      final pratinjau = preview == null
+                          ? null
+                          : _PreviewCard(preview: preview);
 
-                      if (!lebarKolomWeb) {
+                      if (!duaKolom) {
                         return Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            _TempatCard(place: _place!),
+                            kartuTempat,
+                            const SizedBox(height: 24),
+                            form,
                             const SizedBox(height: 20),
-                            Form(key: _formKey, child: _buildFields()),
-                            if (preview != null) ...[
-                              const SizedBox(height: 20),
-                              _PreviewCard(preview: preview),
+                            aksi,
+                            if (pratinjau != null) ...[
+                              const SizedBox(height: 16),
+                              pratinjau,
                             ],
                           ],
                         );
@@ -701,20 +800,19 @@ class _BookingFormScreenState extends ConsumerState<BookingFormScreen> {
                       return Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          Expanded(flex: 6, child: form),
+                          const SizedBox(width: 24),
                           Expanded(
-                            flex: 7,
-                            child: Form(key: _formKey, child: _buildFields()),
-                          ),
-                          const SizedBox(width: 28),
-                          Expanded(
-                            flex: 5,
+                            flex: 4,
                             child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
-                                _TempatCard(place: _place!),
-                                if (preview != null) ...[
+                                kartuTempat,
+                                const SizedBox(height: 16),
+                                aksi,
+                                if (pratinjau != null) ...[
                                   const SizedBox(height: 16),
-                                  _PreviewCard(preview: preview),
+                                  pratinjau,
                                 ],
                               ],
                             ),
@@ -747,8 +845,6 @@ class _AvailabilityInfo extends StatelessWidget {
 
   String _alasanKonflik(BookedRange konflik) {
     switch (konflik.status) {
-      case 'PERIODE_TIDAK_TERSEDIA':
-        return 'Di luar periode ketersediaan tempat';
       case 'MENUNGGU_PEMBAYARAN':
         return 'Sudah dipesan dan menunggu pembayaran';
       case 'LUNAS':
@@ -922,24 +1018,82 @@ class _AvailabilityInfo extends StatelessWidget {
 }
 
 class _SectionHeader extends StatelessWidget {
-  const _SectionHeader({required this.icon, required this.title});
+  const _SectionHeader({required this.title});
 
-  final IconData icon;
   final String title;
 
   @override
   Widget build(BuildContext context) {
-    return Row(
+    return Text(
+      title,
+      style: const TextStyle(
+        fontSize: 14,
+        fontWeight: FontWeight.w700,
+        color: AppColors.charcoal,
+      ),
+    );
+  }
+}
+
+/// Pemilih paket sewa: mingguan, bulanan, atau keduanya.
+///
+/// Hanya paket yang ditawarkan tempat yang bisa dipilih. Bila tempat hanya
+/// punya satu paket, bagian ini menampilkan satu keterangan saja.
+class _PemilihPaket extends StatelessWidget {
+  const _PemilihPaket({
+    required this.paket,
+    required this.aktif,
+    required this.onPilih,
+    required this.enabled,
+  });
+
+  final List<PaketSewa> paket;
+  final String aktif;
+  final ValueChanged<String> onPilih;
+  final bool enabled;
+
+  @override
+  Widget build(BuildContext context) {
+    if (paket.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, size: 18, color: AppColors.primaryInk),
-        const SizedBox(width: 8),
-        Text(
-          title,
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w700,
-            color: AppColors.charcoal,
+        const Text(
+          'Paket sewa',
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: AppColors.darkText,
           ),
+        ),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            for (final item in paket)
+              ChoiceChip(
+                label: Text(
+                  '${item.label} ${formatRupiah(item.harga)}',
+                ),
+                selected: aktif == item.tipe,
+                selectedColor: AppColors.primaryDeep,
+                labelStyle: TextStyle(
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w600,
+                  color: aktif == item.tipe
+                      ? AppColors.white
+                      : AppColors.charcoal,
+                ),
+                showCheckmark: false,
+                onSelected: enabled && paket.length > 1
+                    ? (_) => onPilih(item.tipe)
+                    : null,
+              ),
+          ],
         ),
       ],
     );
@@ -1058,7 +1212,8 @@ class _TempatCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  '${place.kategoriLabel} - ${place.durasiLabel}',
+                  '${place.kategoriLabel} · '
+                  '${place.paket.map((item) => item.label).join(' & ')}',
                   style: const TextStyle(
                     fontSize: 12.5,
                     color: AppColors.secondaryText,
@@ -1092,37 +1247,41 @@ class _TempatCard extends StatelessWidget {
                   ),
                 ],
                 const SizedBox(height: 12),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Flexible(
-                      child: FittedBox(
-                        fit: BoxFit.scaleDown,
-                        alignment: Alignment.centerLeft,
-                        child: Text(
-                          formatRupiah(place.harga),
-                          maxLines: 1,
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.charcoal,
+                for (final item in place.paket)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 2),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Flexible(
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: Alignment.centerLeft,
+                            child: Text(
+                              formatRupiah(item.harga),
+                              maxLines: 1,
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.charcoal,
+                              ),
+                            ),
                           ),
                         ),
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 2),
-                      child: Text(
-                        '/${place.durasiLabel.toLowerCase()}',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: AppColors.secondaryText,
+                        const SizedBox(width: 4),
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 2),
+                          child: Text(
+                            '/${item.satuan}',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: AppColors.secondaryText,
+                            ),
+                          ),
                         ),
-                      ),
+                      ],
                     ),
-                  ],
-                ),
+                  ),
               ],
             ),
           ),
@@ -1217,14 +1376,13 @@ class _PreviewCard extends StatelessWidget {
           ),
           _Row(
             label: 'Lama Sewa',
-            value:
-                '${preview.jumlahDurasi} x ${preview.tipeDurasi.toLowerCase()}',
+            value: labelDurasi(preview.tipeDurasi, preview.jumlahDurasi),
           ),
           _Row(
             label: 'Harga Sewa',
             value:
                 '${formatRupiah(preview.hargaSatuan)} '
-                '/${preview.tipeDurasi.toLowerCase()}',
+                '/${labelSatuan(preview.tipeDurasi)}',
           ),
           const _Divider(),
           _Row(
@@ -1241,10 +1399,9 @@ class _PreviewCard extends StatelessWidget {
             Text(
               preview.jumlahKonflik > 0
                   ? 'Ada ${preview.jumlahKonflik} konflik jadwal pada rentang '
-                        'ini. Periksa periode ketersediaan atau jadwal yang '
-                        'sudah dipesan.'
-                  : 'Jadwal pada rentang ini tidak tersedia. Periksa periode '
-                        'ketersediaan tempat.',
+                        'ini. Pilih tanggal atau lama sewa lain.'
+                  : 'Jadwal pada rentang ini tidak tersedia. Pilih tanggal '
+                        'atau lama sewa lain.',
               style: const TextStyle(
                 fontSize: 12,
                 color: AppColors.secondaryText,

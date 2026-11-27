@@ -23,6 +23,7 @@ class KelolaTempatScreen extends ConsumerWidget {
           if (saved == true && context.mounted) {
             await ref.read(myPlacesProvider.notifier).refresh();
             await ref.read(hostSummaryProvider.notifier).refresh();
+            await ref.read(tenantPlacesProvider.notifier).refresh();
           }
         },
       ),
@@ -31,6 +32,7 @@ class KelolaTempatScreen extends ConsumerWidget {
         onRefresh: () async {
           await ref.read(myPlacesProvider.notifier).refresh();
           await ref.read(hostSummaryProvider.notifier).refresh();
+          await ref.read(tenantPlacesProvider.notifier).refresh();
         },
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),

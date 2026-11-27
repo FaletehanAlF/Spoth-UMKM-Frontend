@@ -8,6 +8,7 @@
     required this.tanggalMulai,
     required this.tanggalSelesai,
     required this.jumlahDurasi,
+    this.tipeDurasi = 'MINGGUAN',
     required this.hargaSatuan,
     required this.totalHarga,
     this.adminFee = 0,
@@ -30,6 +31,9 @@
   final String tanggalMulai;
   final String tanggalSelesai;
   final int jumlahDurasi;
+
+  /// Satuan paket yang dipilih penyewa ("MINGGUAN" atau "BULANAN").
+  final String tipeDurasi;
   final double hargaSatuan;
   final double totalHarga;
   final double adminFee;
@@ -80,6 +84,7 @@
       jumlahDurasi: json['jumlah_durasi'] is num
           ? (json['jumlah_durasi'] as num).toInt()
           : 0,
+      tipeDurasi: json['tipe_durasi'] as String? ?? 'MINGGUAN',
       hargaSatuan: _toDouble(json['harga_satuan']),
       totalHarga: _toDouble(json['total_harga']),
       adminFee: _toDouble(json['admin_fee']),

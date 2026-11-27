@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/theme/app_colors.dart';
 import '../core/theme/app_layout.dart';
 import '../providers/auth_provider.dart';
+import '../providers/booking_provider.dart';
 import '../providers/nav_provider.dart';
 import '../widgets/bottom_nav_pill.dart';
 import '../widgets/nav_items.dart';
@@ -29,6 +30,8 @@ class MainShell extends ConsumerWidget {
     }
 
     final items = navItemsForRole(user);
+    final badgeCount = ref.watch(bookingBadgeProvider);
+    final badgeIndex = tabs.indexOf(MainTab.booking);
 
     final content = IndexedStack(
       index: index,
@@ -55,7 +58,10 @@ class MainShell extends ConsumerWidget {
             SpothSidebar(
               index: index,
               items: items,
-              expanded: width >= AppWidth.sidebarExpanded,
+              badgeIndex: badgeIndex,
+              badgeCount: badgeCount,
+              expanded: ref.watch(sidebarExpandedProvider),
+              onToggle: () => ref.read(sidebarExpandedProvider.notifier).toggle(),
               onChanged: (value) =>
                   ref.read(mainNavIndexProvider.notifier).setTab(tabs[value]),
             ),
@@ -90,6 +96,8 @@ class MainShell extends ConsumerWidget {
       bottomNavigationBar: SpothBottomNav(
         index: index,
         items: items,
+        badgeIndex: badgeIndex,
+        badgeCount: badgeCount,
         onChanged: (value) =>
             ref.read(mainNavIndexProvider.notifier).setTab(tabs[value]),
       ),

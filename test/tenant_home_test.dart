@@ -66,8 +66,8 @@ PlaceModel tempatContoh(String id) {
     deskripsi: 'Teras ruko di pinggir jalan raya.',
     alamat: 'Jl. Merdeka No. 12',
     kecamatan: 'Pancoran Mas',
-    harga: 150000,
-    tipeDurasi: 'HARIAN',
+    hargaMingguan: 150000,
+    hargaBulanan: 450000,
   );
 }
 
@@ -127,11 +127,13 @@ void main() {
     expect(tester.takeException(), isNull);
     expect(find.textContaining('ruang usaha'), findsNothing);
     expect(find.text('Tempat terbaru'), findsOneWidget);
-    expect(find.byKey(const ValueKey('carousel-terbaru')), findsOneWidget);
+    expect(find.byKey(const ValueKey('tempat-terbaru')), findsOneWidget);
     expect(find.text('Tempat untukmu'), findsNothing);
   });
 
-  testWidgets('tiga tempat terbaru tampil di carousel', (tester) async {
+  testWidgets('tempat paling baru tampil besar dan sisanya di bawah', (
+    tester,
+  ) async {
     await tampilkanBeranda(
       tester,
       lebar: 375,
@@ -140,38 +142,65 @@ void main() {
         tempatContoh('2'),
         tempatContoh('3'),
         tempatContoh('4'),
+        tempatContoh('5'),
       ],
     );
 
     expect(tester.takeException(), isNull);
+    expect(find.byKey(const ValueKey('tempat-terbaru')), findsOneWidget);
     expect(find.text('Teras Ruko Merdeka Nomor 1'), findsOneWidget);
-    expect(find.text('Teras Ruko Merdeka Nomor 4'), findsOneWidget);
+    expect(find.text('Teras Ruko Merdeka Nomor 4'), findsWidgets);
+    expect(find.text('Teras Ruko Merdeka Nomor 5'), findsOneWidget);
     expect(find.text('Tempat untukmu'), findsOneWidget);
   });
 
-  testWidgets('kartu carousel bisa digeser', (tester) async {
+  testWidgets('hanya ada satu tautan Lihat semua di ponsel', (tester) async {
     await tampilkanBeranda(
       tester,
       lebar: 375,
+      places: [tempatContoh('1'), tempatContoh('2')],
+    );
+
+    expect(tester.takeException(), isNull);
+    expect(find.text('Lihat semua'), findsOneWidget);
+  });
+
+  testWidgets('hanya ada satu tautan Lihat semua di web', (tester) async {
+    await tampilkanBeranda(
+      tester,
+      lebar: 1440,
       places: [tempatContoh('1'), tempatContoh('2'), tempatContoh('3')],
     );
 
-    final carousel = find.byKey(const ValueKey('carousel-terbaru'));
-
-    await tester.drag(carousel, const Offset(-220, 0));
-    await tester.pumpAndSettle();
-
     expect(tester.takeException(), isNull);
-    expect(find.text('Teras Ruko Merdeka Nomor 3'), findsOneWidget);
+    expect(find.text('Lihat semua'), findsOneWidget);
   });
 
-  testWidgets('label kategori tampil utuh di ponsel sempit', (tester) async {
+  testWidgets('beranda tidak memuat filter kategori', (tester) async {
     await tampilkanBeranda(tester, lebar: 320);
 
     expect(tester.takeException(), isNull);
-    expect(find.text('Lapak Usaha'), findsWidgets);
-    expect(find.text('Teras Komersial'), findsWidgets);
-    expect(find.text('Booth Event'), findsWidgets);
+    expect(find.text('Lapak Usaha'), findsNothing);
+    expect(find.text('Teras Komersial'), findsNothing);
+    expect(find.text('Booth Event'), findsNothing);
+    expect(find.text('Semua'), findsNothing);
+    expect(find.byIcon(Icons.apps), findsNothing);
+  });
+
+  testWidgets('Lihat semua berada di sebelah kanan kartu terbaru', (
+    tester,
+  ) async {
+    await tampilkanBeranda(
+      tester,
+      lebar: 375,
+      places: [tempatContoh('1'), tempatContoh('2')],
+    );
+
+    expect(tester.takeException(), isNull);
+    final kartu = tester.getRect(find.byKey(const ValueKey('tempat-terbaru')));
+    final tautan = tester.getRect(find.text('Lihat semua'));
+    expect(tautan.right, greaterThan(kartu.center.dx));
+    expect(kartu.bottom, lessThan(tautan.top));
   });
 
   testWidgets('beranda penyewa tanpa overflow di web lebar', (tester) async {
@@ -184,16 +213,37 @@ void main() {
         tempatContoh('3'),
         tempatContoh('4'),
         tempatContoh('5'),
+        tempatContoh('6'),
       ],
     );
 
     expect(tester.takeException(), isNull);
     expect(find.text('Tempat terbaru'), findsOneWidget);
     expect(find.text('Tempat untukmu'), findsOneWidget);
+    expect(find.text('Teras Ruko Merdeka Nomor 6'), findsOneWidget);
+    expect(find.byKey(const ValueKey('baris-sorotan')), findsNWidgets(4));
   });
 
-  testWidgets('penyewaan aktif tampil saat masih berjalan', (tester) async {
-    final besok = DateTime.now().add(const Duration(days: 5));
+  testWidgets('beranda web dengan sidebar tetap dua kolom', (tester) async {
+    await tampilkanBeranda(
+      tester,
+      lebar: 1024,
+      places: [
+        tempatContoh('1'),
+        tempatContoh('2'),
+        tempatContoh('3'),
+        tempatContoh('4'),
+        tempatContoh('5'),
+      ],
+    );
+
+    expect(tester.takeException(), isNull);
+    expect(find.byKey(const ValueKey('baris-sorotan')), findsNWidgets(4));
+  });
+
+  testWidgets('penyewaan berjalan tidak lagi tampil di beranda', (
+    tester,
+  ) async {
     final selesai = DateTime.now().add(const Duration(days: 8));
 
     await tampilkanBeranda(
@@ -208,23 +258,8 @@ void main() {
     );
 
     expect(tester.takeException(), isNull);
-    expect(find.text('Penyewaan berjalan'), findsOneWidget);
-    expect(find.text('Belum dibayar'), findsOneWidget);
-    expect(find.text('Lanjutkan pembayaran'), findsOneWidget);
-    expect(besok.isAfter(DateTime.now()), isTrue);
-  });
-
-  testWidgets('penyewaan lewat tidak ditampilkan', (tester) async {
-    await tampilkanBeranda(
-      tester,
-      lebar: 375,
-      bookings: [
-        bookingContoh(status: 'LUNAS', selesai: '2020-01-01'),
-      ],
-    );
-
-    expect(tester.takeException(), isNull);
     expect(find.text('Penyewaan berjalan'), findsNothing);
+    expect(find.byKey(const ValueKey('tempat-terbaru')), findsOneWidget);
   });
 
   testWidgets('kondisi kosong menjelaskan langkah berikutnya', (tester) async {
@@ -232,5 +267,50 @@ void main() {
 
     expect(tester.takeException(), isNull);
     expect(find.text('Belum ada tempat tersedia'), findsOneWidget);
+  });
+
+  testWidgets('menghapus teks pencarian mengembalikan semua tempat', (
+    tester,
+  ) async {
+    final container = ProviderContainer(
+      overrides: [
+        authNotifierProvider.overrideWith(FakeAuthTenant.new),
+        tenantPlacesProvider.overrideWith(
+          () => FakeTenantPlaces([tempatContoh('1')]),
+        ),
+        bookingsProvider.overrideWith(() => FakeBookingsAktif(const [])),
+        notificationSummaryProvider.overrideWith(FakeNotif.new),
+        riwayatBadgeProvider.overrideWith(FakeRiwayat.new),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    tester.view.physicalSize = const Size(375, 1000);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: MaterialApp(
+          theme: AppTheme.lightTheme,
+          home: const TenantHomeScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final field = find.byType(TextField);
+    await tester.enterText(field, 'tidak-ada');
+    await tester.testTextInput.receiveAction(TextInputAction.search);
+    await tester.pumpAndSettle();
+
+    expect(container.read(tenantSearchProvider).keyword, 'tidak-ada');
+
+    await tester.enterText(field, '');
+    await tester.pumpAndSettle();
+
+    expect(container.read(tenantSearchProvider).keyword, isEmpty);
   });
 }

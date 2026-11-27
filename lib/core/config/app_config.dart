@@ -5,10 +5,14 @@ class AppConfig {
 
   static const String appName = 'SPOTH UMKM';
 
-  static const String lanHost = '10.2.11.138';
+  // IP laptop di jaringan Wi-Fi saat ini. Bisa diganti tanpa mengubah kode:
+  // flutter run --dart-define=API_HOST=10.2.13.237
+  static const String lanHost = String.fromEnvironment(
+    'API_HOST',
+    defaultValue: '10.50.199.81',
+  );
 
-  // Samakan dengan PORT di file .env backend (saat ini 3003).
-  static const int port = 3003;
+  static const int port = 3004;
 
   static String get baseUrl {
     if (kIsWeb) {

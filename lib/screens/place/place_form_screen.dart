@@ -121,30 +121,19 @@ class _PlaceFormScreenState extends ConsumerState<PlaceFormScreen> {
     if (error != null) _pesan(error);
   }
 
-  Widget _bagian({
-    required String judul,
-    required IconData ikon,
-    required Widget child,
-  }) {
-    return FormSection(title: judul, icon: ikon, child: child);
-  }
-
   Widget _formFields({required bool duaKolom}) {
-    final foto = _bagian(
-      judul: 'Foto Tempat',
-      ikon: Icons.photo_library_outlined,
+    final foto = FormSection(
+      title: 'Foto Tempat',
       child: PhotoFields(
         photos: _form.photos,
         maxPhotos: PlaceFormController.maxPhotos,
-        maxPhotoBytes: PlaceFormController.maxPhotoBytes,
         onAdd: _pilihFoto,
         onRemove: (index) => _form.hapusFoto(index),
       ),
     );
 
-    final info = _bagian(
-      judul: 'Informasi Tempat',
-      ikon: Icons.storefront_outlined,
+    final info = FormSection(
+      title: 'Informasi Tempat',
       child: InfoFields(
         namaController: _form.namaController,
         alamatController: _form.alamatController,
@@ -162,26 +151,16 @@ class _PlaceFormScreenState extends ConsumerState<PlaceFormScreen> {
       ),
     );
 
-    final harga = _bagian(
-      judul: 'Harga & Durasi',
-      ikon: Icons.payments_outlined,
+    final harga = FormSection(
+      title: 'Harga Sewa',
       child: PriceDurationFields(
-        hargaController: _form.hargaController,
-        tipeDurasi: _form.tipeDurasi,
-        onTipeDurasiChanged: _form.setTipeDurasi,
+        paketMingguan: _form.paketMingguan,
+        paketBulanan: _form.paketBulanan,
+        hargaMingguanController: _form.hargaMingguanController,
+        hargaBulananController: _form.hargaBulananController,
+        onPaketMingguanChanged: _form.setPaketMingguan,
+        onPaketBulananChanged: _form.setPaketBulanan,
         enabled: !_form.submitting,
-      ),
-    );
-
-    final periode = _bagian(
-      judul: 'Tanggal mulai & selesai',
-      ikon: Icons.event_outlined,
-      child: PeriodFields(
-        mulaiController: _form.tanggalMulaiController,
-        selesaiController: _form.tanggalSelesaiController,
-        isEditing: _form.isEditing,
-        onPickMulai: () => _form.pilihTanggal(mulai: true),
-        onPickSelesai: () => _form.pilihTanggal(mulai: false),
       ),
     );
 
@@ -190,12 +169,10 @@ class _PlaceFormScreenState extends ConsumerState<PlaceFormScreen> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           foto,
-          const SizedBox(height: 28),
+          const SizedBox(height: 24),
           info,
-          const SizedBox(height: 28),
+          const SizedBox(height: 24),
           harga,
-          const SizedBox(height: 28),
-          periode,
         ],
       );
     }
@@ -204,17 +181,16 @@ class _PlaceFormScreenState extends ConsumerState<PlaceFormScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Expanded(
+          flex: 4,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [foto, const SizedBox(height: 28), info],
+            children: [foto, const SizedBox(height: 24), harga],
           ),
         ),
-        const SizedBox(width: 28),
+        const SizedBox(width: 24),
         Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [harga, const SizedBox(height: 28), periode],
-          ),
+          flex: 6,
+          child: info,
         ),
       ],
     );
@@ -230,7 +206,7 @@ class _PlaceFormScreenState extends ConsumerState<PlaceFormScreen> {
         activeTab: MainTab.kelolaTempat,
         child: Scaffold(
           backgroundColor: AppColors.canvas,
-          appBar: const SpothAppBar(title: Text('Kelola Tempat')),
+          appBar: const SpothAppBar(title: Text('Kelola')),
           body: const Center(
             child: Padding(
               padding: EdgeInsets.all(20),
@@ -277,7 +253,8 @@ class _PlaceFormScreenState extends ConsumerState<PlaceFormScreen> {
                   )
                 : LayoutBuilder(
                     builder: (context, constraints) {
-                      final duaKolom = constraints.maxWidth >= 900;
+                      final duaKolom =
+                          MediaQuery.sizeOf(context).width >= AppWidth.sidebar;
 
                       return Center(
                         child: ConstrainedBox(

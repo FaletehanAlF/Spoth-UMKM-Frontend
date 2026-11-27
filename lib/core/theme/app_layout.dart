@@ -35,9 +35,6 @@ abstract final class AppWidth {
 
   /// Layar mulai menampilkan sidebar.
   static const double sidebar = 900;
-
-  /// Sidebar diperlebar (lengkap) pada lebar ini.
-  static const double sidebarExpanded = 1400;
   static const double content = 1080;
   static const double form = 680;
   static const double auth = 430;

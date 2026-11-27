@@ -110,33 +110,8 @@ class PlaceGridCard extends StatelessWidget {
                           ),
                         ],
                       ),
-                      const Spacer(),
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Expanded(
-                            child: Text(
-                              formatRupiah(place.harga),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w700,
-                                height: 1.15,
-                                letterSpacing: -0.2,
-                                color: AppColors.charcoal,
-                              ),
-                            ),
-                          ),
-                          Text(
-                            '/${place.durasiLabel.toLowerCase()}',
-                            style: const TextStyle(
-                              fontSize: 10.5,
-                              color: AppColors.secondaryText,
-                            ),
-                          ),
-                        ],
-                      ),
+                      const SizedBox(height: 6),
+                      _HargaPaketRingkas(place: place),
                     ],
                   ),
                 ),
@@ -145,6 +120,73 @@ class PlaceGridCard extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Harga ringkas untuk kartu daftar tempat.
+///
+/// Menampilkan paket termurah, dan bila tempat menawarkan dua paket, paket
+/// lainnya ditulis lebih kecil di bawahnya.
+class _HargaPaketRingkas extends StatelessWidget {
+  const _HargaPaketRingkas({required this.place});
+
+  final PlaceModel place;
+
+  @override
+  Widget build(BuildContext context) {
+    final termurah = place.paketTermurah;
+    if (termurah == null) {
+      return const SizedBox.shrink();
+    }
+
+    final lain = place.paket.where((item) => item.tipe != termurah.tipe);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Flexible(
+              child: Text(
+                formatRupiah(termurah.harga),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  height: 1.15,
+                  letterSpacing: -0.2,
+                  color: AppColors.charcoal,
+                ),
+              ),
+            ),
+            Flexible(
+              child: Text(
+                '/${termurah.satuan}',
+                maxLines: 1,
+                softWrap: false,
+                overflow: TextOverflow.fade,
+                style: const TextStyle(
+                  fontSize: 10.5,
+                  color: AppColors.secondaryText,
+                ),
+              ),
+            ),
+          ],
+        ),
+        for (final item in lain)
+          Text(
+            '${item.label} ${formatRupiah(item.harga)}',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              fontSize: 10,
+              color: AppColors.secondaryText,
+            ),
+          ),
+      ],
     );
   }
 }

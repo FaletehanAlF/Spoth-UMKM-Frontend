@@ -60,10 +60,6 @@ class NotificationService {
     return NotificationSummaryModel.fromJson(ringkasan);
   }
 
-  Future<void> markRead({required String token, required String id}) async {
-    await _apiService.patch('/notifications/$id/read', {}, token: token);
-  }
-
   Future<void> markAllRead({required String token}) async {
     await _apiService.post('/notifications/read-all', {}, token: token);
   }

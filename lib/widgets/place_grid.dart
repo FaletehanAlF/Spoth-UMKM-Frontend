@@ -110,7 +110,7 @@ class PlaceGridMetrics {
     return PlaceGridMetrics(
       kolom: kolom,
       tinggiFoto: tinggiFoto,
-      extent: tinggiFoto + 128,
+      extent: tinggiFoto + 112,
     );
   }
 

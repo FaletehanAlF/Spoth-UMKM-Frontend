@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../config/app_config.dart';
@@ -124,6 +125,11 @@ class ApiService {
         errors: body['errors'] as List<dynamic>?,
       );
     }
+
+    // Membantu saat tes di HP: alamat yang dituju ikut tampil di console.
+    debugPrint(
+      '[api] ${error.requestOptions.uri} -> ${error.type}: ${error.message}',
+    );
 
     if (error.type == DioExceptionType.connectionTimeout ||
         error.type == DioExceptionType.sendTimeout ||

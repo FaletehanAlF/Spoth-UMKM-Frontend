@@ -23,17 +23,39 @@ class PaymentService {
   Future<PaymentModel> payBooking({
     required String token,
     required String bookingId,
-    required String metode,
+    bool force = false,
   }) async {
-    final body = await _apiService.post('/payments/$bookingId', {
-      'metode': metode,
-    }, token: token);
+    final body = await _apiService.post(
+      '/payments/$bookingId',
+      <String, dynamic>{'force': force},
+      token: token,
+    );
 
     final data = body['data'] as Map<String, dynamic>?;
     final payment = data?['payment'] as Map<String, dynamic>?;
 
     if (payment == null) {
       throw const FormatException('Respons pembayaran tidak valid');
+    }
+
+    return PaymentModel.fromJson(payment);
+  }
+
+  Future<PaymentModel?> syncPayment({
+    required String token,
+    required String bookingId,
+  }) async {
+    final body = await _apiService.post(
+      '/payments/$bookingId/sync',
+      const <String, dynamic>{},
+      token: token,
+    );
+
+    final data = body['data'] as Map<String, dynamic>?;
+    final payment = data?['payment'] as Map<String, dynamic>?;
+
+    if (payment == null) {
+      return null;
     }
 
     return PaymentModel.fromJson(payment);

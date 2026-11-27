@@ -133,11 +133,12 @@ class PlaceService {
   Future<PlaceAvailabilityModel> checkAvailability({
     required String placeId,
     required String tanggalMulai,
+    required String tipeDurasi,
     required int jumlahDurasi,
     String? token,
   }) async {
     final body = await _apiService.get(
-      '/places/$placeId/availability${_query({'tanggal_mulai': tanggalMulai, 'jumlah_durasi': '$jumlahDurasi'})}',
+      '/places/$placeId/availability${_query({'tanggal_mulai': tanggalMulai, 'tipe_durasi': tipeDurasi, 'jumlah_durasi': '$jumlahDurasi'})}',
       token: token,
     );
     final data = body['data'] as Map<String, dynamic>?;

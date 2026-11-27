@@ -15,7 +15,6 @@ class ProfileEditForm extends StatelessWidget {
     required this.namaController,
     required this.emailController,
     required this.noHpController,
-    required this.alamatController,
     required this.isSaving,
     required this.onSave,
     required this.onCancel,
@@ -25,7 +24,6 @@ class ProfileEditForm extends StatelessWidget {
   final TextEditingController namaController;
   final TextEditingController emailController;
   final TextEditingController noHpController;
-  final TextEditingController alamatController;
   final bool isSaving;
   final VoidCallback onSave;
   final VoidCallback onCancel;
@@ -98,18 +96,6 @@ class ProfileEditForm extends StatelessWidget {
                 labelText: 'No. HP',
                 hintText: 'Contoh: 081234567890',
                 prefixIcon: Icon(Icons.phone_outlined),
-              ),
-            ),
-            const SizedBox(height: AppSpacing.md),
-            TextFormField(
-              controller: alamatController,
-              enabled: !isSaving,
-              textCapitalization: TextCapitalization.sentences,
-              maxLines: 3,
-              decoration: const InputDecoration(
-                labelText: 'Alamat',
-                hintText: 'Alamat lengkap untuk kebutuhan penyewaan',
-                alignLabelWithHint: true,
               ),
             ),
             const SizedBox(height: AppSpacing.xl),

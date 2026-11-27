@@ -31,3 +31,10 @@ final bookingsProvider =
     AsyncNotifierProvider<BookingsNotifier, List<BookingModel>>(
       BookingsNotifier.new,
     );
+
+final bookingBadgeProvider = Provider<int>((ref) {
+  final bookings = ref.watch(bookingsProvider).value ?? const <BookingModel>[];
+  return bookings
+      .where((booking) => booking.status == 'MENUNGGU_PEMBAYARAN')
+      .length;
+});

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_layout.dart';
-import '../../../core/utils/format.dart';
 import '../../../models/user_model.dart';
 
 /// Kartu identitas profil.
@@ -100,15 +99,6 @@ class ProfileSummaryCard extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.xs),
           Center(child: _RoleBadge(role: user.role)),
-          const SizedBox(height: AppSpacing.sm),
-          Text(
-            'Bergabung sejak ${formatDateString(user.createdAt.toIso8601String())}',
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 11.5,
-              color: AppColors.secondaryText,
-            ),
-          ),
           const SizedBox(height: AppSpacing.xl),
           if (isEditing) ...[
             Row(
