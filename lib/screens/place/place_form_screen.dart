@@ -179,6 +179,7 @@ class _PlaceFormScreenState extends ConsumerState<PlaceFormScreen> {
           _pesan(pesan ?? 'Koordinat dari alamat ditambahkan.');
         },
         onHapusLokasi: _form.hapusLokasi,
+        onKoordinatDipilih: _form.setKoordinat,
         enabled: !_form.submitting,
       ),
     );

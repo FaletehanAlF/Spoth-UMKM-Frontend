@@ -247,6 +247,14 @@ class PlaceFormController extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Set koordinat dari peta; isi alamat otomatis.
+  Future<void> setKoordinat(double lat, double lng) async {
+    latitude = lat;
+    longitude = lng;
+    await _isiAlamatDariKoordinat(lat, lng);
+    notifyListeners();
+  }
+
 bool _teksBersih(String? s) => s != null && s.trim().isNotEmpty;
 
   /// Reverse geocode: koordinat -> alamat lengkap (isi field Alamat).

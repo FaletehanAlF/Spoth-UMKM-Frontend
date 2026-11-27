@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 import '../../../core/constants/place_districts.dart';
 import '../../../core/theme/app_colors.dart';
@@ -8,6 +9,9 @@ import '../../../core/theme/app_layout.dart';
 import '../../../models/category_model.dart';
 import '../../../widgets/category_picker.dart';
 import '../../../widgets/shimmer_loading.dart';
+
+const double _defaultLat = -6.2;
+const double _defaultLng = 106.8167;
 
 class LokasiFields extends StatelessWidget {
   const LokasiFields({
@@ -18,6 +22,7 @@ class LokasiFields extends StatelessWidget {
     required this.onGunakanLokasiSaatIni,
     required this.onCariKoordinatDariAlamat,
     required this.onHapusLokasi,
+    required this.onKoordinatDipilih,
     required this.enabled,
   });
 
@@ -27,6 +32,7 @@ class LokasiFields extends StatelessWidget {
   final VoidCallback onGunakanLokasiSaatIni;
   final VoidCallback onCariKoordinatDariAlamat;
   final VoidCallback onHapusLokasi;
+  final Future<void> Function(double, double) onKoordinatDipilih;
   final bool enabled;
 
   bool get punyaLokasi => latitude != null && longitude != null;
@@ -69,6 +75,16 @@ class LokasiFields extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 14),
+        _PetaPilih(
+          target: LatLng(
+            latitude ?? _defaultLat,
+            longitude ?? _defaultLng,
+          ),
+          punyaLokasi: punyaLokasi,
+          enabled: aktif,
+          onTap: onKoordinatDipilih,
+        ),
+        const SizedBox(height: 14),
         if (punyaLokasi) ...[
           Container(
             padding: const EdgeInsets.all(12),
@@ -100,6 +116,65 @@ class LokasiFields extends StatelessWidget {
             'Lokasi peta opsional. Isi alamat lengkap tetap wajib.',
             style: TextStyle(fontSize: 12.5, height: 1.4, color: AppColors.secondaryText),
           ),
+      ],
+    );
+  }
+}
+
+class _PetaPilih extends StatelessWidget {
+  const _PetaPilih({
+    required this.target,
+    required this.punyaLokasi,
+    required this.enabled,
+    required this.onTap,
+  });
+
+  final LatLng target;
+  final bool punyaLokasi;
+  final bool enabled;
+  final Future<void> Function(double, double) onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: SizedBox(
+            height: 160,
+            width: double.infinity,
+            child: GoogleMap(
+              key: ValueKey('${target.latitude},${target.longitude}'),
+              initialCameraPosition: CameraPosition(target: target, zoom: 15),
+              markers: punyaLokasi
+                  ? {
+                      Marker(
+                        markerId: const MarkerId('lokasi-tempat'),
+                        position: target,
+                        infoWindow: const InfoWindow(title: 'Lokasi'),
+                      ),
+                    }
+                  : {},
+              onTap: enabled
+                  ? (pos) => onTap(pos.latitude, pos.longitude)
+                  : null,
+              scrollGesturesEnabled: enabled,
+              zoomGesturesEnabled: enabled,
+              rotateGesturesEnabled: false,
+              tiltGesturesEnabled: false,
+              myLocationButtonEnabled: false,
+              zoomControlsEnabled: false,
+              compassEnabled: false,
+              mapToolbarEnabled: false,
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        const Text(
+          'Tap peta untuk memilih lokasi. Koordinat & alamat diisi otomatis.',
+          style: TextStyle(fontSize: 12, height: 1.4, color: AppColors.secondaryText),
+        ),
       ],
     );
   }
