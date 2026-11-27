@@ -164,6 +164,25 @@ class _PlaceFormScreenState extends ConsumerState<PlaceFormScreen> {
       ),
     );
 
+    final lokasi = FormSection(
+      title: 'Lokasi',
+      child: LokasiFields(
+        latitude: _form.latitude,
+        longitude: _form.longitude,
+        membacaLokasi: _form.membacaLokasi,
+        onGunakanLokasiSaatIni: () async {
+          final pesan = await _form.gunakanLokasiSaatIni();
+          _pesan(pesan ?? 'Lokasi saat ini ditambahkan.');
+        },
+        onCariKoordinatDariAlamat: () async {
+          final pesan = await _form.cariKoordinatDariAlamat();
+          _pesan(pesan ?? 'Koordinat dari alamat ditambahkan.');
+        },
+        onHapusLokasi: _form.hapusLokasi,
+        enabled: !_form.submitting,
+      ),
+    );
+
     if (!duaKolom) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -171,6 +190,8 @@ class _PlaceFormScreenState extends ConsumerState<PlaceFormScreen> {
           foto,
           const SizedBox(height: 24),
           info,
+          const SizedBox(height: 24),
+          lokasi,
           const SizedBox(height: 24),
           harga,
         ],
@@ -190,7 +211,10 @@ class _PlaceFormScreenState extends ConsumerState<PlaceFormScreen> {
         const SizedBox(width: 24),
         Expanded(
           flex: 6,
-          child: info,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [info, const SizedBox(height: 24), lokasi],
+          ),
         ),
       ],
     );

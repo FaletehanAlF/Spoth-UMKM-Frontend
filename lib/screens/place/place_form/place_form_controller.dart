@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:geocoding/geocoding.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../core/constants/place_districts.dart';
@@ -50,6 +52,12 @@ class PlaceFormController extends ChangeNotifier {
   /// Paket yang ditawarkan tempat ini.
   bool paketMingguan = true;
   bool paketBulanan = false;
+
+  /// Koordinat lokasi tempat (null bila pemilik belum mengisi).
+  double? latitude;
+  double? longitude;
+  bool membacaLokasi = false;
+
   List<CategoryModel> categories = const [];
   bool categoriesLoading = false;
   String? categoriesError;
@@ -116,6 +124,8 @@ class PlaceFormController extends ChangeNotifier {
           ? ''
           : _trimNumber(place.hargaBulanan!);
       kategori = place.kategori;
+      latitude = place.latitude;
+      longitude = place.longitude;
       if (!categories.any((item) => item.nama == place.kategori)) {
         kategori = CategoryModel.useLainya;
         kategoriLainController.text = place.kategori;
@@ -161,6 +171,103 @@ class PlaceFormController extends ChangeNotifier {
   void setPaketBulanan(bool aktif) {
     paketBulanan = aktif;
     notifyListeners();
+  }
+
+  /// Ambil lokasi saat ini, isi koordinat, lalu isi alamat otomatis.
+  Future<String?> gunakanLokasiSaatIni() async {
+    membacaLokasi = true;
+    notifyListeners();
+
+    try {
+      if (!await Geolocator.isLocationServiceEnabled()) {
+        return 'Aktifkan layanan lokasi (GPS) dulu.';
+      }
+
+      var izin = await Geolocator.checkPermission();
+      if (izin == LocationPermission.denied) {
+        izin = await Geolocator.requestPermission();
+      }
+
+      if (izin == LocationPermission.denied ||
+          izin == LocationPermission.deniedForever) {
+        return 'Izin lokasi ditolak. Isi alamat manual atau beri izin.';
+      }
+
+      final posisi = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+        ),
+      );
+
+      latitude = posisi.latitude;
+      longitude = posisi.longitude;
+
+      await _isiAlamatDariKoordinat(posisi.latitude, posisi.longitude);
+
+      return null;
+    } catch (_) {
+      return 'Gagal mengambil lokasi saat ini. Isi alamat manual.';
+    } finally {
+      membacaLokasi = false;
+      notifyListeners();
+    }
+  }
+
+  /// Isi koordinat dari alamat lengkap yang diketik pemilik.
+  Future<String?> cariKoordinatDariAlamat() async {
+    final alamat = alamatController.text.trim();
+    if (alamat.isEmpty) {
+      return 'Isi alamat lengkap dulu.';
+    }
+
+    membacaLokasi = true;
+    notifyListeners();
+
+    try {
+      final hasil = await Geocoding().locationFromAddress(alamat);
+      if (hasil.isEmpty) {
+        return 'Koordinat tidak ditemukan untuk alamat ini.';
+      }
+
+      latitude = hasil.first.latitude;
+      longitude = hasil.first.longitude;
+      return null;
+    } catch (_) {
+      return 'Koordinat tidak ditemukan. Cek alamat atau isi manual.';
+    } finally {
+      membacaLokasi = false;
+      notifyListeners();
+    }
+  }
+
+  /// Hapus koordinat; tempat tetap punya alamat teks.
+  void hapusLokasi() {
+    latitude = null;
+    longitude = null;
+    notifyListeners();
+  }
+
+bool _teksBersih(String? s) => s != null && s.trim().isNotEmpty;
+
+  /// Reverse geocode: koordinat -> alamat lengkap (isi field Alamat).
+  Future<void> _isiAlamatDariKoordinat(double lat, double lng) async {    try {
+      final marks = await Geocoding().placemarkFromCoordinates(lat, lng);
+      if (marks.isEmpty) return;
+
+      final p = marks.first;
+      final bagian = <String>[
+        if (_teksBersih(p.street)) p.street!,
+        if (_teksBersih(p.subLocality)) p.subLocality!,
+        if (_teksBersih(p.locality)) p.locality!,
+        if (_teksBersih(p.subAdministrativeArea)) p.subAdministrativeArea!,
+        if (_teksBersih(p.administrativeArea)) p.administrativeArea!,
+      ];
+
+      final alamat = bagian.join(', ');
+      if (alamat.isNotEmpty) alamatController.text = alamat;
+    } catch (_) {
+      // Alamat tetap bisa diisi manual.
+    }
   }
 
   Future<String?> tambahFoto(ImageSource sumber) async {
@@ -290,6 +397,8 @@ class PlaceFormController extends ChangeNotifier {
         'kecamatan': kecamatan,
         'harga_mingguan': hargaMingguan,
         'harga_bulanan': hargaBulanan,
+        'latitude': latitude,
+        'longitude': longitude,
         'deskripsi': deskripsiController.text.trim(),
         'foto': fotoUrls,
       };

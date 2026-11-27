@@ -28,6 +28,9 @@ android {
         // flag during build.
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        // Isi kunci Google Maps di sini atau lewat -PgoogleMapsApiKey=... saat build.
+        manifestPlaceholders["googleMapsApiKey"] =
+            (project.findProperty("googleMapsApiKey") as String?) ?: "YOUR_GOOGLE_MAPS_API_KEY"
     }
 
     buildTypes {

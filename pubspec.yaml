@@ -43,7 +43,10 @@ dependencies:
   socket_io_client: ^3.1.6
   flutter_local_notifications: ^23.0.2
   dio: ^5.11.1
-  url_launcher: ^6.3.1
+  url_launcher: ^6.3.3
+  google_maps_flutter: ^2.19.0
+  geolocator: ^14.0.1
+  geocoding: ^5.0.1
 
 dev_dependencies:
   flutter_test:

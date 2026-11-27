@@ -33,6 +33,8 @@ class PlaceModel {
     this.foto = const [],
     this.namaHost,
     this.fotoHost,
+    this.latitude,
+    this.longitude,
     this.jumlahFoto = 0,
     this.sudahDiSewa = false,
     this.jadwalTerpakai = const [],
@@ -79,6 +81,11 @@ class PlaceModel {
 
   /// Foto profil pemilik tempat (null bila belum diunggah).
   final String? fotoHost;
+
+  /// Koordinat peta (null bila pemilik belum mengisi lokasi).
+  final double? latitude;
+  final double? longitude;
+
   final int jumlahFoto;
   final bool sudahDiSewa;
   final List<BookedRange> jadwalTerpakai;
@@ -130,6 +137,8 @@ class PlaceModel {
           const [],
       namaHost: json['nama_host'] as String?,
       fotoHost: json['foto_host'] as String?,
+      latitude: _toNullableDouble(json['latitude']),
+      longitude: _toNullableDouble(json['longitude']),
       jumlahFoto: (json['jumlah_foto'] as num?)?.toInt() ?? 0,
       sudahDiSewa: json['sudah_di_sewa'] as bool? ?? false,
       jadwalTerpakai: (json['jadwal_terpakai'] as List<dynamic>? ?? const [])
@@ -138,6 +147,9 @@ class PlaceModel {
           .toList(),
     );
   }
+
+  /// Tempat ini punya koordinat untuk ditampilkan di peta.
+  bool get punyaLokasi => latitude != null && longitude != null;
 
   static double? _toNullableDouble(dynamic value) {
     if (value is num) {

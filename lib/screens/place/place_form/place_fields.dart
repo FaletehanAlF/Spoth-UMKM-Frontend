@@ -9,6 +9,86 @@ import '../../../models/category_model.dart';
 import '../../../widgets/category_picker.dart';
 import '../../../widgets/shimmer_loading.dart';
 
+class LokasiFields extends StatelessWidget {
+  const LokasiFields({
+    super.key,
+    required this.latitude,
+    required this.longitude,
+    required this.membacaLokasi,
+    required this.onGunakanLokasiSaatIni,
+    required this.onCariKoordinatDariAlamat,
+    required this.onHapusLokasi,
+    required this.enabled,
+  });
+
+  final double? latitude;
+  final double? longitude;
+  final bool membacaLokasi;
+  final VoidCallback onGunakanLokasiSaatIni;
+  final VoidCallback onCariKoordinatDariAlamat;
+  final VoidCallback onHapusLokasi;
+  final bool enabled;
+
+  bool get punyaLokasi => latitude != null && longitude != null;
+
+  @override
+  Widget build(BuildContext context) {
+    final aktif = enabled && !membacaLokasi;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          'Alamat lengkap diisi di atas. Koordinat dipakai untuk peta.',
+          style: const TextStyle(fontSize: 12.5, color: AppColors.secondaryText),
+        ),
+        const SizedBox(height: 12),
+        FilledButton.icon(
+          onPressed: aktif ? onGunakanLokasiSaatIni : null,
+          icon: const Icon(Icons.my_location, size: 18),
+          label: Text(membacaLokasi ? 'Mengambil lokasi...' : 'Gunakan lokasi saat ini'),
+        ),
+        const SizedBox(height: 8),
+        OutlinedButton.icon(
+          onPressed: aktif ? onCariKoordinatDariAlamat : null,
+          icon: const Icon(Icons.search, size: 18),
+          label: const Text('Cari koordinat dari alamat'),
+        ),
+        const SizedBox(height: 12),
+        if (punyaLokasi) ...[
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AppColors.surfaceMuted,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.location_on, size: 18, color: AppColors.primaryOrange),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Latitude ${latitude!.toStringAsFixed(6)}, Longitude ${longitude!.toStringAsFixed(6)}',
+                    style: const TextStyle(fontSize: 12.5, color: AppColors.charcoal),
+                  ),
+                ),
+                TextButton(
+                  onPressed: enabled ? onHapusLokasi : null,
+                  child: const Text('Hapus'),
+                ),
+              ],
+            ),
+          ),
+        ] else
+          Text(
+            'Lokasi peta opsional. Isi alamat lengkap tetap wajib.',
+            style: const TextStyle(fontSize: 12.5, color: AppColors.secondaryText),
+          ),
+      ],
+    );
+  }
+}
+
 class PhotoItem {
   PhotoItem.existing({required this.url}) : bytes = null, filename = null;
 
