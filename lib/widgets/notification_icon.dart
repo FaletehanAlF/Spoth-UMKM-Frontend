@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../core/theme/app_colors.dart';
 import '../providers/notification_provider.dart';
 
 class NotificationIconButton extends ConsumerWidget {
@@ -16,6 +17,7 @@ class NotificationIconButton extends ConsumerWidget {
       icon: Badge.count(
         count: count,
         isLabelVisible: count > 0,
+        backgroundColor: AppColors.danger,
         child: const Icon(Icons.notifications_outlined),
       ),
       tooltip: 'Notifikasi',

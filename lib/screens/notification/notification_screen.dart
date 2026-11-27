@@ -41,10 +41,31 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen> {
   @override
   Widget build(BuildContext context) {
     final notifications = ref.watch(notificationsProvider);
+    final adaNotifikasi = notifications.value?.items.isNotEmpty ?? false;
 
     final page = Scaffold(
       backgroundColor: AppColors.canvas,
-      appBar: const SpothAppBar(title: Text('Notifikasi')),
+      appBar: SpothAppBar(
+        title: const Text('Notifikasi'),
+        actions: [
+          TextButton(
+            onPressed: adaNotifikasi
+                ? () async {
+                    await ref
+                        .read(notificationsProvider.notifier)
+                        .deleteAll();
+
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Semua notifikasi dihapus')),
+                      );
+                    }
+                  }
+                : null,
+            child: const Text('Hapus semua'),
+          ),
+        ],
+      ),
       body: notifications.when(
         loading: () => _dibatasi(
           const SingleChildScrollView(

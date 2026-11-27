@@ -13,6 +13,7 @@ import '../../models/booking_model.dart';
 import '../../models/payment_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/booking_provider.dart';
+import '../../providers/notification_provider.dart';
 import '../../providers/riwayat_provider.dart';
 import '../../providers/nav_provider.dart';
 import '../../widgets/app_button.dart';
@@ -232,6 +233,8 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen>
 
       await ref.read(bookingsProvider.notifier).refresh();
       await ref.read(riwayatBadgeProvider.notifier).refresh();
+      await ref.read(notificationSummaryProvider.notifier).refresh();
+      await ref.read(notificationsProvider.notifier).refresh();
 
       await _load();
 

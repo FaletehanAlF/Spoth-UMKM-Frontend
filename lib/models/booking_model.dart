@@ -12,6 +12,8 @@
     required this.hargaSatuan,
     required this.totalHarga,
     this.adminFee = 0,
+    this.komisiPlatform = 0,
+    this.pendapatanHost = 0,
     required this.status,
     this.createdAt,
     this.namaTempat,
@@ -37,6 +39,10 @@
   final double hargaSatuan;
   final double totalHarga;
   final double adminFee;
+  /// Biaya admin platform yang masuk ke platform.
+  final double komisiPlatform;
+  /// Pendapatan host (harga sewa) sebelum dipakai.
+  final double pendapatanHost;
   final String status;
   final DateTime? createdAt;
   final String? namaTempat;
@@ -88,6 +94,8 @@
       hargaSatuan: _toDouble(json['harga_satuan']),
       totalHarga: _toDouble(json['total_harga']),
       adminFee: _toDouble(json['admin_fee']),
+      komisiPlatform: _toDouble(json['komisi_platform']),
+      pendapatanHost: _toDouble(json['pendapatan_host']),
       status: json['status'] as String? ?? '',
       createdAt: DateTime.tryParse(json['created_at'] as String? ?? ''),
       namaTempat: json['nama_tempat'] as String?,
