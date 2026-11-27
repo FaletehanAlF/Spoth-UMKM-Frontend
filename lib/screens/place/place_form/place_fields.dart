@@ -50,6 +50,16 @@ class LokasiFields extends StatelessWidget {
           style: TextStyle(fontSize: 12.5, height: 1.4, color: AppColors.secondaryText),
         ),
         const SizedBox(height: 14),
+        _PetaPilih(
+          target: LatLng(
+            latitude ?? _defaultLat,
+            longitude ?? _defaultLng,
+          ),
+          punyaLokasi: punyaLokasi,
+          enabled: aktif,
+          onTap: onKoordinatDipilih,
+        ),
+        const SizedBox(height: 14),
         SizedBox(
           width: double.infinity,
           child: FilledButton.icon(
@@ -74,16 +84,6 @@ class LokasiFields extends StatelessWidget {
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
           ),
-        ),
-        const SizedBox(height: 14),
-        _PetaPilih(
-          target: LatLng(
-            latitude ?? _defaultLat,
-            longitude ?? _defaultLng,
-          ),
-          punyaLokasi: punyaLokasi,
-          enabled: aktif,
-          onTap: onKoordinatDipilih,
         ),
         const SizedBox(height: 14),
         if (punyaLokasi) ...[
