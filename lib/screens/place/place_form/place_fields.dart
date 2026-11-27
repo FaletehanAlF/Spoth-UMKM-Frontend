@@ -1,13 +1,14 @@
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:latlong2/latlong.dart';
 
 import '../../../core/constants/place_districts.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_layout.dart';
 import '../../../models/category_model.dart';
 import '../../../widgets/category_picker.dart';
+import '../../../widgets/free_map_view.dart';
 import '../../../widgets/shimmer_loading.dart';
 
 const double _defaultLat = -6.2;
@@ -139,36 +140,15 @@ class _PetaPilih extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        ClipRRect(
-          borderRadius: BorderRadius.circular(12),
-          child: SizedBox(
-            height: 160,
-            width: double.infinity,
-            child: GoogleMap(
-              key: ValueKey('${target.latitude},${target.longitude}'),
-              initialCameraPosition: CameraPosition(target: target, zoom: 15),
-              markers: punyaLokasi
-                  ? {
-                      Marker(
-                        markerId: const MarkerId('lokasi-tempat'),
-                        position: target,
-                        infoWindow: const InfoWindow(title: 'Lokasi'),
-                      ),
-                    }
-                  : {},
-              onTap: enabled
-                  ? (pos) => onTap(pos.latitude, pos.longitude)
-                  : null,
-              scrollGesturesEnabled: enabled,
-              zoomGesturesEnabled: enabled,
-              rotateGesturesEnabled: false,
-              tiltGesturesEnabled: false,
-              myLocationButtonEnabled: false,
-              zoomControlsEnabled: false,
-              compassEnabled: false,
-              mapToolbarEnabled: false,
-            ),
-          ),
+        FreeMapView(
+          key: ValueKey('${target.latitude},${target.longitude}'),
+          center: target,
+          punyaLokasi: punyaLokasi,
+          markerId: 'lokasi-tempat',
+          title: 'Lokasi',
+          interactive: enabled,
+          height: 160,
+          onTap: enabled ? onTap : null,
         ),
         const SizedBox(height: 8),
         const Text(

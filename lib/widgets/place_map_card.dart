@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../core/theme/app_colors.dart';
 import '../models/place_model.dart';
+import 'free_map_view.dart';
 
 /// Peta lokasi tempat yang ringkas.
 ///
@@ -169,31 +170,14 @@ class _PetaStatis extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(12),
-      child: SizedBox(
-        height: PlaceMapCard._mapHeight,
-        width: double.infinity,
-        child: GoogleMap(
-          initialCameraPosition: CameraPosition(target: posisi, zoom: 15),
-          markers: {
-            Marker(
-              markerId: MarkerId(place.id),
-              position: posisi,
-              infoWindow: InfoWindow(title: place.namaTempat),
-            ),
-          },
-          onTap: (_) => onBuka(),
-          scrollGesturesEnabled: false,
-          zoomGesturesEnabled: false,
-          rotateGesturesEnabled: false,
-          tiltGesturesEnabled: false,
-          myLocationButtonEnabled: false,
-          zoomControlsEnabled: false,
-          compassEnabled: false,
-          mapToolbarEnabled: false,
-        ),
-      ),
+    return FreeMapView(
+      center: posisi,
+      punyaLokasi: true,
+      markerId: place.id,
+      title: place.namaTempat,
+      interactive: false,
+      height: PlaceMapCard._mapHeight,
+      onTap: (_, _) => onBuka(),
     );
   }
 }
