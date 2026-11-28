@@ -67,4 +67,8 @@ class NotificationService {
   Future<void> delete({required String token, required String id}) async {
     await _apiService.delete('/notifications/$id', token: token);
   }
+
+  Future<void> deleteAll({required String token}) async {
+    await _apiService.delete('/notifications', token: token);
+  }
 }

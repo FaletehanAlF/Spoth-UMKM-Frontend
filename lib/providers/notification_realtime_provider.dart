@@ -8,6 +8,8 @@ import '../core/services/notification_socket_service.dart';
 import '../models/notification_model.dart';
 import 'auth_provider.dart';
 import 'notification_provider.dart';
+import 'booking_provider.dart';
+import 'riwayat_provider.dart';
 
 String _socketHost() {
   final base = AppConfig.baseUrl;
@@ -66,6 +68,12 @@ class NotificationRealtimeNotifier extends Notifier<bool> {
   void _onNewNotification(NotificationModel notification) {
     unawaited(ref.read(notificationsProvider.notifier).refresh());
     unawaited(ref.read(notificationSummaryProvider.notifier).refresh());
+
+    // Pembayaran penyewa mengubah booking; pemilik perlu badge & riwayat update.
+    if (notification.jenis == 'PEMBAYARAN_BERHASIL') {
+      unawaited(ref.read(bookingsProvider.notifier).refresh());
+      unawaited(ref.read(riwayatBadgeProvider.notifier).refresh());
+    }
 
     unawaited(
       LocalNotificationService.instance.showFromNotification(notification),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../core/theme/app_colors.dart';
 import '../providers/riwayat_provider.dart';
 
 class RiwayatIconButton extends ConsumerWidget {
@@ -15,6 +16,7 @@ class RiwayatIconButton extends ConsumerWidget {
       icon: Badge.count(
         count: count,
         isLabelVisible: count > 0,
+        backgroundColor: AppColors.primaryOrange,
         child: const Icon(Icons.history_rounded),
       ),
       tooltip: 'Riwayat',

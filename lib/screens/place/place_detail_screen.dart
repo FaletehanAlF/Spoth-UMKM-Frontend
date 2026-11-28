@@ -14,19 +14,10 @@ import '../../providers/auth_provider.dart';
 import '../../providers/booking_provider.dart';
 import '../../providers/nav_provider.dart';
 import '../../widgets/empty_state.dart';
+import '../../widgets/place_map_card.dart';
 import '../../widgets/shimmer_loading.dart';
 import '../../widgets/spoth_app_bar.dart';
 import '../../widgets/spoth_sidebar_scaffold.dart';
-
-String _lokasiLengkap(PlaceModel place) {
-  final alamat = place.alamat.trim();
-  final kecamatan = place.kecamatan.trim();
-
-  if (kecamatan.isEmpty) return alamat;
-  if (alamat.toLowerCase().contains(kecamatan.toLowerCase())) return alamat;
-
-  return '$alamat, $kecamatan';
-}
 
 bool _punyaPesananAktif(
   String placeId,
@@ -328,6 +319,8 @@ class _DetailScrollView extends StatelessWidget {
           paketAktif: paketAktif,
           onPaketChanged: onPaketChanged,
         ),
+        const SizedBox(height: 20),
+        PlaceMapCard(place: place),
         const SizedBox(height: 20),
         if (deskripsi.isNotEmpty) ...[
           _DetailSectionCard(
@@ -782,31 +775,6 @@ class _KepalaTempat extends StatelessWidget {
             letterSpacing: -0.4,
             color: AppColors.charcoal,
           ),
-        ),
-        const SizedBox(height: 8),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Padding(
-              padding: EdgeInsets.only(top: 2),
-              child: Icon(
-                Icons.location_on_outlined,
-                size: 17,
-                color: AppColors.secondaryText,
-              ),
-            ),
-            const SizedBox(width: 6),
-            Expanded(
-              child: Text(
-                _lokasiLengkap(place),
-                style: const TextStyle(
-                  fontSize: 13.5,
-                  height: 1.4,
-                  color: AppColors.secondaryText,
-                ),
-              ),
-            ),
-          ],
         ),
         const SizedBox(height: 12),
         _BarisPemilik(place: place),

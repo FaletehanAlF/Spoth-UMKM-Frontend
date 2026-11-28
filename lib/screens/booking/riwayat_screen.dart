@@ -409,6 +409,27 @@ class _RiwayatCard extends StatelessWidget {
                             color: AppColors.secondaryText,
                           ),
                         ),
+                      if (isHost) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          'Biaya admin platform '
+                          '${formatRupiah(booking.komisiPlatform)} '
+                          'dipotong dari total pembayaran',
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: AppColors.secondaryText,
+                          ),
+                        ),
+                        Text(
+                          'Pendapatan pemilik '
+                          '${formatRupiah(booking.pendapatanHost)}',
+                          style: const TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.primaryOrange,
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -446,7 +467,7 @@ class _StatusBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: AppColors.sageTint,
+        color: AppColors.lightOrange,
         borderRadius: BorderRadius.circular(8),
       ),
       child: Text(
@@ -455,7 +476,7 @@ class _StatusBadge extends StatelessWidget {
           fontSize: 10,
           fontWeight: FontWeight.w700,
           letterSpacing: 0.2,
-          color: AppColors.success,
+          color: AppColors.primaryOrange,
         ),
       ),
     );

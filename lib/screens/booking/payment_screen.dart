@@ -13,6 +13,7 @@ import '../../models/booking_model.dart';
 import '../../models/payment_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/booking_provider.dart';
+import '../../providers/notification_provider.dart';
 import '../../providers/riwayat_provider.dart';
 import '../../providers/nav_provider.dart';
 import '../../widgets/app_button.dart';
@@ -20,6 +21,7 @@ import '../../widgets/empty_state.dart';
 import '../../widgets/epass_sheet.dart';
 import '../../widgets/shimmer_loading.dart';
 import '../../widgets/spoth_app_bar.dart';
+import '../../widgets/success_check_animation.dart';
 import '../../widgets/spoth_sidebar_scaffold.dart';
 
 class PaymentScreen extends ConsumerStatefulWidget {
@@ -231,6 +233,8 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen>
 
       await ref.read(bookingsProvider.notifier).refresh();
       await ref.read(riwayatBadgeProvider.notifier).refresh();
+      await ref.read(notificationSummaryProvider.notifier).refresh();
+      await ref.read(notificationsProvider.notifier).refresh();
 
       await _load();
 
@@ -851,11 +855,7 @@ class _SuksesPembayaran extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(20, 24, 20, 28),
       child: Column(
         children: [
-          const Icon(
-            Icons.check_circle,
-            size: 64,
-            color: AppColors.primaryOrange,
-          ),
+          const SuccessCheckAnimation(size: 72),
           const SizedBox(height: 12),
           const Text(
             'Pembayaran Berhasil',

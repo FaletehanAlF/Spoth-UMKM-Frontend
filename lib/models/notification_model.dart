@@ -5,6 +5,7 @@ class NotificationModel {
     required this.pesan,
     required this.dibaca,
     this.createdAt,
+    this.jenis,
     this.metadata,
   });
 
@@ -14,6 +15,8 @@ class NotificationModel {
   final bool dibaca;
   final DateTime? createdAt;
 
+  /// Jenis notifikasi, misalnya PEMBAYARAN_BERHASIL.
+  final String? jenis;
   final Map<String, dynamic>? metadata;
 
   factory NotificationModel.fromJson(Map<String, dynamic> json) {
@@ -23,6 +26,7 @@ class NotificationModel {
       pesan: json['pesan'] as String? ?? '',
       dibaca: json['dibaca'] as bool? ?? false,
       createdAt: DateTime.tryParse(json['created_at'] as String? ?? ''),
+      jenis: json['jenis'] as String?,
       metadata: json['metadata'] is Map<String, dynamic>
           ? json['metadata'] as Map<String, dynamic>
           : null,

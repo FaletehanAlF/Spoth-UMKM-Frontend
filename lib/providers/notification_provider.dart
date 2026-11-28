@@ -136,6 +136,18 @@ class NotificationsNotifier extends AsyncNotifier<NotificationsPage> {
     await refresh();
     await ref.read(notificationSummaryProvider.notifier).refresh();
   }
+
+  Future<void> deleteAll() async {
+    final token = ref.read(authNotifierProvider.select((state) => state.token));
+
+    if (token == null) {
+      return;
+    }
+
+    await ref.read(notificationServiceProvider).deleteAll(token: token);
+    await refresh();
+    await ref.read(notificationSummaryProvider.notifier).refresh();
+  }
 }
 
 final notificationsProvider =
