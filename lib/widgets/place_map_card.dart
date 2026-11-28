@@ -19,12 +19,17 @@ class PlaceMapCard extends StatelessWidget {
   static const double _radius = 16;
   static const double _mapHeight = 200;
   static const double _gap = 14;
+  static const double _defaultLat = -6.2;
+  static const double _defaultLng = 106.8167;
 
   @override
   Widget build(BuildContext context) {
     final punyaKoordinat =
         place.latitude != null && place.longitude != null;
-    final posisi = LatLng(place.latitude ?? 0, place.longitude ?? 0);
+    final posisi = LatLng(
+      place.latitude ?? _defaultLat,
+      place.longitude ?? _defaultLng,
+    );
 
     return Container(
       width: double.infinity,
@@ -66,27 +71,23 @@ class PlaceMapCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: _gap),
-          if (punyaKoordinat) ...[
-            _PetaStatis(posisi: posisi, place: place, onBuka: () => _bukaGoogleMaps(context)),
-            const SizedBox(height: _gap),
-          ] else ...[
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: AppColors.surfaceMuted,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Text(
-                'Koordinat peta belum diisi. Alamat tetap tersedia.',
-                style: TextStyle(
-                  fontSize: 12.5,
-                  height: 1.4,
-                  color: AppColors.secondaryText,
-                ),
+          _PetaStatis(
+            posisi: posisi,
+            place: place,
+            punyaLokasi: punyaKoordinat,
+            onBuka: () => _bukaGoogleMaps(context),
+          ),
+          const SizedBox(height: _gap),
+          if (!punyaKoordinat) ...[
+            const Text(
+              'Koordinat peta belum diisi. Peta ditampilkan; alamat tetap tersedia.',
+              style: TextStyle(
+                fontSize: 12.5,
+                height: 1.4,
+                color: AppColors.secondaryText,
               ),
             ),
-            const SizedBox(height: _gap),
+            const SizedBox(height: 8),
           ],
           Text(
             _alamatLengkap(),
@@ -161,18 +162,20 @@ class _PetaStatis extends StatelessWidget {
   const _PetaStatis({
     required this.posisi,
     required this.place,
+    required this.punyaLokasi,
     required this.onBuka,
   });
 
   final LatLng posisi;
   final PlaceModel place;
+  final bool punyaLokasi;
   final VoidCallback onBuka;
 
   @override
   Widget build(BuildContext context) {
     return FreeMapView(
       center: posisi,
-      punyaLokasi: true,
+      punyaLokasi: punyaLokasi,
       markerId: place.id,
       title: place.namaTempat,
       interactive: false,
