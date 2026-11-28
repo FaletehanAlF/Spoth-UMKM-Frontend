@@ -15,6 +15,7 @@ class SpothSidebar extends StatelessWidget {
     required this.onToggle,
     this.badgeIndex = -1,
     this.badgeCount = 0,
+    this.additionalBadgeCounts = const {},
   });
 
   final int index;
@@ -30,6 +31,9 @@ class SpothSidebar extends StatelessWidget {
   final int badgeIndex;
 
   final int badgeCount;
+
+  /// Badge tambahan per index, misalnya Chat dan Booking bersamaan.
+  final Map<int, int> additionalBadgeCounts;
 
   @override
   Widget build(BuildContext context) {
@@ -74,7 +78,9 @@ class SpothSidebar extends StatelessWidget {
                 item: items[i],
                 selected: index == i,
                 expanded: expanded,
-                badgeCount: i == badgeIndex ? badgeCount : 0,
+                badgeCount:
+                    (i == badgeIndex ? badgeCount : 0) +
+                    (additionalBadgeCounts[i] ?? 0),
                 onTap: () => onChanged(i),
               ),
             ),

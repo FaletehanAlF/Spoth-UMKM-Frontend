@@ -39,6 +39,11 @@ const Map<MainTab, NavItemData> kNavItems = {
     activeIcon: Icons.receipt_long,
     label: 'Booking',
   ),
+  MainTab.chat: NavItemData(
+    icon: Icons.chat_bubble_outline,
+    activeIcon: Icons.chat_bubble,
+    label: 'Chat',
+  ),
   MainTab.profil: NavItemData(
     icon: Icons.person_outline,
     activeIcon: Icons.person,
@@ -56,13 +61,14 @@ List<NavItemData> navItemsForRole(UserModel? user) {
 
   return [
     for (final tab in tabsForRole(user))
-      if (tab == MainTab.beranda && isHost)
-        const NavItemData(
-          icon: Icons.space_dashboard_outlined,
-          activeIcon: Icons.space_dashboard,
-          label: 'Dashboard',
-        )
-      else
-        kNavItems[tab]!,
+      if (tab != MainTab.profil)
+        if (tab == MainTab.beranda && isHost)
+          const NavItemData(
+            icon: Icons.space_dashboard_outlined,
+            activeIcon: Icons.space_dashboard,
+            label: 'Dashboard',
+          )
+        else
+          kNavItems[tab]!,
   ];
 }

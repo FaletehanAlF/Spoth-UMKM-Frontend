@@ -2,7 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/user_model.dart';
 
-enum MainTab { beranda, tempat, kelolaTempat, booking, profil }
+enum MainTab { beranda, tempat, kelolaTempat, booking, chat, profil }
 
 class MainNavNotifier extends Notifier<MainTab> {
   @override
@@ -38,6 +38,7 @@ List<MainTab> tabsForRole(UserModel? user) {
       MainTab.tempat,
       MainTab.kelolaTempat,
       MainTab.booking,
+      MainTab.chat,
       MainTab.profil,
     ];
   }
@@ -46,6 +47,7 @@ List<MainTab> tabsForRole(UserModel? user) {
     MainTab.beranda,
     MainTab.tempat,
     MainTab.booking,
+    MainTab.chat,
     MainTab.profil,
   ];
 }

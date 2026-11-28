@@ -25,7 +25,8 @@ class SpothSidebarScaffold extends ConsumerWidget {
       return child;
     }
 
-    final tabs = tabsForRole(ref.watch(authNotifierProvider).user);
+    final user = ref.watch(authNotifierProvider).user;
+    final tabs = tabsForRole(user);
 
     var index = tabs.indexOf(activeTab);
     if (index < 0) {
@@ -39,7 +40,7 @@ class SpothSidebarScaffold extends ConsumerWidget {
       children: [
         SpothSidebar(
           index: index,
-          items: [for (final tab in tabs) kNavItems[tab]!],
+          items: navItemsForRole(user),
           expanded: ref.watch(sidebarExpandedProvider),
           onToggle: () => ref.read(sidebarExpandedProvider.notifier).toggle(),
           onChanged: (i) {

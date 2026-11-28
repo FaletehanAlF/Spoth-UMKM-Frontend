@@ -2,6 +2,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../chat/chat_thread_screen.dart';
 import '../../core/services/place_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_fonts.dart';
@@ -52,6 +53,13 @@ PaketSewa? _paketTerpilih(PlaceModel place, String? tipe) {
   }
 
   return daftar.first;
+}
+
+BookingModel? _bookingUntukChat(List<BookingModel> bookings, String placeId) {
+  for (final booking in bookings) {
+    if (booking.placeId == placeId) return booking;
+  }
+  return null;
 }
 
 class PlaceDetailScreen extends ConsumerStatefulWidget {
@@ -387,22 +395,18 @@ class _HeroPhoto extends StatelessWidget {
         child: Stack(
           fit: StackFit.expand,
           children: [
-            aktif != null
-                ? Image.network(
-                    aktif,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, _, _) => const _HeroPlaceholder(),
-                  )
-                : const _HeroPlaceholder(),
-            if (adaNavigasi)
-              GestureDetector(
-                behavior: HitTestBehavior.translucent,
-                onTapDown: (details) {
-                  final keKanan = details.localPosition.dx > lebar / 2;
-                  final baru = (index + (keKanan ? 1 : -1)) % fotos.length;
-                  onFotoChanged(baru < 0 ? fotos.length - 1 : baru);
-                },
-              ),
+            _FotoBisaGeser(
+              index: index,
+              jumlah: fotos.length,
+              onGeser: onFotoChanged,
+              child: aktif != null
+                  ? Image.network(
+                      aktif,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, _, _) => const _HeroPlaceholder(),
+                    )
+                  : const _HeroPlaceholder(),
+            ),
             if (adaNavigasi)
               IgnorePointer(
                 child: Padding(
@@ -460,6 +464,46 @@ class _HeroPhoto extends StatelessWidget {
       context: context,
       barrierColor: AppColors.charcoal.withValues(alpha: 0.9),
       builder: (_) => _PhotoViewer(fotos: fotos, initialIndex: mulai),
+    );
+  }
+}
+
+class _FotoBisaGeser extends StatefulWidget {
+  const _FotoBisaGeser({
+    required this.index,
+    required this.jumlah,
+    required this.onGeser,
+    required this.child,
+  });
+
+  final int index;
+  final int jumlah;
+  final ValueChanged<int> onGeser;
+  final Widget child;
+
+  @override
+  State<_FotoBisaGeser> createState() => _FotoBisaGeserState();
+}
+
+class _FotoBisaGeserState extends State<_FotoBisaGeser> {
+  double _geser = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    if (widget.jumlah < 2) return widget.child;
+
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onHorizontalDragStart: (_) => _geser = 0,
+      onHorizontalDragUpdate: (details) => _geser += details.delta.dx,
+      onHorizontalDragEnd: (_) {
+        if (_geser.abs() < 40) return;
+
+        final berikutnya = widget.index + (_geser < 0 ? 1 : -1);
+        if (berikutnya < 0 || berikutnya >= widget.jumlah) return;
+        widget.onGeser(berikutnya);
+      },
+      child: widget.child,
     );
   }
 }
@@ -978,7 +1022,52 @@ class _BarisPemilik extends StatelessWidget {
           'Pemilik tempat',
           style: TextStyle(fontSize: 12.5, color: AppColors.secondaryText),
         ),
+        const Spacer(),
+        _TombolChatPemilik(place: place),
       ],
+    );
+  }
+}
+
+class _TombolChatPemilik extends ConsumerWidget {
+  const _TombolChatPemilik({required this.place});
+
+  final PlaceModel place;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final user = ref.watch(authNotifierProvider).user;
+    if (user?.role != UserModel.roleTenant) {
+      return const SizedBox.shrink();
+    }
+
+    final bookings = ref.watch(bookingsProvider).value ?? const <BookingModel>[];
+    final booking = _bookingUntukChat(bookings, place.id);
+    if (booking == null) {
+      return const SizedBox.shrink();
+    }
+
+    final namaHost = place.namaHost?.trim() ?? '';
+
+    return OutlinedButton.icon(
+      key: const ValueKey('tombol-chat-pemilik'),
+      onPressed: () => Navigator.of(context).push<void>(
+        MaterialPageRoute<void>(
+          builder: (_) => ChatThreadScreen(
+            bookingId: booking.id,
+            title: namaHost.isNotEmpty ? namaHost : 'Pemilik tempat',
+            avatarUrl: place.fotoHost,
+          ),
+        ),
+      ),
+      icon: const Icon(Icons.chat_bubble_outline, size: 16),
+      label: const Text('Chat'),
+      style: OutlinedButton.styleFrom(
+        foregroundColor: AppColors.primaryDeep,
+        side: const BorderSide(color: AppColors.primaryDeep),
+        minimumSize: const Size(0, 44),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
     );
   }
 }

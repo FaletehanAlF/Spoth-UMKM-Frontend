@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart' show kIsWeb, debugPrint;
 import 'package:flutter/material.dart' show Color;
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
+import '../../models/chat_message.dart';
 import '../../models/notification_model.dart';
 
 class LocalNotificationService {
@@ -47,6 +48,27 @@ class LocalNotificationService {
   }
 
   Future<void> showFromNotification(NotificationModel notification) async {
+    await _show(
+      id: notification.id.hashCode,
+      title: notification.judul,
+      body: notification.pesan,
+    );
+  }
+
+  /// Tampilkan notifikasi HP beneran ketika ada pesan chat baru.
+  Future<void> showChat(ChatMessageModel message) async {
+    await _show(
+      id: 'chat-${message.id}'.hashCode,
+      title: 'Pesan baru di Chat',
+      body: message.body,
+    );
+  }
+
+  Future<void> _show({
+    required int id,
+    required String title,
+    required String body,
+  }) async {
     if (kIsWeb) {
       return;
     }
@@ -59,9 +81,9 @@ class LocalNotificationService {
 
     try {
       await _plugin.show(
-        id: notification.id.hashCode,
-        title: notification.judul,
-        body: notification.pesan,
+        id: id,
+        title: title,
+        body: body,
         notificationDetails: const NotificationDetails(
           android: AndroidNotificationDetails(
             'spoth_notifications',

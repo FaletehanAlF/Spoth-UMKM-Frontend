@@ -2,12 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:spoth_umkm/core/services/api_service.dart';
+import 'package:spoth_umkm/core/services/chat_service.dart';
+import 'package:spoth_umkm/core/services/notification_socket_service.dart';
 import 'package:spoth_umkm/core/services/place_service.dart';
 import 'package:spoth_umkm/core/theme/app_theme.dart';
+import 'package:spoth_umkm/models/chat_message.dart';
 import 'package:spoth_umkm/models/place_model.dart';
 import 'package:spoth_umkm/models/user_model.dart';
 import 'package:spoth_umkm/providers/auth_provider.dart';
 import 'package:spoth_umkm/providers/booking_provider.dart';
+import 'package:spoth_umkm/providers/notification_realtime_provider.dart';
 import 'package:spoth_umkm/models/booking_model.dart';
 import 'package:spoth_umkm/screens/place/place_detail_screen.dart';
 
@@ -62,6 +66,32 @@ class FakeBookings extends BookingsNotifier {
   Future<List<BookingModel>> build() async => items;
 }
 
+class FakeChat extends ChatService {
+  FakeChat() : super(ApiService());
+
+  @override
+  Future<List<ChatMessageModel>> messages({
+    required String token,
+    required String bookingId,
+  }) async => const [];
+
+  @override
+  Future<int> markRead({required String token, required String bookingId}) async => 0;
+
+  @override
+  Future<ChatMessageModel> send({
+    required String token,
+    required String bookingId,
+    required String body,
+  }) async => ChatMessageModel(
+    id: '1',
+    bookingId: bookingId,
+    senderId: '3',
+    body: body,
+    createdAt: DateTime(2026, 11, 28),
+  );
+}
+
 PlaceModel tempatContoh() {
   return PlaceModel(
     id: '6',
@@ -93,6 +123,7 @@ Future<void> tampilkanDetail(
   required double lebar,
   required double tinggi,
   List<BookingModel> bookings = const [],
+  PlaceModel? place,
 }) async {
   tester.view.physicalSize = Size(lebar, tinggi);
   tester.view.devicePixelRatio = 1;
@@ -103,8 +134,14 @@ Future<void> tampilkanDetail(
     ProviderScope(
       overrides: [
         authNotifierProvider.overrideWith(FakeAuthTenant.new),
-        placeServiceProvider.overrideWithValue(FakePlaceService(tempatContoh())),
+        placeServiceProvider.overrideWithValue(
+          FakePlaceService(place ?? tempatContoh()),
+        ),
         bookingsProvider.overrideWith(() => FakeBookings(bookings)),
+        chatServiceProvider.overrideWithValue(FakeChat()),
+        notificationSocketServiceProvider.overrideWithValue(
+          NotificationSocketService('http://127.0.0.1:3004'),
+        ),
       ],
       child: MaterialApp(
         theme: AppTheme.lightTheme,
@@ -316,5 +353,77 @@ void main() {
 
     expect(tester.takeException(), isNull);
     expect(find.text('Sewa Tempat Ini'), findsOneWidget);
+  });
+
+  testWidgets('penyewa dengan pesanan bisa membuka chat pemilik', (
+    tester,
+  ) async {
+    await tampilkanDetail(
+      tester,
+      lebar: 375,
+      tinggi: 1000,
+      bookings: [
+        BookingModel(
+          id: '9',
+          placeId: '6',
+          jenisUsaha: 'Warung makan',
+          tanggalMulai: '2026-11-24',
+          tanggalSelesai: '2026-12-24',
+          jumlahDurasi: 1,
+          hargaSatuan: 500000,
+          totalHarga: 502000,
+          status: 'LUNAS',
+        ),
+      ],
+    );
+
+    expect(find.byKey(const ValueKey('tombol-chat-pemilik')), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey('tombol-chat-pemilik')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Budi Santoso'), findsWidgets);
+    expect(find.byIcon(Icons.arrow_upward), findsOneWidget);
+  });
+
+  testWidgets('penyewa tanpa pesanan tidak melihat tombol chat', (
+    tester,
+  ) async {
+    await tampilkanDetail(tester, lebar: 375, tinggi: 1000);
+
+    expect(find.byKey(const ValueKey('tombol-chat-pemilik')), findsNothing);
+  });
+
+  testWidgets('foto bisa digeser dengan jari ke foto berikutnya', (
+    tester,
+  ) async {
+    final contoh = tempatContoh();
+    final duaFoto = PlaceModel(
+      id: contoh.id,
+      hostId: contoh.hostId,
+      namaTempat: contoh.namaTempat,
+      kategori: contoh.kategori,
+      deskripsi: contoh.deskripsi,
+      alamat: contoh.alamat,
+      kecamatan: contoh.kecamatan,
+      hargaMingguan: contoh.hargaMingguan,
+      foto: const [
+        'http://127.0.0.1/foto-satu.png',
+        'http://127.0.0.1/foto-dua.png',
+      ],
+      namaHost: contoh.namaHost,
+    );
+
+    await tampilkanDetail(tester, lebar: 375, tinggi: 1000, place: duaFoto);
+
+    expect(find.text('1 / 2'), findsWidgets);
+
+    await tester.drag(
+      find.byKey(const ValueKey('foto-utama-ponsel')),
+      const Offset(-120, 0),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('2 / 2'), findsWidgets);
   });
 }

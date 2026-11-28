@@ -5,8 +5,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/config/app_config.dart';
 import '../core/services/local_notification_service.dart';
 import '../core/services/notification_socket_service.dart';
+import '../models/chat_message.dart';
 import '../models/notification_model.dart';
 import 'auth_provider.dart';
+import 'chat_badge_provider.dart';
 import 'notification_provider.dart';
 import 'booking_provider.dart';
 import 'riwayat_provider.dart';
@@ -53,6 +55,7 @@ class NotificationRealtimeNotifier extends Notifier<bool> {
     }
 
     _service.onNotification = _onNewNotification;
+    _service.addChatMessageListener(_onChatMessage);
     _service.connect(token);
     state = true;
 
@@ -61,8 +64,24 @@ class NotificationRealtimeNotifier extends Notifier<bool> {
 
   void _disconnect() {
     _service.onNotification = null;
+    _service.removeChatMessageListener(_onChatMessage);
     _service.disconnect();
     state = false;
+  }
+
+  void _onChatMessage(Map<String, dynamic> data) {
+    try {
+      final message = ChatMessageModel.fromJson(data);
+      final currentUserId = ref.read(authNotifierProvider).user?.id;
+
+      // Sender tidak kena badge / notifikasi OS atas pesan sendiri.
+      if (message.senderId == currentUserId) return;
+
+      ref.read(chatBadgeProvider.notifier).increment();
+      unawaited(LocalNotificationService.instance.showChat(message));
+    } catch (_) {
+      // Event socket rusak tidak boleh merusak listener lain.
+    }
   }
 
   void _onNewNotification(NotificationModel notification) {

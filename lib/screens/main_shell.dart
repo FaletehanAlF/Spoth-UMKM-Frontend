@@ -5,11 +5,13 @@ import '../core/theme/app_colors.dart';
 import '../core/theme/app_layout.dart';
 import '../providers/auth_provider.dart';
 import '../providers/booking_provider.dart';
+import '../providers/chat_badge_provider.dart';
 import '../providers/nav_provider.dart';
 import '../widgets/bottom_nav_pill.dart';
 import '../widgets/nav_items.dart';
 import '../widgets/spoth_sidebar.dart';
 import 'booking/booking_screen.dart';
+import 'chat/chat_screen.dart';
 import 'home/home_screen.dart';
 import 'place/kelola_tempat_screen.dart';
 import 'place/tempat_screen.dart';
@@ -32,6 +34,8 @@ class MainShell extends ConsumerWidget {
     final items = navItemsForRole(user);
     final badgeCount = ref.watch(bookingBadgeProvider);
     final badgeIndex = tabs.indexOf(MainTab.booking);
+    final chatBadgeCount = ref.watch(chatBadgeProvider);
+    final chatBadgeIndex = tabs.indexOf(MainTab.chat);
 
     final content = IndexedStack(
       index: index,
@@ -42,6 +46,7 @@ class MainShell extends ConsumerWidget {
             MainTab.tempat => const TempatScreen(),
             MainTab.kelolaTempat => const KelolaTempatScreen(),
             MainTab.booking => const BookingScreen(),
+            MainTab.chat => const ChatScreen(),
             MainTab.profil => const ProfileScreen(),
           },
       ],
@@ -60,6 +65,7 @@ class MainShell extends ConsumerWidget {
               items: items,
               badgeIndex: badgeIndex,
               badgeCount: badgeCount,
+              additionalBadgeCounts: {chatBadgeIndex: chatBadgeCount},
               expanded: ref.watch(sidebarExpandedProvider),
               onToggle: () => ref.read(sidebarExpandedProvider.notifier).toggle(),
               onChanged: (value) =>
@@ -98,6 +104,7 @@ class MainShell extends ConsumerWidget {
         items: items,
         badgeIndex: badgeIndex,
         badgeCount: badgeCount,
+        additionalBadgeCounts: {chatBadgeIndex: chatBadgeCount},
         onChanged: (value) =>
             ref.read(mainNavIndexProvider.notifier).setTab(tabs[value]),
       ),

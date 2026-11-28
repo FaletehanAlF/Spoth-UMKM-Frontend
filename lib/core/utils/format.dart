@@ -117,3 +117,17 @@ String formatTanggalJam(DateTime? tanggal) {
       ? '-'
       : DateFormat('dd MMM yyyy, HH:mm').format(tanggal);
 }
+
+String formatWaktuChat(DateTime? tanggal) {
+  if (tanggal == null) return '';
+
+  final sekarang = DateTime.now();
+  final hariIni = DateTime(tanggal.year, tanggal.month, tanggal.day);
+  final hariSekarang = DateTime(sekarang.year, sekarang.month, sekarang.day);
+  final selisih = hariSekarang.difference(hariIni).inDays;
+  final jam = DateFormat('HH:mm').format(tanggal);
+
+  if (selisih == 0) return 'Hari ini, $jam';
+  if (selisih == 1) return 'Kemarin, $jam';
+  return '${DateFormat('dd MMM').format(tanggal)}, $jam';
+}

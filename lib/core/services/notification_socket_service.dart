@@ -11,7 +11,23 @@ class NotificationSocketService {
 
   void Function(NotificationModel notification)? onNotification;
 
+  /// Semua listener dapat menerima `chat:message`; tidak saling menimpa.
+  final List<void Function(Map<String, dynamic> data)> _chatListeners = [];
+
+  void Function(Map<String, dynamic> data)? onChatMessageUpdated;
+  void Function(Map<String, dynamic> data)? onChatMessageDeleted;
+
   bool get isConnected => _socket?.connected ?? false;
+
+  void addChatMessageListener(void Function(Map<String, dynamic>) listener) {
+    if (!_chatListeners.contains(listener)) {
+      _chatListeners.add(listener);
+    }
+  }
+
+  void removeChatMessageListener(void Function(Map<String, dynamic>) listener) {
+    _chatListeners.remove(listener);
+  }
 
   void connect(String token) {
     if (_socket?.connected ?? false) {
@@ -39,12 +55,36 @@ class NotificationSocketService {
       }
     });
 
+    socket.on('chat:message', (dynamic data) {
+      if (data is! Map) return;
+
+      final message = Map<String, dynamic>.from(data);
+      // Salin list agar listener boleh add/remove ketika event berjalan.
+      for (final listener in List.of(_chatListeners)) {
+        listener(message);
+      }
+    });
+
+    socket.on('chat:message-updated', (dynamic data) {
+      if (data is Map) {
+        onChatMessageUpdated?.call(Map<String, dynamic>.from(data));
+      }
+    });
+
+    socket.on('chat:message-deleted', (dynamic data) {
+      if (data is Map) {
+        onChatMessageDeleted?.call(Map<String, dynamic>.from(data));
+      }
+    });
+
     _socket = socket;
   }
 
   void disconnect() {
     _socket?.dispose();
     _socket = null;
+    onChatMessageUpdated = null;
+    onChatMessageDeleted = null;
   }
 
   NotificationModel? _parse(dynamic data) {

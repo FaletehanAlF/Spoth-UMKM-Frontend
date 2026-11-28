@@ -12,6 +12,7 @@ class SpothBottomNav extends StatelessWidget {
     required this.onChanged,
     this.badgeIndex = -1,
     this.badgeCount = 0,
+    this.additionalBadgeCounts = const {},
   });
 
   final int index;
@@ -19,6 +20,9 @@ class SpothBottomNav extends StatelessWidget {
   final ValueChanged<int> onChanged;
   final int badgeIndex;
   final int badgeCount;
+
+  /// Badge tambahan per index, misalnya Chat dan Booking bersamaan.
+  final Map<int, int> additionalBadgeCounts;
 
   @override
   Widget build(BuildContext context) {
@@ -46,7 +50,9 @@ class SpothBottomNav extends StatelessWidget {
               _NavItem(
                 item: items[i],
                 selected: index == i,
-                badgeCount: i == badgeIndex ? badgeCount : 0,
+                badgeCount:
+                    (i == badgeIndex ? badgeCount : 0) +
+                    (additionalBadgeCounts[i] ?? 0),
                 onTap: () => onChanged(i),
               ),
           ],

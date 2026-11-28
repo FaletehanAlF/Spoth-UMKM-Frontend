@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../core/theme/app_colors.dart';
 import 'notification_icon.dart';
+import 'profile_icon_button.dart';
 import 'riwayat_icon_button.dart';
 
 class SpothAppBar extends StatelessWidget implements PreferredSizeWidget {
@@ -13,6 +14,7 @@ class SpothAppBar extends StatelessWidget implements PreferredSizeWidget {
     this.leading,
     this.showRiwayat = false,
     this.showNotification = false,
+    this.showProfile = true,
   });
 
   final Widget? title;
@@ -30,6 +32,9 @@ class SpothAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   /// Tampilkan ikon lonceng di pojok kanan.
   final bool showNotification;
+
+  /// Tampilkan profile di pojok kanan atas, samping notifikasi.
+  final bool showProfile;
 
   @override
   Size get preferredSize => const Size.fromHeight(kToolbarHeight + 1);
@@ -60,6 +65,7 @@ class SpothAppBar extends StatelessWidget implements PreferredSizeWidget {
       actions: [
         ...?actions,
         if (showNotification) const NotificationIconButton(),
+        if (showProfile) const ProfileIconButton(),
       ],
       bottom: const PreferredSize(
         preferredSize: Size.fromHeight(1),
